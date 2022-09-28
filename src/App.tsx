@@ -1,26 +1,49 @@
+import { createTheme, ThemeProvider } from '@mui/material';
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import NeatEditor from "./shape/NeatEditor";
+import { green, yellow, grey } from '@mui/material/colors';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+
+    const theme = createTheme({
+        palette: {
+            primary: {
+                main: grey[700],
+            },
+            secondary: {
+                main: yellow[500],
+            },
+        },
+    });
+    return (
+        <ThemeProvider theme={theme}>
+            <div className="App">
+
+                <NeatEditor/>
+
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100vh",
+                }}>
+
+                    <div style={{
+                        color: "rgb(255 255 255)",
+                        opacity: .8,
+                        mixBlendMode: "overlay",
+                        margin: "auto",
+                        fontFamily: '"Roboto", roboto-condensed,sans-serif',
+                        fontWeight: 900,
+                        fontSize: "18vw",
+                    }}>
+                        NEAT
+                    </div>
+                </div>
+            </div>
+        </ThemeProvider>
+
+    );
 }
 
 export default App;
