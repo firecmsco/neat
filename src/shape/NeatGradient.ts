@@ -7,7 +7,7 @@ const CAMERA_FACTOR = 80;
 
 const PLANE_SIDE = 50;
 
-const WIREFRAME = false;
+const WIREFRAME = true;
 const COLORS_COUNT = 5;
 
 type SceneState = {
@@ -102,7 +102,7 @@ export class NeatGradient implements NeatController {
                 ];
 
                 // @ts-ignore
-                mesh.material.uniforms.u_time.value = clock.getElapsedTime() * this.speed / 16;
+                mesh.material.uniforms.u_time.value = clock.getElapsedTime() * this.speed;
                 // @ts-ignore
                 mesh.material.uniforms.u_resolution = { value: new THREE.Vector2(width, height) };
                 // @ts-ignore
@@ -116,9 +116,7 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_plane_height = { value: PLANE_SIDE };
                 // @ts-ignore
-                mesh.material.uniforms.u_colors = {
-                    value: colors
-                };
+                mesh.material.uniforms.u_colors = { value: colors };
                 // @ts-ignore
                 mesh.material.uniforms.u_colors_count = { value: COLORS_COUNT };
                 // @ts-ignore
@@ -160,7 +158,7 @@ export class NeatGradient implements NeatController {
     }
 
     set speed(speed: number) {
-        this._speed = speed * 2 / 3;
+        this._speed = speed / 12;
     }
 
     get horizontalPressure() {

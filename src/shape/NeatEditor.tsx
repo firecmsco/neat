@@ -159,11 +159,10 @@ export default function NeatEditor() {
                 }}
                 PaperProps={{
                     sx: {
-                        backgroundColor: "#FFFFFF66",
+                        backgroundColor: "#FFFFFF99",
                         overflowX: "scroll",
                         overflowY: "visible",
-                        backdropFilter: "blur(12px)",
-
+                        backdropFilter: "blur(8px)",
                     }
                 }}
                 variant="persistent"
@@ -250,7 +249,7 @@ export default function NeatEditor() {
                     }}>
 
                         <Typography variant={"button"}
-                                    gutterBottom>Pressure</Typography>
+                                    gutterBottom>Color pressure</Typography>
                         <Box sx={{
                             display: "flex",
                             flexDirection: "row",
