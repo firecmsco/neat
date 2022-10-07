@@ -1,7 +1,7 @@
-import { createTheme, ThemeProvider } from '@mui/material';
 import React from 'react';
-import NeatEditor from "./shape/NeatEditor";
-import { green, yellow, grey } from '@mui/material/colors';
+import { createTheme, ThemeProvider } from '@mui/material';
+import NeatEditor from "./components/NeatEditor";
+import { yellow, grey } from '@mui/material/colors';
 
 function App() {
 

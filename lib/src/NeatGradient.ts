@@ -1,14 +1,12 @@
 import * as THREE from "three";
 
-const DEBUG = false;
-
-const CAMERA_FACTOR_DEBUG = 40;
-const CAMERA_FACTOR = 80;
-
-const PLANE_SIDE = 50;
+const PLANE_WIDTH = 50;
+const PLANE_HEIGHT = 50;
 
 const WIREFRAME = true;
 const COLORS_COUNT = 5;
+
+const clock = new THREE.Clock();
 
 type SceneState = {
     renderer: THREE.WebGLRenderer,
@@ -17,18 +15,19 @@ type SceneState = {
     meshes: THREE.Mesh[],
 }
 
-const clock = new THREE.Clock();
-
 export type NeatConfig = {
-    ref: HTMLCanvasElement;
     speed?: number;
     horizontalPressure?: number;
     verticalPressure?: number;
-    waveFrequency?: number;
+    waveFrequencyX?: number;
+    waveFrequencyY?: number;
     waveAmplitude?: number;
+    highlights?: number;
     shadows?: number;
     saturation?: number;
     colors: string[];
+    colorBlending?: number;
+    wireframe?: boolean;
 };
 
 export type NeatController = {
@@ -42,87 +41,112 @@ export class NeatGradient implements NeatController {
     private _horizontalPressure: number = -1;
     private _verticalPressure: number = -1;
 
-    private _waveFrequency: number = -1;
+    private _waveFrequencyX: number = -1;
+    private _waveFrequencyY: number = -1;
     private _waveAmplitude: number = -1;
 
     private _shadows: number = -1;
+    private _highlights: number = -1;
     private _saturation: number = -1;
 
+    private _colorBlending: number = -1;
+
     private _colors: string[] = [];
+    private _wireframe: boolean = false;
 
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
+    private readonly sceneState: SceneState;
 
-    constructor(config: NeatConfig) {
+    constructor(config: NeatConfig & { ref: HTMLCanvasElement }) {
 
         const {
             ref,
             speed = 4,
             horizontalPressure = 3,
             verticalPressure = 3,
-            waveFrequency = 5,
+            waveFrequencyX = 5,
+            waveFrequencyY = 5,
             waveAmplitude = 3,
             colors,
+            highlights = 4,
             shadows = 4,
-            saturation = 0
+            saturation = 0,
+            colorBlending = 5,
+            wireframe = false
         } = config;
 
         const width = ref.width,
             height = ref.height;
 
         this.destroy = this.destroy.bind(this);
+        this._initScene = this._initScene.bind(this);
+        this._buildMaterial = this._buildMaterial.bind(this);
 
         this.speed = speed;
         this.horizontalPressure = horizontalPressure;
         this.verticalPressure = verticalPressure;
-        this.waveFrequency = waveFrequency;
+        this.waveFrequencyX = waveFrequencyX;
+        this.waveFrequencyY = waveFrequencyY;
         this.waveAmplitude = waveAmplitude;
+        this.colorBlending = colorBlending;
         this.colors = colors;
         this.shadows = shadows;
+        this.highlights = highlights;
         this.saturation = saturation;
+        this.wireframe = wireframe;
 
-        const threeJsColors = colors.map((color) => new THREE.Color(color));
-        const sceneState = initScene(ref, width, height, threeJsColors, this.horizontalPressure, this.verticalPressure, this.waveFrequency, this.waveAmplitude, this.shadows);
+        this.sceneState = this._initScene(ref, width, height);
 
-        const { renderer, camera, scene, meshes } = sceneState;
+        const { renderer, camera, scene, meshes } = this.sceneState;
 
+        let tick = 0;
         const render = () => {
 
             meshes.forEach((mesh) => {
 
                 const colors = [
-                    ...this.colors.map(color => ({
+                    ...this._colors.map(color => ({
                         is_active: true,
                         color: new THREE.Color(color)
                     })),
-                    ...Array.from({ length: COLORS_COUNT - this.colors.length }).map(() => ({
+                    ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
                         is_active: false,
                         color: new THREE.Color(0x000000)
                     }))
                 ];
 
+                tick += clock.getDelta() * this._speed;
                 // @ts-ignore
-                mesh.material.uniforms.u_time.value = clock.getElapsedTime() * this.speed;
+                mesh.material.uniforms.u_time.value = tick;
                 // @ts-ignore
                 mesh.material.uniforms.u_resolution = { value: new THREE.Vector2(width, height) };
                 // @ts-ignore
-                mesh.material.uniforms.u_color_pressure = { value: new THREE.Vector2(this.horizontalPressure, this.verticalPressure) };
+                mesh.material.uniforms.u_color_pressure = { value: new THREE.Vector2(this._horizontalPressure, this._verticalPressure) };
                 // @ts-ignore
-                mesh.material.uniforms.u_wave_frequency = { value: this.waveFrequency };
+                mesh.material.uniforms.u_wave_frequency_x = { value: this._waveFrequencyX };
                 // @ts-ignore
-                mesh.material.uniforms.u_wave_amplitude = { value: this.waveAmplitude };
+                mesh.material.uniforms.u_wave_frequency_y = { value: this._waveFrequencyY };
                 // @ts-ignore
-                mesh.material.uniforms.u_plane_width = { value: PLANE_SIDE };
+                mesh.material.uniforms.u_wave_amplitude = { value: this._waveAmplitude };
                 // @ts-ignore
-                mesh.material.uniforms.u_plane_height = { value: PLANE_SIDE };
+                mesh.material.uniforms.u_plane_width = { value: PLANE_WIDTH };
+                // @ts-ignore
+                mesh.material.uniforms.u_plane_height = { value: PLANE_HEIGHT };
+                // @ts-ignore
+                mesh.material.uniforms.u_color_blending = { value: this._colorBlending };
                 // @ts-ignore
                 mesh.material.uniforms.u_colors = { value: colors };
                 // @ts-ignore
                 mesh.material.uniforms.u_colors_count = { value: COLORS_COUNT };
                 // @ts-ignore
-                mesh.material.uniforms.u_shadows = { value: this.shadows };
+                mesh.material.uniforms.u_shadows = { value: this._shadows };
                 // @ts-ignore
-                mesh.material.uniforms.u_saturation = { value: this.saturation };
+                mesh.material.uniforms.u_highlights = { value: this._highlights };
+                // @ts-ignore
+                mesh.material.uniforms.u_saturation = { value: this._saturation };
+                // @ts-ignore
+                mesh.material.wireframe = this._wireframe;
             });
 
             renderer.render(scene, camera);
@@ -133,7 +157,9 @@ export class NeatGradient implements NeatController {
             const canvas = renderer.domElement;
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
-            updateSceneSize(sceneState, width, height);
+
+            this.sceneState.renderer.setSize(width, height, false);
+            updateCamera(this.sceneState.camera, width, height);
         };
 
         this.sizeObserver = new ResizeObserver(entries => {
@@ -153,113 +179,143 @@ export class NeatGradient implements NeatController {
         }
     }
 
-    get speed() {
-        return this._speed;
-    }
-
     set speed(speed: number) {
-        this._speed = speed / 12;
-    }
-
-    get horizontalPressure() {
-        return this._horizontalPressure;
+        this._speed = speed / 20;
     }
 
     set horizontalPressure(horizontalPressure: number) {
-        this._horizontalPressure = horizontalPressure / 3 * 1.3;
-    }
-
-    get verticalPressure() {
-        return this._verticalPressure;
+        this._horizontalPressure = horizontalPressure / 3;
     }
 
     set verticalPressure(verticalPressure: number) {
-        this._verticalPressure = verticalPressure / 3 * 1.3;
+        this._verticalPressure = verticalPressure / 3;
     }
 
-    get waveFrequency() {
-        return this._waveFrequency;
+    set waveFrequencyX(waveFrequencyX: number) {
+        this._waveFrequencyX = waveFrequencyX * 0.04;
     }
 
-    set waveFrequency(waveFrequency: number) {
-        this._waveFrequency = waveFrequency * 0.05;
-    }
-
-    get waveAmplitude() {
-        return this._waveAmplitude;
+    set waveFrequencyY(waveFrequencyY: number) {
+        this._waveFrequencyY = waveFrequencyY * 0.04;
     }
 
     set waveAmplitude(waveAmplitude: number) {
         this._waveAmplitude = waveAmplitude * .75;
     }
 
-    get colors() {
-        return this._colors;
-    }
-
     set colors(colors: string[]) {
         this._colors = colors;
     }
 
-    get shadows() {
-        return this._shadows;
+    set highlights(highlights: number) {
+        this._highlights = highlights / 100;
     }
 
     set shadows(shadows: number) {
         this._shadows = shadows / 100;
     }
 
-    get saturation() {
-        return this._saturation;
-    }
-
     set saturation(saturation: number) {
         this._saturation = saturation / 10;
     }
 
-}
+    set colorBlending(colorBlending: number) {
+        this._colorBlending = colorBlending / 10;
+    }
 
-function initScene(ref: HTMLCanvasElement, width: number, height: number, colors: THREE.Color[], horizontalPressure: number, verticalPressure: number, waveFrequency: number, waveAmplitude: number, shadows: number): SceneState {
+    set wireframe(wireframe: boolean) {
+        this._wireframe = wireframe;
+    }
 
-    const renderer = new THREE.WebGLRenderer({
-        // antialias: true,
-        // alpha: true,
-        canvas: ref
-    });
+    _initScene(ref: HTMLCanvasElement, width: number, height: number): SceneState {
 
-    renderer.setSize(width, height, false);
+        const renderer = new THREE.WebGLRenderer({
+            // antialias: true,
+            // alpha: true,
+            canvas: ref
+        });
 
-    const meshes: THREE.Mesh[] = [];
+        renderer.setClearColor( 0xFF0000, 1 );
+        renderer.setSize(width, height, false);
 
-    const scene = new THREE.Scene();
+        const meshes: THREE.Mesh[] = [];
 
-    const material = buildMaterial(width, height, colors, horizontalPressure, verticalPressure, waveFrequency, waveAmplitude, shadows);
+        const scene = new THREE.Scene();
 
-    const geo = new THREE.PlaneGeometry(PLANE_SIDE, PLANE_SIDE, 240, 240);
-    const plane = new THREE.Mesh(geo, material);
-    plane.rotation.x = -Math.PI / 4;
-    plane.position.z = -1;
-    meshes.push(plane);
-    scene.add(plane);
-    const camera = new THREE.OrthographicCamera(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    updateCamera(camera, width, height);
-    camera.position.z = 15;
+        const material = this._buildMaterial(width, height);
 
-    return {
-        renderer,
-        camera,
-        scene,
-        meshes
-    };
+        const geo = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240, 240);
+        const plane = new THREE.Mesh(geo, material);
+        plane.rotation.x = -Math.PI / 3.5;
+        plane.position.z = -1;
+        meshes.push(plane);
+        scene.add(plane);
+
+        const camera = new THREE.OrthographicCamera(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        // camera.zoom = 1;
+        updateCamera(camera, width, height);
+
+        return {
+            renderer,
+            camera,
+            scene,
+            meshes
+        };
+    }
+
+    _buildMaterial(width: number, height: number) {
+
+        const uniforms = {
+            u_time: { value: 0 },
+            u_color_pressure: { value: new THREE.Vector2(this._horizontalPressure, this._verticalPressure) },
+            u_wave_frequency_x: { value: this._waveFrequencyX },
+            u_wave_frequency_y: { value: this._waveFrequencyY },
+            u_wave_amplitude: { value: this._waveAmplitude },
+            u_resolution: { value: new THREE.Vector2(width, height) },
+            u_colors: { value: this._colors.map((color) => new THREE.Color(color)) },
+            u_colors_count: { value: this._colors.length },
+            u_plane_width: { value: PLANE_WIDTH },
+            u_plane_height: { value: PLANE_HEIGHT },
+            u_shadows: { value: this._shadows },
+            u_highlights: { value: this._highlights },
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: buildUniforms() + buildNoise() + buildColorFunctions() + buildVertexShader(),
+            fragmentShader: buildUniforms() + buildColorFunctions() + buildFragmentShader()
+        });
+
+        material.wireframe = WIREFRAME;
+        return material;
+    }
+
+
 }
 
 function updateCamera(camera: THREE.OrthographicCamera, width: number, height: number) {
+
+    const viewPortAreaRatio = 1000000;
+    const areaViewPort = width * height;
+    const targetPlaneArea =
+        areaViewPort / viewPortAreaRatio *
+        PLANE_WIDTH * PLANE_HEIGHT / 1.5;
+
     const ratio = width / height;
-    const side = PLANE_SIDE / 4;
-    const left = ratio > 0 ? -side : -side / ratio;
-    const right = ratio > 0 ? side : side / ratio;
-    const top = (ratio > 0 ? side / ratio : side / 1.7);
-    const bottom = (ratio > 0 ? -side / ratio : -side / 1.7);
+
+    const targetWidth = Math.sqrt(targetPlaneArea * ratio);
+    const targetHeight = targetPlaneArea / targetWidth;
+
+    console.log({ areaViewPort, targetPlaneArea, targetWidth, targetHeight });
+
+    const left = -PLANE_WIDTH / 2;
+    const right = Math.min((left + targetWidth) / 1.5, PLANE_WIDTH / 2);
+
+    const top = PLANE_HEIGHT / 4;
+    const bottom = Math.max((top - targetHeight) / 2, -PLANE_HEIGHT / 4);
+
+    console.log({ left, right, top, bottom });
+
     const near = -100;
     const far = 1000;
     camera.left = left;
@@ -269,39 +325,8 @@ function updateCamera(camera: THREE.OrthographicCamera, width: number, height: n
     camera.near = near;
     camera.far = far;
     camera.updateProjectionMatrix();
-
-    // const camera = new THREE.OrthographicCamera(-PLANE_SIDE / 2, PLANE_SIDE / 2, PLANE_HEIGHT / 4, -PLANE_HEIGHT / 4, 0.0, 1000);
 }
 
-function updateSceneSize(state: SceneState, width: number, height: number) {
-    state.renderer.setSize(width, height, false);
-    updateCamera(state.camera, width, height);
-}
-
-function buildMaterial(width: number, height: number, colors: THREE.Color[], horizontalPressure: number, verticalPressure: number, waveFrequency: number, waveAmplitude: number, shadows: number,) {
-
-    const uniforms = {
-        u_time: { value: 0 },
-        u_color_pressure: { value: new THREE.Vector2(horizontalPressure, verticalPressure) },
-        u_wave_frequency: { value: waveFrequency },
-        u_wave_amplitude: { value: waveAmplitude },
-        u_resolution: { value: new THREE.Vector2(width, height) },
-        u_colors: { value: colors },
-        u_colors_count: { value: colors.length },
-        u_plane_width: { value: PLANE_SIDE },
-        u_plane_height: { value: PLANE_SIDE },
-        u_shadows: { value: shadows },
-    };
-
-    const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: buildUniforms() + buildNoise() + buildColorFunctions() + buildVertexShader(),
-        fragmentShader: buildUniforms() + buildColorFunctions() + buildFragmentShader()
-    });
-
-    material.wireframe = WIREFRAME;
-    return material;
-}
 
 function buildVertexShader() {
     return `
@@ -310,8 +335,11 @@ void main() {
 
     vUv = uv;
 
-    // v_displacement_amount = cnoise( u_wave_frequency * position + u_time  + u_wave_frequency * position.x / 10.0);
-    v_displacement_amount = cnoise( u_wave_frequency * position + u_time );
+    v_displacement_amount = cnoise( vec3(
+        u_wave_frequency_x * position.x + u_time,
+        u_wave_frequency_y * position.y + u_time,
+        u_time
+    ));
     
     vec3 color;
 
@@ -321,28 +349,26 @@ void main() {
     vec2 noise_cord = vUv * u_color_pressure;
     
     const float minNoise = .0;
-    const float maxNoise = .75;
+    const float maxNoise = .9;
     
     for (int i = 1; i < u_colors_count; i++) {
     
         if(u_colors[i].is_active == 1.0){
             float noiseFlow = (1. + float(i)) / 30.;
-            float noiseSpeed = (1. + float(i)) * 0.1;
-            float noiseSeed = 7. + float(i) * 12.;
+            float noiseSpeed = (1. + float(i)) * 0.11;
+            float noiseSeed = 13. + float(i) * 7.;
             
             float noise = snoise(
                 vec3(
-                    noise_cord.x * u_color_pressure.x + u_time * noiseFlow,
+                    noise_cord.x * u_color_pressure.x + u_time * noiseFlow * 2.,
                     noise_cord.y * u_color_pressure.y,
-                    u_time * noiseSpeed + noiseSeed
-                )
+                    u_time * noiseSpeed
+                ) + noiseSeed
             );
             
-            noise = clamp(minNoise, maxNoise + float(i) * 0.05, noise);
+            noise = clamp(minNoise, maxNoise + float(i) * 0.02, noise);
             vec3 nextColor = u_colors[i].color;
-            color = mix(color, nextColor, smoothstep(0.0, 1., noise));
-            // float nextSat = getSaturation(color);
-            // color = saturation(color, nextSat);
+            color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
         }
         
     }
@@ -362,9 +388,10 @@ function buildFragmentShader() {
 
 void main(){
     vec3 color = v_color;
-    // color = saturation(color, 1. + clamp(v_displacement_amount, 0.0, 1.0) * 0.3);
-    color = saturation(color, 1.0 + u_saturation);
+    
+    color.rgb += pow(v_displacement_amount, 1.0) * u_highlights;
     color.rgb -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
+    color = saturation(color, 1.0 + u_saturation);
     
     gl_FragColor = vec4(color,1.0);
 }
@@ -383,7 +410,8 @@ struct Color {
 uniform float u_time;
 
 uniform float u_wave_amplitude;
-uniform float u_wave_frequency;
+uniform float u_wave_frequency_x;
+uniform float u_wave_frequency_y;
 
 uniform vec2 u_color_pressure;
 
@@ -391,7 +419,10 @@ uniform float u_plane_width;
 uniform float u_plane_height;
 
 uniform float u_shadows;
+uniform float u_highlights;
 uniform float u_saturation;
+
+uniform float u_color_blending;
 
 uniform int u_colors_count;
 uniform Color u_colors[5];

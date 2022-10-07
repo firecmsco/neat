@@ -1,0 +1,35 @@
+{
+  "name": "@camberi/neat",
+  "version": "0.1.0",
+  "private": false,
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "source": "src/index.ts",
+  "dependencies": {
+    "typescript": "^4.8.4"
+  },
+  "peerDependencies": {
+    "three": "^0.144.0"
+  },
+  "devDependencies": {
+    "vite": "^3.1.4",
+    "three": "^0.144.0"
+  },
+  "scripts": {
+    "start": "../node_modules/.bin/vite",
+    "build": "../node_modules/.bin/vite build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
