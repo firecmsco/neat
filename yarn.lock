@@ -1592,11 +1592,6 @@ postcss@^8.4.16:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-postprocessing@^6.28.7:
-  version "6.28.7"
-  resolved "https://registry.npmjs.org/postprocessing/-/postprocessing-6.28.7.tgz"
-  integrity sha512-norsBlNIhDoNG2R0nki9C0bNEARIunE/s5W/4qH/Ozlg3m0dOOmBoY8JZhnmPild/+Jvq/UFEeHQRBvTc11WUg==
-
 pretty-format@^27.0.0, pretty-format@^27.0.2, pretty-format@^27.5.1:
   version "27.5.1"
   resolved "https://registry.npmjs.org/pretty-format/-/pretty-format-27.5.1.tgz"
