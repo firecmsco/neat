@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 const PLANE_WIDTH = 50;
-const PLANE_HEIGHT = 50;
+const PLANE_HEIGHT = 80;
 
 const WIREFRAME = true;
 const COLORS_COUNT = 5;
