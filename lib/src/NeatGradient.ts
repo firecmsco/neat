@@ -25,10 +25,21 @@ export type NeatConfig = {
     highlights?: number;
     shadows?: number;
     saturation?: number;
-    colors: string[];
+    colors: NeatColor[];
     colorBlending?: number;
     wireframe?: boolean;
+    backgroundColor?: string;
+    backgroundAlpha?: number;
 };
+
+export type NeatColor = {
+    color: string;
+    enabled: boolean;
+    /**
+     * Value from 0 to 1
+     */
+    influence?: number;
+}
 
 export type NeatController = {
     destroy: () => void;
@@ -51,8 +62,11 @@ export class NeatGradient implements NeatController {
 
     private _colorBlending: number = -1;
 
-    private _colors: string[] = [];
+    private _colors: NeatColor[] = [];
     private _wireframe: boolean = false;
+
+    private _backgroundColor: string = "#FFFFFF";
+    private _backgroundAlpha: number = 1.0;
 
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
@@ -73,7 +87,9 @@ export class NeatGradient implements NeatController {
             shadows = 4,
             saturation = 0,
             colorBlending = 5,
-            wireframe = false
+            wireframe = false,
+            backgroundColor = "#FFFFFF",
+            backgroundAlpha = 1.0,
         } = config;
 
         const width = ref.width,
@@ -95,6 +111,8 @@ export class NeatGradient implements NeatController {
         this.highlights = highlights;
         this.saturation = saturation;
         this.wireframe = wireframe;
+        this.backgroundColor = backgroundColor;
+        this.backgroundAlpha = backgroundAlpha;
 
         this.sceneState = this._initScene(ref, width, height);
 
@@ -103,12 +121,14 @@ export class NeatGradient implements NeatController {
         let tick = 0;
         const render = () => {
 
+            renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
             meshes.forEach((mesh) => {
 
                 const colors = [
                     ...this._colors.map(color => ({
-                        is_active: true,
-                        color: new THREE.Color(color)
+                        is_active: color.enabled,
+                        color: new THREE.Color(color.color),
+                        influence: color.influence
                     })),
                     ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
                         is_active: false,
@@ -203,7 +223,7 @@ export class NeatGradient implements NeatController {
         this._waveAmplitude = waveAmplitude * .75;
     }
 
-    set colors(colors: string[]) {
+    set colors(colors: NeatColor[]) {
         this._colors = colors;
     }
 
@@ -227,15 +247,23 @@ export class NeatGradient implements NeatController {
         this._wireframe = wireframe;
     }
 
+    set backgroundColor(backgroundColor: string) {
+        this._backgroundColor = backgroundColor;
+    }
+
+    set backgroundAlpha(backgroundAlpha: number) {
+        this._backgroundAlpha = backgroundAlpha;
+    }
+
     _initScene(ref: HTMLCanvasElement, width: number, height: number): SceneState {
 
         const renderer = new THREE.WebGLRenderer({
             // antialias: true,
-            // alpha: true,
+            alpha: true,
             canvas: ref
         });
 
-        renderer.setClearColor( 0xFF0000, 1 );
+        renderer.setClearColor(0xFF0000, .5);
         renderer.setSize(width, height, false);
 
         const meshes: THREE.Mesh[] = [];
@@ -265,6 +293,18 @@ export class NeatGradient implements NeatController {
 
     _buildMaterial(width: number, height: number) {
 
+        const colors = [
+            ...this._colors.map(color => ({
+                is_active: color.enabled,
+                color: new THREE.Color(color.color),
+                influence: color.influence
+            })),
+            ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
+                is_active: false,
+                color: new THREE.Color(0x000000)
+            }))
+        ];
+
         const uniforms = {
             u_time: { value: 0 },
             u_color_pressure: { value: new THREE.Vector2(this._horizontalPressure, this._verticalPressure) },
@@ -272,7 +312,7 @@ export class NeatGradient implements NeatController {
             u_wave_frequency_y: { value: this._waveFrequencyY },
             u_wave_amplitude: { value: this._waveAmplitude },
             u_resolution: { value: new THREE.Vector2(width, height) },
-            u_colors: { value: this._colors.map((color) => new THREE.Color(color)) },
+            u_colors: { value: colors },
             u_colors_count: { value: this._colors.length },
             u_plane_width: { value: PLANE_WIDTH },
             u_plane_height: { value: PLANE_HEIGHT },
@@ -306,15 +346,11 @@ function updateCamera(camera: THREE.OrthographicCamera, width: number, height: n
     const targetWidth = Math.sqrt(targetPlaneArea * ratio);
     const targetHeight = targetPlaneArea / targetWidth;
 
-    console.log({ areaViewPort, targetPlaneArea, targetWidth, targetHeight });
-
     const left = -PLANE_WIDTH / 2;
     const right = Math.min((left + targetWidth) / 1.5, PLANE_WIDTH / 2);
 
     const top = PLANE_HEIGHT / 4;
     const bottom = Math.max((top - targetHeight) / 2, -PLANE_HEIGHT / 4);
-
-    console.log({ left, right, top, bottom });
 
     const near = -100;
     const far = 1000;

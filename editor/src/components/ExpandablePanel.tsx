@@ -6,7 +6,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 export function ExpandablePanel({
                                     Title,
                                     children,
-                                    expanded = true,
+                                    expanded = false,
                                     padding = 1,
                                     noBottomBorder = true,
                                 }: PropsWithChildren<{
@@ -18,8 +18,9 @@ export function ExpandablePanel({
 
     const [expandedInternal, setExpandedInternal] = useState(expanded);
     return (
-        <Accordion variant={"outlined"}
-                   disableGutters
+        <Accordion
+            // variant={"outlined"}
+                   // disableGutters
                    elevation={0}
                    expanded={expandedInternal}
                    sx={{
@@ -27,30 +28,35 @@ export function ExpandablePanel({
                            display: 'none',
                        },
                        backgroundColor: "inherit",
-                       borderBottom: noBottomBorder ? undefined : "1px solid rgba(0, 0, 0, 0.12)",
+                       // borderBottom: noBottomBorder ? undefined : "1px solid rgba(0, 0, 0, 0.12)",
                    }}
                    TransitionProps={{ unmountOnExit: true }}
                    onChange={useCallback((event: React.SyntheticEvent, expanded: boolean) => setExpandedInternal(expanded), [])}>
             <AccordionSummary expandIcon={<ExpandMoreIcon/>}
                               sx={(theme) => ({
-                                  minHeight: "56px",
-                                  alignItems: "center",
-                                  borderTopLeftRadius: `${theme.shape.borderRadius}px`,
-                                  borderTopRightRadius: `${theme.shape.borderRadius}px`,
-                                  borderBottomLeftRadius: !expandedInternal ? `${theme.shape.borderRadius}px` : undefined,
-                                  borderBottomRightRadius: !expandedInternal ? `${theme.shape.borderRadius}px` : undefined,
-                                  "&.Mui-expanded": {
-                                      borderBottom: `1px solid ${theme.palette.divider}`
-                                  },
-                                  // flexDirection: "row-reverse",
-                                  "& .MuiAccordionSummary-content": {
-                                      // marginLeft: theme.spacing(1)
-                                  }
+                                  // minHeight: "56px",
+                                  // alignItems: "center",
+                                  // borderTopLeftRadius: `8px`,
+                                  // borderTopRightRadius: `8px`,
+                                  // borderBottomLeftRadius: !expandedInternal ? `${theme.shape.borderRadius}px` : undefined,
+                                  // borderBottomRightRadius: !expandedInternal ? `${theme.shape.borderRadius}px` : undefined,
+                                  // "&.Mui-expanded": {
+                                  //     borderBottom: `1px solid ${theme.palette.divider}`
+                                  // },
+                                  // "&.MuiAccordionSummary-root": {
+                                  //     borderTopLeftRadius: `8px`,
+                                  //     borderTopRightRadius: `8px`,
+                                  // },
+                                  // "& .MuiAccordionSummary-content": {
+                                  //     // marginLeft: theme.spacing(1)
+                                  // }
                               })}>
                 {Title}
             </AccordionSummary>
             <AccordionDetails sx={(theme) => ({
-                padding: typeof padding === "string" ? padding : theme.spacing(padding)
+                // border: `1px solid ${theme.palette.divider}`,
+                padding: 2,
+                // marginLeft: 2
             })}>
                 {children}
             </AccordionDetails>
