@@ -68,21 +68,36 @@ export const PASTEL_PRESET = {
 
 export const CLOUDS_PRESET = {
     "colors": [
-        { color: '#FFFFFF', enabled: true },
-        { color: '#FDBF7B', enabled: true },
-        { color: '#FBECC1', enabled: true },
-        { color: '#E4E4E4', enabled: true },
-        { color: '#7BEFF7', enabled: true }
+        {
+            "color": "#FFFFFF",
+            "enabled": true
+        },
+        {
+            "color": "#FFDEBB",
+            "enabled": true
+        },
+        {
+            "color": "#FBECC1",
+            "enabled": true
+        },
+        {
+            "color": "#E4E4E4",
+            "enabled": true
+        },
+        {
+            "color": "#F6FFFF",
+            "enabled": true
+        }
     ],
-    "speed": 4,
-    "horizontalPressure": 3,
-    "verticalPressure": 2,
-    "waveFrequencyX": 4,
+    "speed": 2,
+    "horizontalPressure": 2,
+    "verticalPressure": 5,
+    "waveFrequencyX": 2,
     "waveFrequencyY": 4,
     "waveAmplitude": 3,
     "shadows": 7,
     "highlights": 6,
-    "saturation": 3,
+    "saturation": 1,
     "wireframe": false,
     "colorBlending": 7,
     "backgroundColor": "#0b3954",

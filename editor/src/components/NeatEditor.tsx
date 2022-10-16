@@ -31,9 +31,9 @@ const drawerWidth = 360;
 
 const defaultConfig = STRIPE_PRESET;
 
-export type NeatEditorProps = { analytics: Analytics  };
+export type NeatEditorProps = { analytics: Analytics };
 
-export default function NeatEditor({analytics}:NeatEditorProps) {
+export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     const [drawerOpen, setDrawerOpen] = React.useState(true);
     const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -672,7 +672,7 @@ export default function NeatEditor({analytics}:NeatEditorProps) {
                         </Button>
                     </Box>
 
-                    <Box sx={{height: 80}}/>
+                    <Box sx={{ height: 80 }}/>
                 </Box>
             </Drawer>
 
@@ -707,11 +707,27 @@ export default function NeatEditor({analytics}:NeatEditorProps) {
                     mixBlendMode: lightText ? "overlay" : "multiply",
                     margin: "auto",
                     fontFamily: '"Roboto", roboto-condensed,sans-serif',
-                    fontWeight: 900,
-                    fontSize: "16vw",
+
                 }}>
-                    NEAT
+                    <Typography sx={{
+                        fontWeight: 900,
+                        fontSize: "6rem",
+                        width: "100%",
+                        textAlign: "center",
+                        m: 0
+                    }}>NEAT</Typography>
+                    <Typography sx={{
+                        fontWeight: 600,
+                        fontSize: "1rem",
+                        width: "100%",
+                        textAlign: "center",
+                        textTransform: "uppercase",
+                    }}>
+                        Beautiful gradient animations for your website
+                    </Typography>
+
                 </div>
+
             </div>
         </>
     )
