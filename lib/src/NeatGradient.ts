@@ -204,11 +204,11 @@ export class NeatGradient implements NeatController {
     }
 
     set horizontalPressure(horizontalPressure: number) {
-        this._horizontalPressure = horizontalPressure / 3;
+        this._horizontalPressure = horizontalPressure / 4;
     }
 
     set verticalPressure(verticalPressure: number) {
-        this._verticalPressure = verticalPressure / 3;
+        this._verticalPressure = verticalPressure / 4;
     }
 
     set waveFrequencyX(waveFrequencyX: number) {

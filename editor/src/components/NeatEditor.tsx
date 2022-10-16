@@ -35,7 +35,7 @@ export type NeatEditorProps = { analytics: Analytics };
 
 export default function NeatEditor({ analytics }: NeatEditorProps) {
 
-    const [drawerOpen, setDrawerOpen] = React.useState(true);
+    const [drawerOpen, setDrawerOpen] = React.useState(false);
     const [dialogOpen, setDialogOpen] = React.useState(false);
 
     const handleDrawerOpen = () => {
@@ -185,7 +185,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     }
 
     return (
-        <>
+        <Box sx={{
+            position: 'relative',
+        }}>
 
             <IconButton
                 color="inherit"
@@ -193,7 +195,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 edge="start"
                 sx={{
                     m: 0,
-                    position: "absolute",
+                    position: "fixed",
                     left: 16,
                     top: 16,
                     backgroundColor: "#00000010",
@@ -235,6 +237,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 left: 16,
                                 top: 16,
                                 backgroundColor: "#00000010",
+                                zIndex: 100
                             }}>
                     <ChevronLeftIcon/>
                 </IconButton>
@@ -255,7 +258,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                     }}>
 
-                        <Typography variant={"caption"}>Preset</Typography>
+                        <Typography variant={"caption"}>PRESET</Typography>
                         <FilledSelect value={selectedPreset}
                                       label={"Preset"}
                                       renderValue={(preset: string) => {
@@ -646,6 +649,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                             <FormControlLabel
                                 value={wireframe}
+
                                 control={<Checkbox
                                     checked={wireframe}
                                     onChange={(evt: React.ChangeEvent<HTMLInputElement>) => setWireframe(evt.target.checked)}/>}
@@ -679,57 +683,118 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             <CodeDialog open={dialogOpen}
                         onClose={() => setDialogOpen(false)}
                         config={config}/>
+
             <Box sx={{
-                position: "fixed",
-                zIndex: -1,
-                height: "100vh",
-                width: "100vw",
-            }}>
-                <canvas
-                    style={{
-                        height: "100%",
-                        width: "100%",
-                    }}
-                    ref={canvasRef}
-                />
-            </Box>
-
-            <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 height: "100vh",
             }}>
-
-                <div style={{
-                    color: lightText ? "rgb(255 255 255)" : "rgb(10 10 10)",
-                    opacity: .8,
-                    mixBlendMode: lightText ? "overlay" : "multiply",
-                    margin: "auto",
-                    fontFamily: '"Roboto", roboto-condensed,sans-serif',
-
+                <Box sx={{
+                    position: "fixed",
+                    zIndex: -1,
+                    height: "100%",
+                    width: "100%",
                 }}>
-                    <Typography sx={{
-                        fontWeight: 900,
-                        fontSize: "6rem",
-                        width: "100%",
-                        textAlign: "center",
-                        m: 0
-                    }}>NEAT</Typography>
-                    <Typography sx={{
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        width: "100%",
-                        textAlign: "center",
-                        textTransform: "uppercase",
+                    <canvas
+                        style={{
+                            height: "100%",
+                            width: "100%",
+                        }}
+                        ref={canvasRef}
+                    />
+                </Box>
+
+                <Box>
+                    <Box sx={{
+                        color: lightText ? "rgb(255 255 255)" : "rgb(10 10 10)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: '"Roboto", roboto-condensed,sans-serif',
+                        height: "100vh",
                     }}>
-                        Beautiful gradient animations for your website
-                    </Typography>
 
-                </div>
+                        <Box sx={{
+                            opacity: .8,
+                            mixBlendMode: lightText ? "overlay" : "multiply",
+                            margin: "auto",
+                            display: "flex",
+                            flexDirection: "column",
+                            pt: 4
+                        }}>
+                            <Typography component={"h1"}
+                                        sx={{
+                                            fontWeight: 900,
+                                            fontSize: "8rem",
+                                            width: "100%",
+                                            textAlign: "center",
+                                            lineHeight: 1.1,
+                                            m: 0
+                                        }}>NEAT</Typography>
 
-            </div>
-        </>
+                            <Typography
+                                component={"h2"}
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: "1rem",
+                                    width: "100%",
+                                    textAlign: "center",
+                                    textTransform: "uppercase",
+                                }}>
+                                Beautiful gradient animations for your website
+                            </Typography>
+
+                            <Button variant="contained"
+                                    sx={{ mt: 3 }}
+                                    onClick={handleDrawerOpen}>Edit</Button>
+
+
+                        </Box>
+                        <Box sx={{
+                            width: "380px",
+                            p: 2,
+                            maxWidth: "95vw",
+                            textAlign: "center"
+                        }}>
+                            <Box component={"p"}
+                                 sx={{ mt: 4 }}>
+                                Neat is a free tool that generates beautiful
+                                gradient
+                                animations for your website.
+                                It's easy to use and offers a wide range of
+                                customization options.
+                            </Box>
+
+                            <Box component={"p"}>
+                                Built with ❤️ by <a rel={"noopener"}
+                                                    href={"https://camberi.com"}>Camberi</a>
+                            </Box>
+                        </Box>
+                    </Box>
+                </Box>
+                {/*<Box sx={{*/}
+                {/*    display: "flex",*/}
+                {/*    flexDirection: "column",*/}
+                {/*    alignItems: "center",*/}
+                {/*    background: "#eee",*/}
+                {/*    justifyContent: "center",*/}
+                {/*    fontFamily: '"Roboto", roboto-condensed,sans-serif',*/}
+                {/*    p: 6*/}
+                {/*}}>*/}
+
+                {/*    <Box component={"p"}>*/}
+                {/*        Neat is a free tool that generates beautiful gradient*/}
+                {/*        animations for your website.*/}
+                {/*        It's easy to use and offers a wide range of*/}
+                {/*        customization options.*/}
+                {/*    </Box>*/}
+
+                {/*    <Box component={"p"}>*/}
+                {/*        Built with ❤️by <a rel={"noopener"} href={"https://camberi.com"}>Camberi</a>*/}
+                {/*    </Box>*/}
+
+                {/*</Box>*/}
+            </Box>
+        </Box>
     )
         ;
 

@@ -1,5 +1,6 @@
 {
   "name": "@camberi/neat",
+  "description": "Beautiful 3D gradients for your website",
   "version": "0.1.0",
   "private": false,
   "main": "./dist/index.umd.js",
