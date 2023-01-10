@@ -1,35 +1,39 @@
 export const STRIPE_PRESET = {
-    speed: 4,
-    colors: [
+    "colors": [
         {
-            color: "#FF5373",
-            enabled: true,
-        }, {
-            color: "#FFC858",
-            enabled: true,
-        }, {
-            color: "#17E7FF",
-            enabled: true,
-        }, {
-            color: "#6D3BFF",
-            enabled: true,
-        }, {
-            color: "#f5e1e5",
-            enabled: false,
+            "color": "#FF5373",
+            "enabled": true
         },
+        {
+            "color": "#FFC858",
+            "enabled": true
+        },
+        {
+            "color": "#17E7FF",
+            "enabled": true
+        },
+        {
+            "color": "#6D3BFF",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
     ],
-    colorBlending: 6,
-    horizontalPressure: 4,
-    verticalPressure: 4,
-    shadows: 0,
-    highlights: 2,
-    saturation: 3,
-    waveFrequencyX: 2,
-    waveFrequencyY: 4,
-    waveAmplitude: 5,
-    wireframe: false,
-    backgroundColor: "#003FFF",
-    backgroundAlpha: 1.0,
+    "speed": 4,
+    "horizontalPressure": 4,
+    "verticalPressure": 5,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 3,
+    "waveAmplitude": 5,
+    "shadows": 0,
+    "highlights": 2,
+    "saturation": 3,
+    "wireframe": false,
+    "colorBlending": 6,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1
 };
 
 export const PASTEL_PRESET = {
