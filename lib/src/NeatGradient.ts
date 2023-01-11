@@ -121,6 +121,10 @@ export class NeatGradient implements NeatController {
         let tick = 0;
         const render = () => {
 
+            if (Math.floor(tick * 10) % 5 === 0) {
+                addNeatLink(ref);
+            }
+
             renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
             meshes.forEach((mesh) => {
 
@@ -700,3 +704,35 @@ vec3 hsv2rgb(vec3 c)
 `;
 
 
+const setLinkStyles = (link: HTMLAnchorElement) => {
+    link.id = "neat-link";
+    link.href = "https://neat.camberi.com";
+    link.target = "_blank";
+    link.style.position = "absolute";
+    link.style.display = "block";
+    link.style.opacity = "1";
+    link.style.bottom = "0";
+    link.style.right = "0";
+    link.style.padding = "10px";
+    link.style.color = "#c3c3c3";
+    link.style.fontFamily = "sans-serif";
+    link.style.fontSize = "14px";
+    link.style.textDecoration = "none";
+    link.style.zIndex = "100";
+    link.innerHTML = "NEAT";
+}
+
+const addNeatLink = (ref: HTMLCanvasElement) => {
+    const existingLinks = ref.parentElement?.getElementsByTagName("a");
+    if (existingLinks) {
+        for (let i = 0; i < existingLinks.length; i++) {
+            if (existingLinks[i].id === "neat-link") {
+                setLinkStyles(existingLinks[i]);
+                return;
+            }
+        }
+    }
+    const link = document.createElement("a");
+    setLinkStyles(link);
+    ref.parentElement?.appendChild(link);
+}

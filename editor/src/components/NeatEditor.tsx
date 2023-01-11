@@ -689,7 +689,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             }}>
                 <Box sx={{
                     position: "fixed",
-                    zIndex: -1,
                     height: "100%",
                     width: "100%",
                 }}>
@@ -714,7 +713,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     }}>
 
                         <Box sx={{
-                            opacity: .8,
                             mixBlendMode: lightText ? "overlay" : "multiply",
                             margin: "auto",
                             display: "flex",
@@ -742,18 +740,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 }}>
                                 Beautiful gradient animations for your website
                             </Typography>
-
-                            <Button variant="contained"
-                                    sx={{ mt: 3 }}
-                                    onClick={handleDrawerOpen}>Edit</Button>
-
-
                         </Box>
+
+                        <Button variant="contained"
+                                sx={{ mt: 3 }}
+                                onClick={handleDrawerOpen}>Edit this gradient</Button>
                         <Box sx={{
                             width: "380px",
                             p: 2,
                             maxWidth: "95vw",
-                            textAlign: "center"
+                            textAlign: "center",
+                            zIndex: 1,
                         }}>
                             <Box component={"p"}
                                  sx={{ mt: 4 }}>

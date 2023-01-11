@@ -7,7 +7,7 @@ Check the demo and gradients editor to find your perfect config here:
 
 Neat is released under the CC license, so you can use it for free in your projects,
 commercial or not. You can also modify it and redistribute it, but you must keep
-the license and the credits.
+the license and the credits. 
 
 If you want to remove the Camberi link, you can reach us at hello@camberi.com
 

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material';
 import NeatEditor from "./components/NeatEditor";
-import { yellow, grey } from '@mui/material/colors';
+import { yellow, blue } from '@mui/material/colors';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { Analytics } from "@firebase/analytics";
@@ -27,7 +27,7 @@ function App() {
     const theme = createTheme({
         palette: {
             primary: {
-                main: grey[700],
+                main: yellow[700],
             },
             secondary: {
                 main: yellow[500],

@@ -29,7 +29,45 @@ export const STRIPE_PRESET = {
     "waveAmplitude": 5,
     "shadows": 0,
     "highlights": 2,
-    "saturation": 3,
+    "saturation": 7,
+    "wireframe": false,
+    "colorBlending": 6,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1
+};
+
+export const FIRECMS_PRESET = {
+    "colors": [
+        {
+            "color": "#FF5373",
+            "enabled": true
+        },
+        {
+            "color": "#FFC858",
+            "enabled": true
+        },
+        {
+            "color": "#17E7FF",
+            "enabled": true
+        },
+        {
+            "color": "#6D3BFF",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
+    ],
+    "speed": 2,
+    "horizontalPressure": 2,
+    "verticalPressure": 5,
+    "waveFrequencyX": 1,
+    "waveFrequencyY": 7,
+    "waveAmplitude": 10,
+    "shadows": 10,
+    "highlights": 8,
+    "saturation": 10,
     "wireframe": false,
     "colorBlending": 6,
     "backgroundColor": "#003FFF",
@@ -193,39 +231,45 @@ export const PSYCHEDELIC_PRESET = {
     "horizontalPressure": 7,
     "verticalPressure": 7
 };
-//e6eed6-dde2c6-bbc5aa-a72608-090c02
-export const BEIGE_PRESET = {
 
-    "colors": [{
-        "color": "#FFB6B6",
-        "enabled": true
-    }, {
-        "color": "#dde2c6",
-        "enabled": true
-    }, {
-        "color": "#bbc5aa",
-        "enabled": true
-    }, {
-        "color": "#a72608",
-        "enabled": true
-    }, {
-        "color": "#e6eed6",
-        "enabled": true
-    }],
+export const BEIGE_PRESET = {
+    "colors": [
+        {
+            "color": "#FFB6B6",
+            "enabled": true
+        },
+        {
+            "color": "#dde2c6",
+            "enabled": true
+        },
+        {
+            "color": "#bbc5aa",
+            "enabled": true
+        },
+        {
+            "color": "#a72608",
+            "enabled": true
+        },
+        {
+            "color": "#e6eed6",
+            "enabled": true
+        }
+    ],
     "speed": 4,
-    "horizontalPressure": 1,
-    "verticalPressure": 1,
-    "waveFrequencyX": 3,
-    "waveFrequencyY": 4,
-    "waveAmplitude": 5,
+    "horizontalPressure": 3,
+    "verticalPressure": 3,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 2,
+    "waveAmplitude": 9,
     "shadows": 0,
     "highlights": 10,
     "saturation": -1,
     "wireframe": false,
-    "colorBlending": 2,
+    "colorBlending": 8,
     "backgroundColor": "#FFFFFF",
     "backgroundAlpha": 1
 };
+
 export const SPLASH_PRESET = {
     "colors": [{
         "color": "#ffbe0b",
@@ -260,6 +304,7 @@ export const SPLASH_PRESET = {
 
 export const PRESETS = {
     "Stripe": STRIPE_PRESET,
+    "FireCMS": FIRECMS_PRESET,
     "Prussian": PRUSSIAN_BLUE_PRESET,
     "We the root": WE_THE_ROOT_PRESET,
     "Clouds": CLOUDS_PRESET,

@@ -32,5 +32,21 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Camberi/neat.git"
+  },
+  "keywords": [
+    "threejs",
+    "3d",
+    "gradient",
+    "background"
+  ],
+  "author": "Francesco Gatti",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Camberi/neat/issues"
+  },
+  "homepage": "https://github.com/Camberi/neat#readme"
 }
