@@ -714,9 +714,10 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
     link.style.bottom = "0";
     link.style.right = "0";
     link.style.padding = "10px";
-    link.style.color = "#c3c3c3";
+    link.style.color = "#dcdcdc";
     link.style.fontFamily = "sans-serif";
-    link.style.fontSize = "14px";
+    link.style.fontSize = "16px";
+    link.style.fontWeight = "bold";
     link.style.textDecoration = "none";
     link.style.zIndex = "100";
     link.innerHTML = "NEAT";

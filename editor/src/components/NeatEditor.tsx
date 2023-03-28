@@ -2,10 +2,13 @@ import React, { useEffect, useRef } from "react";
 
 import { NeatColor, NeatConfig, NeatGradient } from "@camberi/neat";
 
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
+import "@fontsource/sofia-sans";
+
+// import '@fontsource/sofia/300.css';
+// import '@fontsource/sofia/400.css';
+// import '@fontsource/sofia/500.css';
+// import '@fontsource/sofia/700.css';
+// import '@fontsource/sofia/900.css';
 import {
     Box,
     FormControlLabel,
@@ -199,6 +202,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     left: 16,
                     top: 16,
                     backgroundColor: "#00000010",
+                    zIndex: 10,
                     ...(drawerOpen && { display: 'none' })
                 }}
             >

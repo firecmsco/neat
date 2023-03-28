@@ -25,6 +25,18 @@ function App() {
     }, []);
 
     const theme = createTheme({
+        typography: {
+            fontFamily: [
+                'Sofia Sans',
+                'Roboto',
+                '"Helvetica Neue"',
+                'Arial',
+                'sans-serif',
+                '"Apple Color Emoji"',
+                '"Segoe UI Emoji"',
+                '"Segoe UI Symbol"',
+            ].join(','),
+        },
         palette: {
             primary: {
                 main: yellow[700],

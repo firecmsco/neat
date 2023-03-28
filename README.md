@@ -5,7 +5,8 @@ Create awesome 3d gradients with this library based on three.js.
 Check the demo and gradients editor to find your perfect config here:
 [https://neat.camberi.com/](https://neat.camberi.com/)
 
-Neat is released under the CC license, so you can use it for free in your projects,
+Neat is released under the CC license, so you can use it for free in your
+projects,
 commercial or not. You can also modify it and redistribute it, but you must keep
 the license and the credits.
 
@@ -24,7 +25,6 @@ npm install @camberi/neat three.js
 ```
 
 ### Usage:
-
 
 ```typescript
 import { NeatConfig, NeatGradient } from "@camberi/neat";
@@ -82,3 +82,13 @@ neat.speed = 6;
 // e.g. returning from a useEffect hook in React
 neat.destroy();
 ```
+
+### How it works
+
+Neat is a three.js library that generates a 3d gradient based on a config
+object.
+
+It uses a custom WebGL shader to generate a 3D shape that morphs and changes
+its color based on the config.
+
+All the computations are done on the GPU, so it's very fast and efficient.
