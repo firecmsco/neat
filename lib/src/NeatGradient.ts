@@ -78,7 +78,7 @@ export class NeatGradient implements NeatController {
     private sizeObserver: ResizeObserver;
     private sceneState: SceneState;
 
-    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number }) {
+    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
         const {
             ref,
@@ -97,7 +97,8 @@ export class NeatGradient implements NeatController {
             wireframe = false,
             backgroundColor = "#FFFFFF",
             backgroundAlpha = 1.0,
-            resolution = 1
+            resolution = 1,
+            seed
         } = config;
 
 
@@ -125,8 +126,7 @@ export class NeatGradient implements NeatController {
 
         this.sceneState = this._initScene(resolution);
 
-
-        let tick = 0;
+        let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
         const render = () => {
 
             const { renderer, camera, scene, meshes } = this.sceneState;
@@ -810,4 +810,11 @@ const addNeatLink = (ref: HTMLCanvasElement) => {
     const link = document.createElement("a");
     setLinkStyles(link);
     ref.parentElement?.appendChild(link);
+}
+
+function getElapsedSecondsInLastHour() {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    return (minutes * 60) + seconds;
 }
