@@ -3,31 +3,31 @@
 Create awesome 3d gradients with this library based on three.js.
 
 Check the demo and gradients editor to find your perfect config here:
-[https://neat.camberi.com/](https://neat.camberi.com/)
+[https://neat.firecms.co/](https://neat.firecms.co/)
 
 Neat is released under the CC license, so you can use it for free in your
 projects,
 commercial or not. You can also modify it and redistribute it, but you must keep
 the license and the credits.
 
-If you want to remove the Camberi link, you can reach us at hello@camberi.com
+If you want to remove the Camberi link, you can reach us at hello@firecms.co
 
 ### Installation:
 
 ```
-yarn install @camberi/neat three.js
+yarn install @firecms/neat three.js
 ```
 
 or
 
 ```
-npm install @camberi/neat three.js
+npm install @firecms/neat three.js
 ```
 
 ### Usage:
 
 ```typescript
-import { NeatConfig, NeatGradient } from "@camberi/neat";
+import { NeatConfig, NeatGradient } from "@firecms/neat";
 
 // Define your config
 export const config: NeatConfig = {

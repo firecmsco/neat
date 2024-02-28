@@ -8,7 +8,7 @@ import {
 import Checkbox from '@mui/material/Checkbox';
 import React from 'react'
 import { ChromePicker, ColorResult } from "react-color";
-import { NeatColor } from "@camberi/neat";
+import { NeatColor } from "@firecms/neat";
 
 export function ColorSwatch({
                                 color,

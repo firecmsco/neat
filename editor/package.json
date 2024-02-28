@@ -1,11 +1,11 @@
 {
-  "name": "@camberi/neat-editor",
+  "name": "@firecms/neat-editor",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@camberi/neat": "0.1.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
+    "@firecms/neat": "0.1.0",
     "@fontsource/roboto": "^4.5.8",
     "@fontsource/sofia-sans": "^4.5.0",
     "@mui/icons-material": "^5.10.6",
@@ -36,7 +36,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "yarn build && firebase deploy --only=hosting"
+    "deploy": "yarn build && firebase deploy --only=hosting --project=neat-co"
   },
   "eslintConfig": {
     "extends": [

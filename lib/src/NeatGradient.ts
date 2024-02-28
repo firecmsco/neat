@@ -10,12 +10,14 @@ const clock = new THREE.Clock();
 
 type SceneState = {
     renderer: THREE.WebGLRenderer,
-    camera: THREE.OrthographicCamera,
+    camera: THREE.Camera,
     scene: THREE.Scene,
     meshes: THREE.Mesh[],
+    resolution: number
 }
 
 export type NeatConfig = {
+    resolution?: number;
     speed?: number;
     horizontalPressure?: number;
     verticalPressure?: number;
@@ -24,7 +26,8 @@ export type NeatConfig = {
     waveAmplitude?: number;
     highlights?: number;
     shadows?: number;
-    saturation?: number;
+    colorSaturation?: number;
+    colorBrightness?: number;
     colors: NeatColor[];
     colorBlending?: number;
     wireframe?: boolean;
@@ -47,6 +50,8 @@ export type NeatController = {
 
 export class NeatGradient implements NeatController {
 
+    private _ref: HTMLCanvasElement;
+
     private _speed: number = -1;
 
     private _horizontalPressure: number = -1;
@@ -59,6 +64,7 @@ export class NeatGradient implements NeatController {
     private _shadows: number = -1;
     private _highlights: number = -1;
     private _saturation: number = -1;
+    private _brightness: number = -1;
 
     private _colorBlending: number = -1;
 
@@ -70,9 +76,9 @@ export class NeatGradient implements NeatController {
 
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
-    private readonly sceneState: SceneState;
+    private sceneState: SceneState;
 
-    constructor(config: NeatConfig & { ref: HTMLCanvasElement }) {
+    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number }) {
 
         const {
             ref,
@@ -85,15 +91,17 @@ export class NeatGradient implements NeatController {
             colors,
             highlights = 4,
             shadows = 4,
-            saturation = 0,
+            colorSaturation = 0,
+            colorBrightness = 1,
             colorBlending = 5,
             wireframe = false,
             backgroundColor = "#FFFFFF",
             backgroundAlpha = 1.0,
+            resolution = 1
         } = config;
 
-        const width = ref.width,
-            height = ref.height;
+
+        this._ref = ref;
 
         this.destroy = this.destroy.bind(this);
         this._initScene = this._initScene.bind(this);
@@ -109,24 +117,28 @@ export class NeatGradient implements NeatController {
         this.colors = colors;
         this.shadows = shadows;
         this.highlights = highlights;
-        this.saturation = saturation;
+        this.colorSaturation = colorSaturation;
+        this.colorBrightness = colorBrightness;
         this.wireframe = wireframe;
         this.backgroundColor = backgroundColor;
         this.backgroundAlpha = backgroundAlpha;
 
-        this.sceneState = this._initScene(ref, width, height);
+        this.sceneState = this._initScene(resolution);
 
-        const { renderer, camera, scene, meshes } = this.sceneState;
 
         let tick = 0;
         const render = () => {
 
+            const { renderer, camera, scene, meshes } = this.sceneState;
             if (Math.floor(tick * 10) % 5 === 0) {
                 addNeatLink(ref);
             }
 
             renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
             meshes.forEach((mesh) => {
+
+                const width = this._ref.width,
+                    height = this._ref.height;
 
                 const colors = [
                     ...this._colors.map(color => ({
@@ -170,6 +182,8 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_saturation = { value: this._saturation };
                 // @ts-ignore
+                mesh.material.uniforms.u_brightness = { value: this._brightness };
+                // @ts-ignore
                 mesh.material.wireframe = this._wireframe;
             });
 
@@ -178,6 +192,8 @@ export class NeatGradient implements NeatController {
         };
 
         const setSize = () => {
+
+            const { renderer } = this.sceneState;
             const canvas = renderer.domElement;
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
@@ -239,8 +255,12 @@ export class NeatGradient implements NeatController {
         this._shadows = shadows / 100;
     }
 
-    set saturation(saturation: number) {
-        this._saturation = saturation / 10;
+    set colorSaturation(colorSaturation: number) {
+        this._saturation = colorSaturation / 10;
+    }
+
+    set colorBrightness(colorBrightness: number) {
+        this._brightness = colorBrightness;
     }
 
     set colorBlending(colorBlending: number) {
@@ -251,6 +271,10 @@ export class NeatGradient implements NeatController {
         this._wireframe = wireframe;
     }
 
+    set resolution(resolution: number) {
+        this.sceneState = this._initScene(resolution);
+    }
+
     set backgroundColor(backgroundColor: string) {
         this._backgroundColor = backgroundColor;
     }
@@ -259,12 +283,15 @@ export class NeatGradient implements NeatController {
         this._backgroundAlpha = backgroundAlpha;
     }
 
-    _initScene(ref: HTMLCanvasElement, width: number, height: number): SceneState {
+    _initScene(resolution: number): SceneState {
+
+        const width = this._ref.width,
+            height = this._ref.height;
 
         const renderer = new THREE.WebGLRenderer({
             // antialias: true,
             alpha: true,
-            canvas: ref
+            canvas: this._ref
         });
 
         renderer.setClearColor(0xFF0000, .5);
@@ -276,7 +303,7 @@ export class NeatGradient implements NeatController {
 
         const material = this._buildMaterial(width, height);
 
-        const geo = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240, 240);
+        const geo = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
         const plane = new THREE.Mesh(geo, material);
         plane.rotation.x = -Math.PI / 3.5;
         plane.position.z = -1;
@@ -284,14 +311,16 @@ export class NeatGradient implements NeatController {
         scene.add(plane);
 
         const camera = new THREE.OrthographicCamera(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        // camera.zoom = 1;
+        // const camera = new THREE.PerspectiveCamera( 1000, window.innerWidth / window.innerHeight, 1, 1000000 );
+        camera.position.z = 5;
         updateCamera(camera, width, height);
 
         return {
             renderer,
             camera,
             scene,
-            meshes
+            meshes,
+            resolution
         };
     }
 
@@ -337,7 +366,7 @@ export class NeatGradient implements NeatController {
 
 }
 
-function updateCamera(camera: THREE.OrthographicCamera, width: number, height: number) {
+function updateCamera(camera: THREE.Camera, width: number, height: number) {
 
     const viewPortAreaRatio = 1000000;
     const areaViewPort = width * height;
@@ -358,13 +387,19 @@ function updateCamera(camera: THREE.OrthographicCamera, width: number, height: n
 
     const near = -100;
     const far = 1000;
-    camera.left = left;
-    camera.right = right;
-    camera.top = top;
-    camera.bottom = bottom;
-    camera.near = near;
-    camera.far = far;
-    camera.updateProjectionMatrix();
+    if (camera instanceof THREE.OrthographicCamera) {
+        camera.left = left;
+        camera.right = right;
+        camera.top = top;
+        camera.bottom = bottom;
+        camera.near = near;
+        camera.far = far;
+        camera.updateProjectionMatrix();
+    } else if (camera instanceof THREE.PerspectiveCamera) {
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+    }
+
 }
 
 
@@ -408,6 +443,13 @@ void main() {
             
             noise = clamp(minNoise, maxNoise + float(i) * 0.02, noise);
             vec3 nextColor = u_colors[i].color;
+            
+            // vec3 colorOklab = oklab2rgb(color);
+            // vec3 nextColorOklab = oklab2rgb(nextColor);
+            // vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
+            //
+            // color = rgb2oklab(mixColor);
+            
             color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
         }
         
@@ -432,6 +474,7 @@ void main(){
     color.rgb += pow(v_displacement_amount, 1.0) * u_highlights;
     color.rgb -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
     color = saturation(color, 1.0 + u_saturation);
+    color = color * u_brightness;
     
     gl_FragColor = vec4(color,1.0);
 }
@@ -461,6 +504,7 @@ uniform float u_plane_height;
 uniform float u_shadows;
 uniform float u_highlights;
 uniform float u_saturation;
+uniform float u_brightness;
 
 uniform float u_color_blending;
 
@@ -655,6 +699,35 @@ mat3 yuv2rgb = mat3(1.0, 0.0, 1.13983,
 mat3 rgb2yuv = mat3(0.2126, 0.7152, 0.0722,
                     -0.09991, -0.33609, 0.43600,
                     0.615, -0.5586, -0.05639);
+                    
+vec3 oklab2rgb(vec3 linear)
+{
+    const mat3 im1 = mat3(0.4121656120, 0.2118591070, 0.0883097947,
+                          0.5362752080, 0.6807189584, 0.2818474174,
+                          0.0514575653, 0.1074065790, 0.6302613616);
+                       
+    const mat3 im2 = mat3(+0.2104542553, +1.9779984951, +0.0259040371,
+                          +0.7936177850, -2.4285922050, +0.7827717662,
+                          -0.0040720468, +0.4505937099, -0.8086757660);
+                       
+    vec3 lms = im1 * linear;
+            
+    return im2 * (sign(lms) * pow(abs(lms), vec3(1.0/3.0)));
+}
+
+vec3 rgb2oklab(vec3 oklab)
+{
+    const mat3 m1 = mat3(+1.000000000, +1.000000000, +1.000000000,
+                         +0.396337777, -0.105561346, -0.089484178,
+                         +0.215803757, -0.063854173, -1.291485548);
+                       
+    const mat3 m2 = mat3(+4.076724529, -1.268143773, -0.004111989,
+                         -3.307216883, +2.609332323, -0.703476310,
+                         +0.230759054, -0.341134429, +1.706862569);
+    vec3 lms = m1 * oklab;
+    
+    return m2 * (lms * lms * lms);
+}
 
     `;
 
@@ -706,7 +779,7 @@ vec3 hsv2rgb(vec3 c)
 
 const setLinkStyles = (link: HTMLAnchorElement) => {
     link.id = "neat-link";
-    link.href = "https://neat.camberi.com";
+    link.href = "https://neat.firecms.co";
     link.target = "_blank";
     link.style.position = "absolute";
     link.style.display = "block";
@@ -715,6 +788,7 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
     link.style.right = "0";
     link.style.padding = "10px";
     link.style.color = "#dcdcdc";
+    link.style.opacity = "0.8";
     link.style.fontFamily = "sans-serif";
     link.style.fontSize = "16px";
     link.style.fontWeight = "bold";

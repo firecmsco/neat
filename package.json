@@ -2,15 +2,15 @@
     "name": "neat-parent",
     "private": true,
     "description": "Best background gradients",
-    "author": "camberi",
-    "homepage": "https://camberi.com",
+    "author": "FireCMS",
+    "homepage": "https://neat.firecms.co",
     "workspaces": [
         "lib",
         "editor"
     ],
     "scripts": {
         "dev": "cd editor && yarn dev",
-        "deploy-web": "cd website && yarn deploy",
+        "deploy": "cd editor && yarn deploy",
         "build": "cd lib && yarn build"
     },
     "packageManager": "yarn@3.2.3"

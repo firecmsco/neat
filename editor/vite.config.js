@@ -10,7 +10,7 @@ export default ({ mode }) => {
         },
         resolve: {
             alias: {
-                '@camberi/neat': path.resolve(__dirname, '../lib/src')
+                '@firecms/neat': path.resolve(__dirname, '../lib/src')
             },
         },
     })

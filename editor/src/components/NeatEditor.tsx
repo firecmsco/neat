@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-import { NeatColor, NeatConfig, NeatGradient } from "@camberi/neat";
+import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
 
 import "@fontsource/sofia-sans";
 
@@ -9,13 +9,7 @@ import "@fontsource/sofia-sans";
 // import '@fontsource/sofia/500.css';
 // import '@fontsource/sofia/700.css';
 // import '@fontsource/sofia/900.css';
-import {
-    Box,
-    FormControlLabel,
-    Button,
-    Slider,
-    Typography
-} from "@mui/material";
+import { Box, Button, FormControlLabel, Slider, Tooltip, Typography } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Drawer from "@mui/material/Drawer";
@@ -58,12 +52,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.verticalPressure !== undefined) setVerticalPressure(config.verticalPressure);
         if (config.shadows !== undefined) setShadows(config.shadows);
         if (config.highlights !== undefined) setHighlights(config.highlights);
-        if (config.saturation !== undefined) setSaturation(config.saturation);
+        if (config.colorSaturation !== undefined) setSaturation(config.colorSaturation);
+        if (config.colorBrightness !== undefined) setBrightness(config.colorBrightness);
         if (config.waveFrequencyX !== undefined) setWaveFrequencyX(config.waveFrequencyX);
         if (config.waveFrequencyY !== undefined) setWaveFrequencyY(config.waveFrequencyY);
         if (config.waveAmplitude !== undefined) setWaveAmplitude(config.waveAmplitude);
         if (config.backgroundAlpha !== undefined) setBackgroundAlpha(config.backgroundAlpha);
         if (config.backgroundColor !== undefined) setBackgroundColor(config.backgroundColor);
+        if (config.resolution !== undefined) setResolution(config.resolution);
     }
 
     const scrollRef = useRef<number>(0);
@@ -80,12 +76,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     const [shadows, setShadows] = React.useState<number>(defaultConfig.shadows);
     const [highlights, setHighlights] = React.useState<number>(defaultConfig.highlights);
-    const [saturation, setSaturation] = React.useState<number>(defaultConfig.saturation);
+    const [saturation, setSaturation] = React.useState<number>(defaultConfig.colorSaturation);
+    const [brightness, setBrightness] = React.useState<number>(defaultConfig.colorBrightness);
 
     const [waveFrequencyX, setWaveFrequencyX] = React.useState<number>(defaultConfig.waveFrequencyX);
     const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY);
     const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude);
 
+    const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution);
     const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha);
     const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor);
 
@@ -130,7 +128,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             colorBlending,
             shadows,
             highlights,
-            saturation
+            colorSaturation: saturation,
+            colorBrightness: brightness,
+            resolution
         });
 
         return gradientRef.current.destroy;
@@ -161,14 +161,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             gradientRef.current.waveAmplitude = waveAmplitude;
             gradientRef.current.shadows = shadows;
             gradientRef.current.highlights = highlights;
-            gradientRef.current.saturation = saturation;
+            gradientRef.current.colorSaturation = saturation;
+            gradientRef.current.colorBrightness = brightness;
             gradientRef.current.wireframe = wireframe;
             gradientRef.current.colorBlending = colorBlending;
             gradientRef.current.backgroundColor = backgroundColor;
             gradientRef.current.backgroundAlpha = backgroundAlpha;
-
+            gradientRef.current.resolution = resolution;
         }
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, wireframe, colorBlending, backgroundColor, backgroundAlpha]);
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha]);
 
     const config: NeatConfig = {
         colors,
@@ -180,11 +181,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         waveAmplitude,
         shadows,
         highlights,
-        saturation,
+        colorBrightness: brightness,
+        colorSaturation: saturation,
         wireframe,
         colorBlending,
         backgroundColor,
-        backgroundAlpha
+        backgroundAlpha,
+        resolution
     }
 
     return (
@@ -423,7 +426,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         </ExpandablePanel>
 
-
                         <ExpandablePanel
                             Title={
                                 <Typography variant={"button"}>
@@ -592,6 +594,31 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     }}
                                 />
                             </Box>
+                            <Box sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
+                                alignItems: "flex-end"
+                            }}>
+                                <Typography gutterBottom
+                                            variant={"caption"}
+                                            sx={{
+                                                width: 100,
+                                                textAlign: "right",
+                                                pr: 1
+                                            }}>Brightness</Typography>
+                                <Slider
+                                    valueLabelDisplay="auto"
+                                    value={brightness}
+                                    size={"small"}
+                                    step={.05}
+                                    min={0}
+                                    max={10}
+                                    onChange={(event, newValue) => {
+                                        setBrightness(newValue as number)
+                                    }}
+                                />
+                            </Box>
 
                         </ExpandablePanel>
 
@@ -601,6 +628,34 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     Shape
                                 </Typography>
                             }>
+
+                            <Tooltip title={"The density of triangles in the 3d mesh. Reduce to increase performance"}>
+                                <Box sx={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: 1,
+                                    alignItems: "flex-end"
+                                }}>
+                                    <Typography gutterBottom
+                                                variant={"caption"}
+                                                sx={{
+                                                    width: 100,
+                                                    textAlign: "right",
+                                                    pr: 1
+                                                }}>Resolution</Typography>
+                                    <Slider
+                                        valueLabelDisplay="auto"
+                                        value={resolution}
+                                        size={"small"}
+                                        step={.05}
+                                        min={.05}
+                                        max={2}
+                                        onChange={(event, newValue) => {
+                                            setResolution(newValue as number)
+                                        }}
+                                    />
+                                </Box>
+                            </Tooltip>
 
 
                             <Box sx={{
@@ -748,7 +803,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         <Button variant="contained"
                                 sx={{ mt: 3 }}
-                                onClick={handleDrawerOpen}>Edit this gradient</Button>
+                                onClick={handleDrawerOpen}>EDIT THIS GRADIENT</Button>
+
                         <Box sx={{
                             width: "380px",
                             p: 2,
@@ -757,7 +813,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             zIndex: 1,
                         }}>
                             <Box component={"p"}
-                                 sx={{ mt: 4 }}>
+                                 sx={{
+                                     mt: 4,
+                                     fontSize: "20px"
+                                 }}>
                                 Neat is a free tool that generates beautiful
                                 gradient
                                 animations for your website.
@@ -765,9 +824,25 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 customization options.
                             </Box>
 
+                            <Box component={"p"}
+                                 sx={{
+                                     mt: 4,
+                                     fontSize: "20px"
+                                 }}>
+                                Install the package using npm or yarn, following the instructions in the <a
+                                target={"_blank"}
+                                href="https://github.com/FireCMSco/neat">GitHub page</a> and please leave a star ⭐.
+                            </Box>
+
+                            <Button variant="outlined"
+                                    component={"a"}
+                                    target={"_blank"}
+                                    href="https://github.com/FireCMSco/neat"
+                                    sx={{ mt: 3 }}>GET STARTED</Button>
+
                             <Box component={"p"}>
                                 Built with ❤️ by <a rel={"noopener"}
-                                                    href={"https://camberi.com"}>Camberi</a>
+                                                    href={"https://firecms.co"}>FireCMS</a>
                             </Box>
                         </Box>
                     </Box>
@@ -790,7 +865,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 {/*    </Box>*/}
 
                 {/*    <Box component={"p"}>*/}
-                {/*        Built with ❤️by <a rel={"noopener"} href={"https://camberi.com"}>Camberi</a>*/}
+                {/*        Built with ❤️by <a rel={"noopener"} href={"https://firecms.co"}>Camberi</a>*/}
                 {/*    </Box>*/}
 
                 {/*</Box>*/}

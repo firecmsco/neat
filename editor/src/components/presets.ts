@@ -1,3 +1,5 @@
+import { NeatConfig } from "@firecms/neat";
+
 export const STRIPE_PRESET = {
     "colors": [
         {
@@ -29,11 +31,13 @@ export const STRIPE_PRESET = {
     "waveAmplitude": 5,
     "shadows": 0,
     "highlights": 2,
-    "saturation": 7,
+    "colorSaturation": 7,
+    "colorBrightness": 1,
     "wireframe": false,
     "colorBlending": 6,
     "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1
+    "backgroundAlpha": 1,
+    "resolution": 1
 };
 
 export const FIRECMS_PRESET = {
@@ -67,12 +71,53 @@ export const FIRECMS_PRESET = {
     "waveAmplitude": 10,
     "shadows": 10,
     "highlights": 8,
-    "saturation": 10,
+    "colorSaturation": 10,
+    "colorBrightness": 1,
     "wireframe": false,
     "colorBlending": 6,
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1
 };
+
+export const GLITCH_PRESET = {
+    "colors": [
+        {
+            "color": "#F9F27A",
+            "enabled": true
+        },
+        {
+            "color": "#FFAB00",
+            "enabled": true
+        },
+        {
+            "color": "#17E7FF",
+            "enabled": true
+        },
+        {
+            "color": "#FF0003",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
+    ],
+    "speed": 4,
+    "horizontalPressure": 4,
+    "verticalPressure": 8,
+    "waveFrequencyX": 0,
+    "waveFrequencyY": 10,
+    "waveAmplitude": 10,
+    "shadows": 0,
+    "highlights": 10,
+    "colorBrightness": 1,
+    "colorSaturation": 7,
+    "wireframe": true,
+    "colorBlending": 7,
+    "backgroundColor": "#3600FF",
+    "backgroundAlpha": 1,
+    "resolution": 2
+}
 
 export const PASTEL_PRESET = {
     speed: 4,
@@ -99,7 +144,8 @@ export const PASTEL_PRESET = {
     verticalPressure: 3,
     shadows: 0,
     highlights: 2,
-    saturation: 3,
+    colorSaturation: 3,
+    "colorBrightness": 1,
     waveFrequencyX: 2,
     waveFrequencyY: 4,
     waveAmplitude: 5,
@@ -139,7 +185,8 @@ export const CLOUDS_PRESET = {
     "waveAmplitude": 3,
     "shadows": 7,
     "highlights": 6,
-    "saturation": 1,
+    "colorSaturation": 1,
+    "colorBrightness": 1,
     "wireframe": false,
     "colorBlending": 7,
     "backgroundColor": "#0b3954",
@@ -171,7 +218,8 @@ export const WE_THE_ROOT_PRESET = {
     verticalPressure: 4,
     shadows: 0,
     highlights: 2,
-    saturation: 3,
+    colorSaturation: 3,
+    "colorBrightness": 1,
     waveFrequencyX: 4,
     waveFrequencyY: 4,
     waveAmplitude: 3,
@@ -206,7 +254,8 @@ export const PRUSSIAN_BLUE_PRESET = {
     verticalPressure: 8,
     shadows: 2,
     highlights: 7,
-    saturation: 8,
+    colorSaturation: 8,
+    "colorBrightness": 1,
     waveFrequencyX: 5,
     waveFrequencyY: 3,
     waveAmplitude: 7,
@@ -263,7 +312,8 @@ export const BEIGE_PRESET = {
     "waveAmplitude": 9,
     "shadows": 0,
     "highlights": 10,
-    "saturation": -1,
+    "colorSaturation": -1,
+    "colorBrightness": 1,
     "wireframe": false,
     "colorBlending": 8,
     "backgroundColor": "#FFFFFF",
@@ -295,7 +345,8 @@ export const SPLASH_PRESET = {
     "waveAmplitude": 7,
     "shadows": 4,
     "highlights": 5,
-    "saturation": 2,
+    "colorSaturation": 2,
+    "colorBrightness": 1,
     "wireframe": false,
     "colorBlending": 5,
     "backgroundColor": "#FFBE0B",
@@ -306,7 +357,7 @@ export const PRESETS = {
     "Stripe": STRIPE_PRESET,
     "FireCMS": FIRECMS_PRESET,
     "Prussian": PRUSSIAN_BLUE_PRESET,
-    "We the root": WE_THE_ROOT_PRESET,
+    // "We the root": WE_THE_ROOT_PRESET,
     "Clouds": CLOUDS_PRESET,
     "Psychedelic": PSYCHEDELIC_PRESET,
     "Beige": BEIGE_PRESET,

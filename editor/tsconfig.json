@@ -22,7 +22,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@camberi/neat": [
+      "@firecms/neat": [
         "../lib/src/index.ts"
       ]
     }
