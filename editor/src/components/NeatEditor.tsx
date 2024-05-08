@@ -4,11 +4,6 @@ import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
 
 import "@fontsource/sofia-sans";
 
-// import '@fontsource/sofia/300.css';
-// import '@fontsource/sofia/400.css';
-// import '@fontsource/sofia/500.css';
-// import '@fontsource/sofia/700.css';
-// import '@fontsource/sofia/900.css';
 import { Box, Button, FormControlLabel, Slider, Tooltip, Typography } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -267,6 +262,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         <Typography variant={"caption"}>PRESET</Typography>
                         <FilledSelect value={selectedPreset}
+                                      variant={"filled"}
                                       label={"Preset"}
                                       renderValue={(preset: string) => {
                                           return preset.toUpperCase();
@@ -806,7 +802,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 onClick={handleDrawerOpen}>EDIT THIS GRADIENT</Button>
 
                         <Box sx={{
-                            width: "380px",
+                            width: "540px",
                             p: 2,
                             maxWidth: "95vw",
                             textAlign: "center",
@@ -815,7 +811,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <Box component={"p"}
                                  sx={{
                                      mt: 4,
-                                     fontSize: "20px"
+                                     fontSize: "16px"
                                  }}>
                                 Neat is a free tool that generates beautiful
                                 gradient
@@ -827,18 +823,27 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <Box component={"p"}
                                  sx={{
                                      mt: 4,
-                                     fontSize: "20px"
+                                     fontSize: "16px"
                                  }}>
                                 Install the package using npm or yarn, following the instructions in the <a
                                 target={"_blank"}
                                 href="https://github.com/FireCMSco/neat">GitHub page</a> and please leave a star ⭐.
                             </Box>
 
-                            <Button variant="outlined"
-                                    component={"a"}
-                                    target={"_blank"}
-                                    href="https://github.com/FireCMSco/neat"
-                                    sx={{ mt: 3 }}>GET STARTED</Button>
+                            <Button
+                                variant={"contained"}
+                                component={"a"}
+                                target={"_blank"}
+                                color={"secondary"}
+                                size={"large"}
+                                href="https://github.com/FireCMSco/neat"
+                                onClick={() => {
+                                    logEvent(analytics, 'get_started');
+                                }}
+                                sx={{
+                                    mt: 3,
+                                    fontWeight: "bold",
+                                }}>GET STARTED</Button>
 
                             <Box component={"p"}>
                                 Built with ❤️ by <a rel={"noopener"}
@@ -847,31 +852,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </Box>
                     </Box>
                 </Box>
-                {/*<Box sx={{*/}
-                {/*    display: "flex",*/}
-                {/*    flexDirection: "column",*/}
-                {/*    alignItems: "center",*/}
-                {/*    background: "#eee",*/}
-                {/*    justifyContent: "center",*/}
-                {/*    fontFamily: '"Roboto", roboto-condensed,sans-serif',*/}
-                {/*    p: 6*/}
-                {/*}}>*/}
-
-                {/*    <Box component={"p"}>*/}
-                {/*        Neat is a free tool that generates beautiful gradient*/}
-                {/*        animations for your website.*/}
-                {/*        It's easy to use and offers a wide range of*/}
-                {/*        customization options.*/}
-                {/*    </Box>*/}
-
-                {/*    <Box component={"p"}>*/}
-                {/*        Built with ❤️by <a rel={"noopener"} href={"https://firecms.co"}>Camberi</a>*/}
-                {/*    </Box>*/}
-
-                {/*</Box>*/}
             </Box>
         </Box>
-    )
-        ;
+    );
 
 }

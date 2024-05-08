@@ -1,6 +1,6 @@
 # Neat gradients
 
-Create awesome 3d gradients with this library based on three.js.
+Create awesome 3D gradients with this library based on three.js.
 
 Check the demo and gradients editor to find your perfect config here:
 [https://neat.firecms.co/](https://neat.firecms.co/)
@@ -10,7 +10,7 @@ projects,
 commercial or not. You can also modify it and redistribute it, but you must keep
 the license and the credits.
 
-If you want to remove the Camberi link, you can reach us at hello@firecms.co
+If you want to remove the NEAT link, you can reach us at hello@firecms.co
 
 ### Installation:
 

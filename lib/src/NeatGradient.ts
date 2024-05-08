@@ -8,6 +8,8 @@ const COLORS_COUNT = 5;
 
 const clock = new THREE.Clock();
 
+const LINK_ID = generateRandomString();
+
 type SceneState = {
     renderer: THREE.WebGLRenderer,
     camera: THREE.Camera,
@@ -778,12 +780,11 @@ vec3 hsv2rgb(vec3 c)
 
 
 const setLinkStyles = (link: HTMLAnchorElement) => {
-    link.id = "neat-link";
+    link.id = LINK_ID;
     link.href = "https://neat.firecms.co";
     link.target = "_blank";
     link.style.position = "absolute";
     link.style.display = "block";
-    link.style.opacity = "1";
     link.style.bottom = "0";
     link.style.right = "0";
     link.style.padding = "10px";
@@ -793,7 +794,7 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
     link.style.fontSize = "16px";
     link.style.fontWeight = "bold";
     link.style.textDecoration = "none";
-    link.style.zIndex = "100";
+    link.style.zIndex = "10000";
     link.innerHTML = "NEAT";
 }
 
@@ -801,7 +802,7 @@ const addNeatLink = (ref: HTMLCanvasElement) => {
     const existingLinks = ref.parentElement?.getElementsByTagName("a");
     if (existingLinks) {
         for (let i = 0; i < existingLinks.length; i++) {
-            if (existingLinks[i].id === "neat-link") {
+            if (existingLinks[i].id === LINK_ID) {
                 setLinkStyles(existingLinks[i]);
                 return;
             }
@@ -817,4 +818,14 @@ function getElapsedSecondsInLastHour() {
     const minutes = now.getMinutes();
     const seconds = now.getSeconds();
     return (minutes * 60) + seconds;
+}
+
+function generateRandomString(length: number = 6): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters.charAt(randomIndex);
+    }
+    return result;
 }
