@@ -1,7 +1,7 @@
 {
     "name": "neat-parent",
     "private": true,
-    "description": "Best background gradients",
+    "description": "Best animated background gradients for your website",
     "author": "FireCMS",
     "homepage": "https://neat.firecms.co",
     "workspaces": [
