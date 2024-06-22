@@ -66,17 +66,58 @@ export const FIRECMS_PRESET = {
     "speed": 2,
     "horizontalPressure": 2,
     "verticalPressure": 5,
-    "waveFrequencyX": 1,
-    "waveFrequencyY": 7,
-    "waveAmplitude": 10,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 2,
+    "waveAmplitude": 5,
     "shadows": 10,
     "highlights": 8,
-    "colorSaturation": 10,
     "colorBrightness": 1,
+    "colorSaturation": 10,
+    "wireframe": true,
+    "colorBlending": 6,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "resolution": 0.95
+};
+
+export const LIGHT_PRESET = {
+    "colors": [
+        {
+            "color": "#fbe4f4",
+            "enabled": true
+        },
+        {
+            "color": "#c9edfd",
+            "enabled": true
+        },
+        {
+            "color": "#e1e5fe",
+            "enabled": true
+        },
+        {
+            "color": "#FFFFFF",
+            "enabled": true
+        },
+        {
+            "color": "#FFFFFF",
+            "enabled": true
+        }
+    ],
+    "speed": 5,
+    "horizontalPressure": 2,
+    "verticalPressure": 5,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 2,
+    "waveAmplitude": 2,
+    "shadows": 0,
+    "highlights": 10,
+    "colorBrightness": 1,
+    "colorSaturation": 10,
     "wireframe": false,
     "colorBlending": 6,
     "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1
+    "backgroundAlpha": 1,
+    "resolution": 0.9
 };
 
 export const BLOOM_PRESET = {
@@ -396,6 +437,7 @@ export const SPLASH_PRESET = {
 export const PRESETS = {
     "Stripe": STRIPE_PRESET,
     "FireCMS": FIRECMS_PRESET,
+    "Light": LIGHT_PRESET,
     "Bloom": BLOOM_PRESET,
     "Prussian": PRUSSIAN_BLUE_PRESET,
     // "We the root": WE_THE_ROOT_PRESET,
