@@ -79,6 +79,46 @@ export const FIRECMS_PRESET = {
     "backgroundAlpha": 1
 };
 
+export const BLOOM_PRESET = {
+    "colors": [
+        {
+            "color": "#FF0A39",
+            "enabled": true
+        },
+        {
+            "color": "#FFC858",
+            "enabled": true
+        },
+        {
+            "color": "#17E7FF",
+            "enabled": true
+        },
+        {
+            "color": "#4A21FF",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
+    ],
+    "speed": 4,
+    "horizontalPressure": 6,
+    "verticalPressure": 6,
+    "waveFrequencyX": 0,
+    "waveFrequencyY": 0,
+    "waveAmplitude": 0,
+    "shadows": 0,
+    "highlights": 0,
+    "colorBrightness": 1.95,
+    "colorSaturation": 10,
+    "wireframe": false,
+    "colorBlending": 6,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "resolution": 1
+};
+
 export const GLITCH_PRESET = {
     "colors": [
         {
@@ -356,6 +396,7 @@ export const SPLASH_PRESET = {
 export const PRESETS = {
     "Stripe": STRIPE_PRESET,
     "FireCMS": FIRECMS_PRESET,
+    "Bloom": BLOOM_PRESET,
     "Prussian": PRUSSIAN_BLUE_PRESET,
     // "We the root": WE_THE_ROOT_PRESET,
     "Clouds": CLOUDS_PRESET,
