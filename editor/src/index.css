@@ -16,3 +16,7 @@ code {
   height: 100%;
   width: 100%;
 }
+
+/*a[href="https://neat.firecms.co"] {*/
+/*  display: none !important;*/
+/*}*/

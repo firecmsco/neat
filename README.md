@@ -10,7 +10,6 @@ projects,
 commercial or not. You can also modify it and redistribute it, but you must keep
 the license and the credits.
 
-If you want to remove the NEAT link, you can reach us at hello@firecms.co
 
 ### Installation:
 
@@ -82,6 +81,14 @@ neat.speed = 6;
 // e.g. returning from a useEffect hook in React
 neat.destroy();
 ```
+
+### Remove the NEAT link
+
+If you want to remove the NEAT link, you can make a donation to the project
+in the following link:
+[https://github.com/sponsors/firecmsco](https://github.com/sponsors/firecmsco)
+Then reach out to us at [hello@firecms.co](mailto:hello@firecms.co) and we will
+send you a license key to remove the link.
 
 ### How it works
 

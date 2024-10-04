@@ -39,6 +39,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     };
 
     const updatePresetConfig = (config: NeatConfig) => {
+
+        console.log("Updating preset config", config);
+
         setColors(config.colors);
         if (config.wireframe !== undefined) setWireframe(config.wireframe);
         if (config.speed !== undefined) setSpeed(config.speed);
@@ -55,6 +58,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.backgroundAlpha !== undefined) setBackgroundAlpha(config.backgroundAlpha);
         if (config.backgroundColor !== undefined) setBackgroundColor(config.backgroundColor);
         if (config.resolution !== undefined) setResolution(config.resolution);
+        if (config.grainIntensity !== undefined) setGrainIntensity(config.grainIntensity);
+        if (config.grainSpeed !== undefined) setGrainSpeed(config.grainSpeed);
+        if (config.grainScale !== undefined) setGrainScale(config.grainScale);
     }
 
     const scrollRef = useRef<number>(0);
@@ -81,6 +87,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution);
     const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha);
     const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor);
+
+    const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity);
+    const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
+    const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -125,6 +135,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             highlights,
             colorSaturation: saturation,
             colorBrightness: brightness,
+            grainSpeed,
+            grainIntensity,
+            grainScale,
             resolution
         });
 
@@ -162,9 +175,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             gradientRef.current.colorBlending = colorBlending;
             gradientRef.current.backgroundColor = backgroundColor;
             gradientRef.current.backgroundAlpha = backgroundAlpha;
+            gradientRef.current.grainIntensity = grainIntensity;
+            gradientRef.current.grainScale = grainScale;
+            gradientRef.current.grainSpeed = grainSpeed;
             gradientRef.current.resolution = resolution;
         }
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha]);
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainScale, grainSpeed]);
 
     const config: NeatConfig = {
         colors,
@@ -182,6 +198,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         colorBlending,
         backgroundColor,
         backgroundAlpha,
+        grainScale,
+        grainIntensity,
+        grainSpeed,
         resolution
     }
 
@@ -713,6 +732,101 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         </ExpandablePanel>
 
+                        <ExpandablePanel
+                            Title={
+                                <Typography variant={"button"}>
+                                    Grain
+                                </Typography>
+                            }>
+
+                            <Box sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
+                                alignItems: "center",
+                            }}>
+
+                                <Box sx={{
+                                    flexGrow: 1
+                                }}>
+                                    <Typography gutterBottom
+                                                variant={"caption"}
+                                                sx={{
+                                                    pr: 1,
+                                                }}>Grain intensity </Typography>
+                                    <Slider
+                                        valueLabelDisplay="auto"
+                                        value={grainIntensity}
+                                        size={"small"}
+                                        step={.05}
+                                        min={0}
+                                        max={1}
+                                        onChange={(event, newValue) => {
+                                            setGrainIntensity(newValue as number)
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+
+                            <Box sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
+                                alignItems: "center",
+                            }}>
+
+                                <Box sx={{
+                                    flexGrow: 1
+                                }}>
+                                    <Typography gutterBottom
+                                                variant={"caption"}
+                                                sx={{
+                                                    pr: 1,
+                                                }}>Grain scale </Typography>
+                                    <Slider
+                                        valueLabelDisplay="auto"
+                                        value={grainScale}
+                                        size={"small"}
+                                        step={1}
+                                        min={0}
+                                        max={50}
+                                        onChange={(event, newValue) => {
+                                            setGrainScale(newValue as number)
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+                            <Box sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
+                                alignItems: "center",
+                            }}>
+
+                                <Box sx={{
+                                    flexGrow: 1
+                                }}>
+                                    <Typography gutterBottom
+                                                variant={"caption"}
+                                                sx={{
+                                                    pr: 1,
+                                                }}>Grain speed </Typography>
+                                    <Slider
+                                        valueLabelDisplay="auto"
+                                        value={grainSpeed}
+                                        size={"small"}
+                                        step={.1}
+                                        min={0}
+                                        max={5}
+                                        onChange={(event, newValue) => {
+                                            setGrainSpeed(newValue as number)
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+
+
+                        </ExpandablePanel>
                     </Box>
                     <Box
                         sx={{
@@ -793,7 +907,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     textAlign: "center",
                                     textTransform: "uppercase",
                                 }}>
-                                Beautiful gradient animations for your website
+                                Beautiful 3D gradient animations for your website
                             </Typography>
                         </Box>
 
@@ -802,32 +916,44 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 onClick={handleDrawerOpen}>EDIT THIS GRADIENT</Button>
 
                         <Box sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
                             width: "540px",
                             p: 2,
                             maxWidth: "95vw",
-                            textAlign: "center",
                             zIndex: 1,
                         }}>
-                            <Box component={"p"}
-                                 sx={{
-                                     mt: 4,
-                                     fontSize: "16px"
-                                 }}>
-                                Neat is a free tool that generates beautiful
-                                gradient
-                                animations for your website.
-                                It's easy to use and offers a wide range of
-                                customization options.
-                            </Box>
 
-                            <Box component={"p"}
-                                 sx={{
-                                     mt: 4,
-                                     fontSize: "16px"
-                                 }}>
-                                Install the package using npm or yarn, following the instructions in the <a
-                                target={"_blank"}
-                                href="https://github.com/FireCMSco/neat">GitHub page</a> and please leave a star ⭐.
+                            <Box
+                                sx={{
+                                    mt: 4,
+                                    px: 4,
+                                    py: 2,
+                                    mixBlendMode: lightText ? "overlay" : "multiply",
+                                    backgroundColor: lightText ? "rgba(0,0,0,.23)" : "rgba(255, 255, 255, 0.63)",
+                                    borderRadius: 8,
+                                }}>
+                                <Box component={"p"}
+                                     sx={{
+                                         fontSize: "18px"
+                                     }}>
+                                    Neat is a <b>free tool</b> that generates beautiful
+                                    gradient
+                                    animations for your website.
+                                    It's easy to use and offers a wide range of
+                                    customization options.
+                                </Box>
+
+                                <Box component={"p"}
+                                     sx={{
+                                         mt: 4,
+                                         fontSize: "18px"
+                                     }}>
+                                    Install the package using npm or yarn, following the instructions in the <a
+                                    target={"_blank"}
+                                    href="https://github.com/FireCMSco/neat">GitHub page</a> and please leave a star ⭐.
+                                </Box>
                             </Box>
 
                             <Button

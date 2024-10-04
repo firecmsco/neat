@@ -32,6 +32,9 @@ export type NeatConfig = {
     colorBrightness?: number;
     colors: NeatColor[];
     colorBlending?: number;
+    grainScale?: number;
+    grainIntensity?: number;
+    grainSpeed?: number;
     wireframe?: boolean;
     backgroundColor?: string;
     backgroundAlpha?: number;
@@ -68,6 +71,10 @@ export class NeatGradient implements NeatController {
     private _saturation: number = -1;
     private _brightness: number = -1;
 
+    private _grainScale: number = -1;
+    private _grainIntensity: number = -1;
+    private _grainSpeed: number = -1;
+
     private _colorBlending: number = -1;
 
     private _colors: NeatColor[] = [];
@@ -96,6 +103,9 @@ export class NeatGradient implements NeatController {
             colorSaturation = 0,
             colorBrightness = 1,
             colorBlending = 5,
+            grainScale= 2,
+            grainIntensity = 0.55,
+            grainSpeed = 0.1,
             wireframe = false,
             backgroundColor = "#FFFFFF",
             backgroundAlpha = 1.0,
@@ -117,6 +127,9 @@ export class NeatGradient implements NeatController {
         this.waveFrequencyY = waveFrequencyY;
         this.waveAmplitude = waveAmplitude;
         this.colorBlending = colorBlending;
+        this.grainScale = grainScale;
+        this.grainIntensity = grainIntensity;
+        this.grainSpeed = grainSpeed;
         this.colors = colors;
         this.shadows = shadows;
         this.highlights = highlights;
@@ -185,6 +198,12 @@ export class NeatGradient implements NeatController {
                 mesh.material.uniforms.u_saturation = { value: this._saturation };
                 // @ts-ignore
                 mesh.material.uniforms.u_brightness = { value: this._brightness };
+                // @ts-ignore
+                mesh.material.uniforms.u_grain_intensity = { value: this._grainIntensity };
+                // @ts-ignore
+                mesh.material.uniforms.u_grain_speed = { value: this._grainSpeed };
+                // @ts-ignore
+                mesh.material.uniforms.u_grain_scale = { value: this._grainScale };
                 // @ts-ignore
                 mesh.material.wireframe = this._wireframe;
             });
@@ -267,6 +286,18 @@ export class NeatGradient implements NeatController {
 
     set colorBlending(colorBlending: number) {
         this._colorBlending = colorBlending / 10;
+    }
+
+    set grainScale(grainScale: number) {
+        this._grainScale = grainScale == 0 ? 1 : grainScale;
+    }
+
+    set grainIntensity(grainIntensity: number) {
+        this._grainIntensity = grainIntensity;
+    }
+
+    set grainSpeed(grainSpeed: number) {
+        this._grainSpeed = grainSpeed;
     }
 
     set wireframe(wireframe: boolean) {
@@ -353,12 +384,15 @@ export class NeatGradient implements NeatController {
             u_plane_height: { value: PLANE_HEIGHT },
             u_shadows: { value: this._shadows },
             u_highlights: { value: this._highlights },
+            u_grain_intensity: { value: this._grainIntensity },
+            u_grain_scale: { value: this._grainScale },
+            u_grain_speed: { value: this._grainSpeed },
         };
 
         const material = new THREE.ShaderMaterial({
             uniforms: uniforms,
             vertexShader: buildUniforms() + buildNoise() + buildColorFunctions() + buildVertexShader(),
-            fragmentShader: buildUniforms() + buildColorFunctions() + buildFragmentShader()
+            fragmentShader: buildUniforms() + buildColorFunctions() + buildNoise() + buildFragmentShader()
         });
 
         material.wireframe = WIREFRAME;
@@ -446,13 +480,13 @@ void main() {
             noise = clamp(minNoise, maxNoise + float(i) * 0.02, noise);
             vec3 nextColor = u_colors[i].color;
             
-            // vec3 colorOklab = oklab2rgb(color);
-            // vec3 nextColorOklab = oklab2rgb(nextColor);
-            // vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
-            //
-            // color = rgb2oklab(mixColor);
+            vec3 colorOklab = oklab2rgb(color);
+            vec3 nextColorOklab = oklab2rgb(nextColor);
+            vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
+
+            color = rgb2oklab(mixColor);
             
-            color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
+            // color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
         }
         
     }
@@ -469,15 +503,48 @@ void main() {
 
 function buildFragmentShader() {
     return `
+float random(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453);
+}
 
+float fbm(vec3 x) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for (int i = 0; i < 4; i++) {
+        value += amplitude * snoise(x * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+    
 void main(){
     vec3 color = v_color;
     
-    color.rgb += pow(v_displacement_amount, 1.0) * u_highlights;
-    color.rgb -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
+    color += pow(v_displacement_amount, 1.0) * u_highlights;
+    color -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
     color = saturation(color, 1.0 + u_saturation);
     color = color * u_brightness;
     
+    // Generate grain using fbm
+    vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
+
+    float grain = (u_grain_speed != 0.0) 
+        ? fbm(vec3(noiseCoords, u_time * u_grain_speed)) 
+        : fbm(vec3(noiseCoords, 0.0));
+
+    // Center the grain around zero
+    grain = grain * 0.5 + 0.5;
+    grain -= 0.5;
+
+    // Apply grain intensity
+    grain *= u_grain_intensity;
+
+    // Add grain to color
+    color += vec3(grain);
+            
     gl_FragColor = vec4(color,1.0);
 }
 `;
@@ -492,6 +559,9 @@ struct Color {
     float value;
 };
 
+uniform float u_grain_intensity; 
+uniform float u_grain_scale; 
+uniform float u_grain_speed; 
 uniform float u_time;
 
 uniform float u_wave_amplitude;

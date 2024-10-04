@@ -1,5 +1,3 @@
-import { NeatConfig } from "@firecms/neat";
-
 export const STRIPE_PRESET = {
     "colors": [
         {
@@ -36,6 +34,9 @@ export const STRIPE_PRESET = {
     "wireframe": false,
     "colorBlending": 6,
     "backgroundColor": "#003FFF",
+    "grainIntensity": 0.1,
+    "grainScale": 2,
+    "grainSpeed": 1,
     "backgroundAlpha": 1,
     "resolution": 1
 };
@@ -160,6 +161,49 @@ export const BLOOM_PRESET = {
     "resolution": 1
 };
 
+export const LEMON_PRESET = {
+    "colors": [
+        {
+            "color": "#F2FF00",
+            "enabled": true
+        },
+        {
+            "color": "#6B00FF",
+            "enabled": true
+        },
+        {
+            "color": "#D5ECEB",
+            "enabled": true
+        },
+        {
+            "color": "#E4E4E4",
+            "enabled": false
+        },
+        {
+            "color": "#F6FFFF",
+            "enabled": false
+        }
+    ],
+    "speed": 4,
+    "horizontalPressure": 4,
+    "verticalPressure": 5,
+    "waveFrequencyX": 1,
+    "waveFrequencyY": 2,
+    "waveAmplitude": 10,
+    "shadows": 4,
+    "highlights": 7,
+    "colorBrightness": 1,
+    "colorSaturation": 0,
+    "wireframe": false,
+    "colorBlending": 7,
+    "backgroundColor": "#00A2FF",
+    "backgroundAlpha": 1,
+    "grainScale": 4,
+    "grainIntensity": 0.2,
+    "grainSpeed": 2.2,
+    "resolution": 0.65
+}
+
 export const GLITCH_PRESET = {
     "colors": [
         {
@@ -179,15 +223,15 @@ export const GLITCH_PRESET = {
             "enabled": true
         },
         {
-            "color": "#f5e1e5",
+            "color": "#671424",
             "enabled": false
         }
     ],
     "speed": 4,
     "horizontalPressure": 4,
-    "verticalPressure": 8,
+    "verticalPressure": 9,
     "waveFrequencyX": 0,
-    "waveFrequencyY": 10,
+    "waveFrequencyY": 6,
     "waveAmplitude": 10,
     "shadows": 0,
     "highlights": 10,
@@ -197,9 +241,11 @@ export const GLITCH_PRESET = {
     "colorBlending": 7,
     "backgroundColor": "#3600FF",
     "backgroundAlpha": 1,
-    "resolution": 2
+    "grainScale": 0,
+    "grainIntensity": 0,
+    "grainSpeed": 0,
+    "resolution": 1.2
 }
-
 export const PASTEL_PRESET = {
     speed: 4,
     colors: [
@@ -242,11 +288,11 @@ export const CLOUDS_PRESET = {
             "enabled": true
         },
         {
-            "color": "#FFDEBB",
+            "color": "#EFE2CE",
             "enabled": true
         },
         {
-            "color": "#FBECC1",
+            "color": "#D5ECEB",
             "enabled": true
         },
         {
@@ -259,54 +305,66 @@ export const CLOUDS_PRESET = {
         }
     ],
     "speed": 2,
-    "horizontalPressure": 2,
+    "horizontalPressure": 4,
     "verticalPressure": 5,
-    "waveFrequencyX": 2,
+    "waveFrequencyX": 4,
     "waveFrequencyY": 4,
-    "waveAmplitude": 3,
-    "shadows": 7,
-    "highlights": 6,
-    "colorSaturation": 1,
+    "waveAmplitude": 2,
+    "shadows": 4,
+    "highlights": 7,
     "colorBrightness": 1,
+    "colorSaturation": 0,
     "wireframe": false,
     "colorBlending": 7,
-    "backgroundColor": "#0b3954",
-    "backgroundAlpha": 1
+    "backgroundColor": "#00A2FF",
+    "backgroundAlpha": 1,
+    "grainScale": 50,
+    "grainIntensity": 0.05,
+    "grainSpeed": 2.2,
+    "resolution": 0.65
 };
 
-export const WE_THE_ROOT_PRESET = {
-    speed: 4,
-    colors: [
+export const NIGHTTIME = {
+    "colors": [
         {
-            color: "#FFFFFF",
-            enabled: true,
-        }, {
-            color: "#FFFFFF",
-            enabled: true,
-        }, {
-            color: "#C4C3FF",
-            enabled: true,
-        }, {
-            color: "#FFE8A7",
-            enabled: true,
-        }, {
-            color: "#f5e1e5",
-            enabled: false,
+            "color": "#FF3087",
+            "enabled": true
         },
+        {
+            "color": "#1B36A6",
+            "enabled": true
+        },
+        {
+            "color": "#002027",
+            "enabled": true
+        },
+        {
+            "color": "#6D3BFF",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
     ],
-    colorBlending: 7,
-    horizontalPressure: 4,
-    verticalPressure: 4,
-    shadows: 0,
-    highlights: 2,
-    colorSaturation: 3,
+    "speed": 4,
+    "horizontalPressure": 3,
+    "verticalPressure": 5,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 3,
+    "waveAmplitude": 5,
+    "shadows": 0,
+    "highlights": 2,
     "colorBrightness": 1,
-    waveFrequencyX: 4,
-    waveFrequencyY: 4,
-    waveAmplitude: 3,
-    wireframe: false,
-    backgroundColor: "#0b3954",
-    backgroundAlpha: 1.0,
+    "colorSaturation": 7,
+    "wireframe": false,
+    "colorBlending": 7,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "grainScale": 2,
+    "grainIntensity": 0.5,
+    "grainSpeed": 1,
+    "resolution": 1
 };
 
 export const PRUSSIAN_BLUE_PRESET = {
@@ -402,45 +460,57 @@ export const BEIGE_PRESET = {
 };
 
 export const SPLASH_PRESET = {
-    "colors": [{
-        "color": "#ffbe0b",
-        "enabled": true
-    }, {
-        "color": "#fb5607",
-        "enabled": true
-    }, {
-        "color": "#ff006e",
-        "enabled": true
-    }, {
-        "color": "#8338ec",
-        "enabled": true
-    }, {
-        "color": "#3a86ff",
-        "enabled": true
-    }],
+    "colors": [
+        {
+            "color": "#ffbe0b",
+            "enabled": true
+        },
+        {
+            "color": "#fb5607",
+            "enabled": true
+        },
+        {
+            "color": "#ff006e",
+            "enabled": true
+        },
+        {
+            "color": "#8338ec",
+            "enabled": true
+        },
+        {
+            "color": "#3a86ff",
+            "enabled": true
+        }
+    ],
     "speed": 4,
     "horizontalPressure": 2,
     "verticalPressure": 2,
     "waveFrequencyX": 1,
     "waveFrequencyY": 2,
     "waveAmplitude": 7,
-    "shadows": 4,
-    "highlights": 5,
-    "colorSaturation": 2,
+    "shadows": 10,
+    "highlights": 10,
     "colorBrightness": 1,
+    "colorSaturation": 2,
     "wireframe": false,
     "colorBlending": 5,
     "backgroundColor": "#FFBE0B",
-    "backgroundAlpha": 1
+    "backgroundAlpha": 1,
+    "grainScale": 2,
+    "grainIntensity": 0.3,
+    "grainSpeed": 0,
+    "resolution": 1
 };
 
 export const PRESETS = {
     "Stripe": STRIPE_PRESET,
     "FireCMS": FIRECMS_PRESET,
+    "Lemon": LEMON_PRESET,
+    "Glitch": GLITCH_PRESET,
+    "Nighttime": NIGHTTIME,
     "Light": LIGHT_PRESET,
     "Bloom": BLOOM_PRESET,
     "Prussian": PRUSSIAN_BLUE_PRESET,
-    // "We the root": WE_THE_ROOT_PRESET,
     "Clouds": CLOUDS_PRESET,
     "Psychedelic": PSYCHEDELIC_PRESET,
     "Beige": BEIGE_PRESET,
