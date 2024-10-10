@@ -669,7 +669,7 @@ export const TROPICAL_PRESET = {
         { "color": "#581845", "enabled": true },
         { "color": "#FFC300", "enabled": true }
     ],
-    "speed": 5,
+    "speed": 2,
     "horizontalPressure": 3,
     "verticalPressure": 7,
     "waveFrequencyX": 2,
@@ -691,24 +691,39 @@ export const TROPICAL_PRESET = {
 
 export const OCEANIC_PRESET = {
     "colors": [
-        { "color": "#005F73", "enabled": true },
-        { "color": "#0A9396", "enabled": true },
-        { "color": "#94D2BD", "enabled": true },
-        { "color": "#E9D8A6", "enabled": true },
-        { "color": "#EE9B00", "enabled": false }
+        {
+            "color": "#005F73",
+            "enabled": true
+        },
+        {
+            "color": "#0A9396",
+            "enabled": true
+        },
+        {
+            "color": "#94D2BD",
+            "enabled": true
+        },
+        {
+            "color": "#E9D8A6",
+            "enabled": true
+        },
+        {
+            "color": "#EE9B00",
+            "enabled": false
+        }
     ],
     "speed": 3,
-    "horizontalPressure": 2,
-    "verticalPressure": 4,
-    "waveFrequencyX": 4,
+    "horizontalPressure": 5,
+    "verticalPressure": 7,
+    "waveFrequencyX": 2,
     "waveFrequencyY": 2,
-    "waveAmplitude": 3,
+    "waveAmplitude": 8,
     "shadows": 6,
     "highlights": 8,
     "colorBrightness": 1,
     "colorSaturation": 7,
     "wireframe": false,
-    "colorBlending": 7,
+    "colorBlending": 10,
     "backgroundColor": "#004E64",
     "backgroundAlpha": 1,
     "grainScale": 3,
