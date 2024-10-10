@@ -13,7 +13,7 @@ import { ColorSwatch } from "./ColowSwatch";
 import Checkbox from "@mui/material/Checkbox";
 import { ExpandablePanel } from "./ExpandablePanel";
 import { FilledMenuItem, FilledSelect } from "./FilledSelect";
-import { PRESETS, STRIPE_PRESET } from "./presets";
+import { PRESETS, NEAT_PRESET } from "./presets";
 import { isDarkColor } from "../utils/colors";
 import { CodeDialog } from "./CodeDialog";
 import { Analytics } from "@firebase/analytics";
@@ -21,7 +21,7 @@ import { logEvent } from "firebase/analytics";
 
 const drawerWidth = 360;
 
-const defaultConfig = STRIPE_PRESET;
+const defaultConfig = NEAT_PRESET;
 
 export type NeatEditorProps = { analytics: Analytics };
 

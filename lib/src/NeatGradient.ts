@@ -103,7 +103,7 @@ export class NeatGradient implements NeatController {
             colorSaturation = 0,
             colorBrightness = 1,
             colorBlending = 5,
-            grainScale= 2,
+            grainScale = 2,
             grainIntensity = 0.55,
             grainSpeed = 0.1,
             wireframe = false,
@@ -156,11 +156,15 @@ export class NeatGradient implements NeatController {
                     height = this._ref.height;
 
                 const colors = [
-                    ...this._colors.map(color => ({
-                        is_active: color.enabled,
-                        color: new THREE.Color(color.color),
-                        influence: color.influence
-                    })),
+                    ...this._colors.map(color => {
+                        let threeColor = new THREE.Color();
+                        threeColor.setStyle(color.color, "");
+                        return ({
+                            is_active: color.enabled,
+                            color: threeColor,
+                            influence: color.influence
+                        });
+                    }),
                     ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
                         is_active: false,
                         color: new THREE.Color(0x000000)
@@ -469,24 +473,25 @@ void main() {
             float noiseSpeed = (1. + float(i)) * 0.11;
             float noiseSeed = 13. + float(i) * 7.;
             
+            int reverseIndex = u_colors_count - i;
+            
             float noise = snoise(
                 vec3(
                     noise_cord.x * u_color_pressure.x + u_time * noiseFlow * 2.,
                     noise_cord.y * u_color_pressure.y,
                     u_time * noiseSpeed
                 ) + noiseSeed
-            );
+            ) - (.1 * float(i)) + (.5 * u_color_blending);
             
             noise = clamp(minNoise, maxNoise + float(i) * 0.02, noise);
             vec3 nextColor = u_colors[i].color;
+            color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
             
-            vec3 colorOklab = oklab2rgb(color);
-            vec3 nextColorOklab = oklab2rgb(nextColor);
-            vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
-
-            color = rgb2oklab(mixColor);
+            // vec3 colorOklab = oklab2rgb(color);
+            // vec3 nextColorOklab = oklab2rgb(nextColor);
+            // vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
+            // color = rgb2oklab(mixColor);
             
-            // color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
         }
         
     }

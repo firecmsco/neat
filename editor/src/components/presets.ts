@@ -1,3 +1,46 @@
+export const NEAT_PRESET = {
+    "colors": [
+        {
+            "color": "#FF5772",
+            "enabled": true
+        },
+        {
+            "color": "#4CB4BB",
+            "enabled": true
+        },
+        {
+            "color": "#FFC600",
+            "enabled": true
+        },
+        {
+            "color": "#8B6AE6",
+            "enabled": true
+        },
+        {
+            "color": "#2E0EC7",
+            "enabled": true
+        }
+    ],
+    "speed": 4,
+    "horizontalPressure": 3,
+    "verticalPressure": 4,
+    "waveFrequencyX": 3,
+    "waveFrequencyY": 3,
+    "waveAmplitude": 8,
+    "shadows": 1,
+    "highlights": 5,
+    "colorBrightness": 1,
+    "colorSaturation": 7,
+    "wireframe": false,
+    "colorBlending": 8,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "grainScale": 3,
+    "grainIntensity": 0.3,
+    "grainSpeed": 1,
+    "resolution": 1
+};
+
 export const STRIPE_PRESET = {
     "colors": [
         {
@@ -35,9 +78,9 @@ export const STRIPE_PRESET = {
     "colorBlending": 8,
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
-    "grainScale": 3,
-    "grainIntensity": 0.3,
-    "grainSpeed": 1,
+    "grainScale": 0,
+    "grainIntensity": 0,
+    "grainSpeed": 0,
     "resolution": 1
 };
 
@@ -703,6 +746,7 @@ export const FOREST_PRESET = {
 };
 
 export const PRESETS = {
+    "Neat": NEAT_PRESET,
     "Stripe": STRIPE_PRESET,
     "FireCMS": FIRECMS_PRESET,
     "Lemon": LEMON_PRESET,
