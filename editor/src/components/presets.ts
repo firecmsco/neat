@@ -5,11 +5,11 @@ export const STRIPE_PRESET = {
             "enabled": true
         },
         {
-            "color": "#FFC858",
+            "color": "#17E7FF",
             "enabled": true
         },
         {
-            "color": "#17E7FF",
+            "color": "#FFC858",
             "enabled": true
         },
         {
@@ -22,22 +22,22 @@ export const STRIPE_PRESET = {
         }
     ],
     "speed": 4,
-    "horizontalPressure": 4,
-    "verticalPressure": 5,
+    "horizontalPressure": 3,
+    "verticalPressure": 4,
     "waveFrequencyX": 2,
-    "waveFrequencyY": 3,
-    "waveAmplitude": 5,
+    "waveFrequencyY": 2,
+    "waveAmplitude": 8,
     "shadows": 0,
     "highlights": 2,
-    "colorSaturation": 7,
     "colorBrightness": 1,
+    "colorSaturation": 7,
     "wireframe": false,
-    "colorBlending": 6,
+    "colorBlending": 8,
     "backgroundColor": "#003FFF",
-    "grainIntensity": 0.1,
-    "grainScale": 2,
-    "grainSpeed": 1,
     "backgroundAlpha": 1,
+    "grainScale": 3,
+    "grainIntensity": 0.3,
+    "grainSpeed": 1,
     "resolution": 1
 };
 
