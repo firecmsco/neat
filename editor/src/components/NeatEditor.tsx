@@ -758,7 +758,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         valueLabelDisplay="auto"
                                         value={grainIntensity}
                                         size={"small"}
-                                        step={.05}
+                                        step={.025}
                                         min={0}
                                         max={1}
                                         onChange={(event, newValue) => {
@@ -789,7 +789,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         size={"small"}
                                         step={1}
                                         min={0}
-                                        max={50}
+                                        max={100}
                                         onChange={(event, newValue) => {
                                             setGrainScale(newValue as number)
                                         }}
