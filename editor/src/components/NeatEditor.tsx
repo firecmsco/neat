@@ -1,34 +1,40 @@
 import React, { useEffect, useRef } from "react";
-
-import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
-
 import "@fontsource/sofia-sans";
-
-import { Box, Button, FormControlLabel, Slider, Tooltip, Typography } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import Drawer from "@mui/material/Drawer";
-import MenuIcon from "@mui/icons-material/Menu";
-import { ColorSwatch } from "./ColowSwatch";
-import Checkbox from "@mui/material/Checkbox";
-import { ExpandablePanel } from "./ExpandablePanel";
-import { FilledMenuItem, FilledSelect } from "./FilledSelect";
-import { PRESETS, NEAT_PRESET } from "./presets";
-import { isDarkColor } from "../utils/colors";
+import {
+    Button,
+    Checkbox,
+    ChevronLeftIcon,
+    cls,
+    EditIcon,
+    ExpandablePanel,
+    IconButton,
+    KeyboardArrowLeftIcon,
+    KeyboardArrowRightIcon,
+    Label,
+    Select,
+    SelectItem,
+    Sheet,
+    Slider,
+    Tooltip
+} from "@firecms/ui";
+import { ColorSwatch } from "./ColorSwatch";
+import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
+import { getComplementaryColor, isDarkColor } from "../utils/colors";
 import { CodeDialog } from "./CodeDialog";
 import { Analytics } from "@firebase/analytics";
 import { logEvent } from "firebase/analytics";
+import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
 
 const drawerWidth = 360;
-
 const defaultConfig = NEAT_PRESET;
 
-export type NeatEditorProps = { analytics: Analytics };
+export type NeatEditorProps = {
+    analytics: Analytics;
+};
 
 export default function NeatEditor({ analytics }: NeatEditorProps) {
-
-    const [drawerOpen, setDrawerOpen] = React.useState(false);
-    const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
+    const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
 
     const handleDrawerOpen = () => {
         setDrawerOpen(true);
@@ -39,8 +45,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     };
 
     const updatePresetConfig = (config: NeatConfig) => {
-
-        console.log("Updating preset config", config);
 
         setColors(config.colors);
         if (config.wireframe !== undefined) setWireframe(config.wireframe);
@@ -65,55 +69,39 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     const scrollRef = useRef<number>(0);
 
-    const [selectedPreset, setSelectedPreset] = React.useState(Object.keys(PRESETS)[0]);
-
+    const [selectedPresetIndex, setSelectedPresetIndex] = React.useState<number>(0);
     const [colors, setColors] = React.useState<NeatColor[]>(defaultConfig.colors);
     const [wireframe, setWireframe] = React.useState<boolean>(defaultConfig.wireframe);
     const [speed, setSpeed] = React.useState<number>(defaultConfig.speed);
-
     const [colorBlending, setColorBlending] = React.useState<number>(defaultConfig.colorBlending);
     const [horizontalPressure, setHorizontalPressure] = React.useState<number>(defaultConfig.horizontalPressure);
     const [verticalPressure, setVerticalPressure] = React.useState<number>(defaultConfig.verticalPressure);
-
     const [shadows, setShadows] = React.useState<number>(defaultConfig.shadows);
     const [highlights, setHighlights] = React.useState<number>(defaultConfig.highlights);
     const [saturation, setSaturation] = React.useState<number>(defaultConfig.colorSaturation);
     const [brightness, setBrightness] = React.useState<number>(defaultConfig.colorBrightness);
-
     const [waveFrequencyX, setWaveFrequencyX] = React.useState<number>(defaultConfig.waveFrequencyX);
     const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY);
     const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude);
-
     const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution);
     const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha);
     const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor);
-
     const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity);
     const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
     const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
 
-    const handleColorChange = (newValue: NeatColor, index: number) => {
-        const newColors = [...colors];
-        newColors[index] = newValue;
-        setColors(newColors);
-    }
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const gradientRef = useRef<NeatGradient>();
 
     useEffect(() => {
         const listener = () => {
-            if (typeof window !== "undefined")
-                scrollRef.current = window?.scrollY ?? 0;
+            scrollRef.current = window?.scrollY ?? 0;
         };
-        listener();
-        if (typeof window !== "undefined")
-            window.addEventListener("scroll", listener);
+        if (typeof window !== "undefined") window.addEventListener("scroll", listener);
         return () => {
-            if (typeof window !== "undefined")
-                window.removeEventListener("scroll", listener);
+            if (typeof window !== "undefined") window.removeEventListener("scroll", listener);
         };
-    }, [window]);
-
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const gradientRef = useRef<NeatGradient>();
+    }, []);
 
     useEffect(() => {
 
@@ -143,21 +131,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
         return gradientRef.current.destroy;
 
-    }, [canvasRef.current]);
+    }, []);
 
-    const onGetTheCodeClick = () => {
-        setDialogOpen(true);
-        logEvent(analytics, 'open_get_code_dialog', {
-            config
-        });
-    };
-
-    const [lightText, setLightText] = React.useState(true);
-    useEffect(() => {
-        setLightText(isDarkColor(colors[0].color));
-    }, [colors[0]]);
-
-    // const colorsArray = getColorsArray();
     useEffect(() => {
         if (gradientRef.current) {
             gradientRef.current.colors = colors;
@@ -182,6 +157,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
     }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainScale, grainSpeed]);
 
+    const handleColorChange = (newValue: NeatColor, index: number) => {
+        const newColors = [...colors];
+        newColors[index] = newValue;
+        setColors(newColors);
+    };
+
+    const onGetTheCodeClick = () => {
+        setDialogOpen(true);
+        logEvent(analytics, 'open_get_code_dialog', { config });
+    };
+
+    const [lightText, setLightText] = React.useState<boolean>(true);
+    const [complementaryColor, setComplementaryColor] = React.useState<string | undefined>();
+    useEffect(() => {
+        setLightText(isDarkColor(colors[0].color));
+        setComplementaryColor(getComplementaryColor(colors[0].color));
+    }, [colors]);
+
     const config: NeatConfig = {
         colors,
         speed,
@@ -201,785 +194,428 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainScale,
         grainIntensity,
         grainSpeed,
-        resolution
+        resolution,
+    };
+
+    const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
+
+    function setPreset(preset: string) {
+        setSelectedPresetIndex(Object.keys(PRESETS).indexOf(preset));
+        updatePresetConfig(PRESETS[preset]);
     }
 
-    return (
-        <Box sx={{
-            position: 'relative',
-        }}>
+    const fontClass = fontMap[selectedPreset] || 'font-sans';
 
+    const prevPreset = () => {
+        setSelectedPresetIndex((selectedPresetIndex - 1 + Object.keys(PRESETS).length) % Object.keys(PRESETS).length);
+        setPreset(Object.keys(PRESETS)[(selectedPresetIndex - 1 + Object.keys(PRESETS).length) % Object.keys(PRESETS).length]);
+    };
+    const nextPreset = () => {
+        setSelectedPresetIndex((selectedPresetIndex + 1) % Object.keys(PRESETS).length);
+        setPreset(Object.keys(PRESETS)[(selectedPresetIndex + 1) % Object.keys(PRESETS).length]);
+    };
+
+    // listen to right and left arrow keys
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "ArrowRight") {
+                nextPreset();
+            } else if (event.key === "ArrowLeft") {
+                prevPreset();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [selectedPresetIndex]);
+
+    return (
+        <div className="relative w-full h-full">
             <IconButton
-                color="inherit"
                 onClick={handleDrawerOpen}
-                edge="start"
-                sx={{
-                    m: 0,
-                    position: "fixed",
-                    left: 16,
-                    top: 16,
-                    backgroundColor: "#00000010",
-                    zIndex: 10,
-                    ...(drawerOpen && { display: 'none' })
-                }}
+                className={`fixed right-4 top-4 bg-black bg-opacity-20 hover:bg-black hover:bg-opacity-30 rounded-full z-10 ${drawerOpen ? 'hidden' : ''}`}
             >
-                <MenuIcon/>
+                <EditIcon className="w-6 h-6 text-white"/>
             </IconButton>
 
-            <Drawer
-                sx={{
-                    width: drawerWidth,
-                    '& .MuiDrawer-paper': {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                    },
-
-                }}
-                PaperProps={{
-                    sx: {
-                        // position: "relative",
-                        maxHeight: "100vh",
-                        backgroundColor: "#FFFFFF99",
-                        background: "linear-gradient(hsla(0,0%,100%,.4),hsla(0,0%,100%,.3) 25%,rgba(246,249,252,.3) 50%,rgba(246,249,252,.6)  100%)",
-                        boxShadow: "inset 0 1px 1px 0 hsl(0deg 0% 100% / 10%), 0 50px 100px -20px rgb(50 50 93 / 25%), 0 30px 60px -30px rgb(0 0 0 / 30%)",
-                        overflowX: "scroll",
-                        overflowY: "visible",
-                        backdropFilter: "blur(8px)",
-                    }
-                }}
-                variant="persistent"
-                anchor="left"
-                open={drawerOpen}
+            <Sheet open={drawerOpen}
+                // modal={false}
+                   includeBackgroundOverlay={false}
+                   className={"w-[360px] bg-white bg-opacity-50 backdrop-blur border-none h-full"}
+                   onOpenChange={setDrawerOpen}
+                   side={"right"}
             >
-
-                <IconButton onClick={handleDrawerClose}
-                            sx={{
-                                position: "fixed",
-                                left: 16,
-                                top: 16,
-                                backgroundColor: "#00000010",
-                                zIndex: 100
-                            }}>
-                    <ChevronLeftIcon/>
+                <IconButton
+                    onClick={handleDrawerClose}
+                    className="fixed left-4 top-4 bg-black bg-opacity-10 p-2 rounded-full"
+                >
+                    <ChevronLeftIcon className="w-6 h-6"/>
                 </IconButton>
 
-                <Box sx={{
-                    height: "100%",
-                    overflow: "auto",
-                    p: 2
-                }}>
-
-                    <Box sx={{
-                        mt: "64px",
-                        display: "flex",
-                        flexDirection: "column",
-                        // height: "100%",
-                        // gap: 1,
-                        overflow: "visible"
-
-                    }}>
-
-                        <Typography variant={"caption"}>PRESET</Typography>
-                        <FilledSelect value={selectedPreset}
-                                      variant={"filled"}
-                                      label={"Preset"}
-                                      renderValue={(preset: string) => {
-                                          return preset.toUpperCase();
-                                      }}>
+                <div className="flex flex-col h-full gap-4">
+                    <div className="p-4 pt-20 flex flex-col gap-4 overflow-auto flex-grow ">
+                        <span className="text-xs font-bold">PRESET</span>
+                        <Select value={selectedPreset}
+                                className={fontClass + " text-xl"}
+                                onValueChange={(preset) => {
+                                    logEvent(analytics, 'select_preset', {
+                                        preset
+                                    });
+                                    setPreset(preset);
+                                }}
+                                renderValue={(preset: string) => {
+                                    return preset;
+                                }}>
                             {Object.keys(PRESETS).map((preset) =>
-                                <FilledMenuItem
+                                <SelectItem
+                                    className={fontMap[preset] + " "}
                                     key={preset}
-                                    value={preset}
-                                    onClick={() => {
-                                        logEvent(analytics, 'select_preset', {
-                                            preset
-                                        });
-                                        setSelectedPreset(preset);
-                                        updatePresetConfig(PRESETS[preset]);
-                                    }}>
-                                    {preset.toUpperCase()}
-                                </FilledMenuItem>
+                                    value={preset}>
+                                    {preset}
+                                </SelectItem>
                             )}
 
-                        </FilledSelect>
+                        </Select>
+                        <div className="flex space-x-4 justify-evenly mt-4 mb-2">
+                            {colors.map((color, index) => (
+                                <ColorSwatch
+                                    key={index}
+                                    color={color}
+                                    showEnabled={true}
+                                    onChange={(newColor) => handleColorChange(newColor, index)}
+                                />
+                            ))}
+                        </div>
 
-                        <Box sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 1,
-                            mt: 4,
-                            mb: 2,
-                            justifyContent: "space-evenly"
-                        }}>
-                            <ColorSwatch
-                                color={colors[0]}
-                                showEnabled={true}
-                                onChange={(color) => handleColorChange(color, 0)}/>
-                            <ColorSwatch
-                                color={colors[1]}
-                                showEnabled={true}
-                                onChange={(color) => handleColorChange(color, 1)}/>
-                            <ColorSwatch
-                                color={colors[2]}
-                                showEnabled={true}
-                                onChange={(color) => handleColorChange(color, 2)}/>
-                            <ColorSwatch
-                                color={colors[3]}
-                                showEnabled={true}
-                                onChange={(color) => handleColorChange(color, 3)}/>
-                            <ColorSwatch
-                                color={colors[4]}
-                                showEnabled={true}
-                                onChange={(color) => handleColorChange(color, 4)}/>
-                        </Box>
-
-                        <Box sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            mt: 2,
-                            mb: 2,
-                            ml: 2
-                        }}>
-                            <Typography variant={"button"}
-                                        gutterBottom
-                                        sx={{
-                                            width: 100,
-                                            pr: 1
-                                        }}>Speed</Typography>
+                        <div className="flex flex-row my-2 ml-2">
+                            <span className="w-28 pr-2 font-bold text-sm text-right">Speed</span>
                             <Slider
-                                valueLabelDisplay="auto"
-                                value={speed}
                                 size={"small"}
+                                value={[speed]}
                                 min={0}
                                 max={10}
-                                onChange={(event, newValue) => {
-                                    setSpeed(newValue as number)
-                                }}
+                                onValueChange={(newValue) => setSpeed(newValue[0] as number)}
                             />
-                        </Box>
+                        </div>
 
                         <ExpandablePanel
-                            Title={
-                                <Typography variant={"button"}>
-                                    Color pressure
-                                </Typography>
-                            }>
+                            title={<span className="font-semibold text-sm">Color pressure</span>}
+                            innerClassName={"space-y-1"}
+                            className={"border-none"}
+                        >
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Blending</span>
+                                <Slider
+                                    size={"small"}
+                                    value={[colorBlending]}
+                                    min={0}
+                                    max={10}
+                                    onValueChange={(newValue) => setColorBlending(newValue[0] as number)}
+                                />
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Horizontal</span>
+                                <Slider
 
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>Blending </Typography>
-                                <Slider
-                                    valueLabelDisplay="auto"
-                                    value={colorBlending}
                                     size={"small"}
+                                    value={[horizontalPressure]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setColorBlending(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setHorizontalPressure(newValue[0] as number)}
                                 />
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>Horizontal </Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Vertical</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={horizontalPressure}
                                     size={"small"}
+                                    value={[verticalPressure]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setHorizontalPressure(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setVerticalPressure(newValue[0] as number)}
                                 />
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography variant={"caption"}
-                                            gutterBottom sx={{
-                                    width: 100,
-                                    textAlign: "right",
-                                    pr: 1
-                                }}>
-                                    Vertical
-                                </Typography>
-                                <Slider
-                                    valueLabelDisplay="auto"
-                                    value={verticalPressure}
-                                    size={"small"}
-                                    min={0}
-                                    max={10}
-                                    onChange={(event, newValue) => {
-                                        setVerticalPressure(newValue as number)
-                                    }}
-                                />
-                            </Box>
-
+                            </div>
                         </ExpandablePanel>
 
-                        <ExpandablePanel
-                            Title={
-                                <Typography variant={"button"}>
-                                    Waves
-                                </Typography>
-                            }>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>
-                                    Frequency X
-                                </Typography>
+                        <ExpandablePanel title={<span className="font-semibold text-sm">Waves</span>}
+                                         innerClassName={"space-y-1"}
+                                         className={"border-none"}>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Frequency X</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={waveFrequencyX}
                                     size={"small"}
+                                    value={[waveFrequencyX]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setWaveFrequencyX(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setWaveFrequencyX(newValue[0] as number)}
                                 />
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>Frequency
-                                    Y</Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Frequency Y</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={waveFrequencyY}
                                     size={"small"}
+                                    value={[waveFrequencyY]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setWaveFrequencyY(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setWaveFrequencyY(newValue[0] as number)}
                                 />
-                            </Box>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}> Amplitude</Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Amplitude</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={waveAmplitude}
+
                                     size={"small"}
+                                    value={[waveAmplitude]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setWaveAmplitude(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setWaveAmplitude(newValue[0] as number)}
                                 />
-                            </Box>
-
+                            </div>
                         </ExpandablePanel>
 
-
-                        <ExpandablePanel
-                            Title={
-                                <Typography variant={"button"}>
-                                    Post-processing
-                                </Typography>
-                            }>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}> Shadows</Typography>
-
+                        <ExpandablePanel title={<span className="font-semibold text-sm">Post-processing</span>}
+                                         innerClassName={"space-y-1"}
+                                         className={"border-none"}>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Shadows</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={shadows}
+
                                     size={"small"}
+                                    value={[shadows]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setShadows(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setShadows(newValue[0] as number)}
                                 />
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}> Highlights</Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Highlights</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={highlights}
+
                                     size={"small"}
+                                    value={[highlights]}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setHighlights(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setHighlights(newValue[0] as number)}
                                 />
-                            </Box>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>Saturation</Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Saturation</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={saturation}
+
                                     size={"small"}
+                                    value={[saturation]}
                                     min={-10}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setSaturation(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setSaturation(newValue[0] as number)}
                                 />
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "flex-end"
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                width: 100,
-                                                textAlign: "right",
-                                                pr: 1
-                                            }}>Brightness</Typography>
+                            </div>
+                            <div className="flex flex-row gap-2 items-end">
+                                <span className="w-28 text-right pr-2 text-xs">Brightness</span>
                                 <Slider
-                                    valueLabelDisplay="auto"
-                                    value={brightness}
                                     size={"small"}
-                                    step={.05}
+                                    value={[brightness]}
+                                    step={0.05}
                                     min={0}
                                     max={10}
-                                    onChange={(event, newValue) => {
-                                        setBrightness(newValue as number)
-                                    }}
+                                    onValueChange={(newValue) => setBrightness(newValue[0] as number)}
                                 />
-                            </Box>
-
+                            </div>
                         </ExpandablePanel>
 
-                        <ExpandablePanel
-                            Title={
-                                <Typography variant={"button"}>
-                                    Shape
-                                </Typography>
-                            }>
-
-                            <Tooltip title={"The density of triangles in the 3d mesh. Reduce to increase performance"}>
-                                <Box sx={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    gap: 1,
-                                    alignItems: "flex-end"
-                                }}>
-                                    <Typography gutterBottom
-                                                variant={"caption"}
-                                                sx={{
-                                                    width: 100,
-                                                    textAlign: "right",
-                                                    pr: 1
-                                                }}>Resolution</Typography>
+                        <ExpandablePanel title={<span className="font-semibold text-sm">Shape</span>}
+                                         innerClassName={"space-y-1"}
+                                         className={"border-none"}>
+                            <Tooltip
+                                title={"The density of triangles in the 3D mesh. Reduce to increase performance"}>
+                                <div className="flex flex-row gap-2 items-end">
+                                    <span className="w-28 text-right pr-2 text-xs">Resolution</span>
                                     <Slider
-                                        valueLabelDisplay="auto"
-                                        value={resolution}
                                         size={"small"}
-                                        step={.05}
-                                        min={.05}
+                                        value={[resolution]}
+                                        step={0.05}
+                                        min={0.05}
                                         max={2}
-                                        onChange={(event, newValue) => {
-                                            setResolution(newValue as number)
-                                        }}
+                                        onValueChange={(newValue) => setResolution(newValue[0] as number)}
                                     />
-                                </Box>
+                                </div>
                             </Tooltip>
 
+                            <div className="flex flex-row gap-2 items-center">
+                                <span className="w-28 text-right pr-2 text-xs">Background</span>
+                                <div className={"w-full flex"}>
+                                    <div className="text-center pl-2">
+                                        <ColorSwatch
+                                            color={{ color: backgroundColor, enabled: true }}
+                                            showEnabled={false}
+                                            onChange={color => setBackgroundColor(color.color)}
+                                        />
+                                    </div>
+                                    <div className="flex-grow pl-2 flex flex-col gap-2">
+                                        <span className="text-xs">Background Alpha</span>
+                                        <Slider
+                                            size={"small"}
+                                            value={[backgroundAlpha]}
+                                            step={0.05}
+                                            min={0}
+                                            max={1}
+                                            onValueChange={(newValue) => setBackgroundAlpha(newValue[0] as number)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "center",
-                            }}>
-                                <Typography gutterBottom
-                                            variant={"caption"}
-                                            sx={{
-                                                pr: 1
-                                            }}>Background</Typography>
-
-                                <Box sx={{
-                                    textAlign: "center",
-                                    pr: 1
-                                }}>
-
-                                    <ColorSwatch
-                                        color={{
-                                            color: backgroundColor,
-                                            enabled: true
-                                        }}
-                                        showEnabled={false}
-                                        onChange={(color) => setBackgroundColor(color.color)}/>
-                                </Box>
-
-                                <Box sx={{
-                                    flexGrow: 1
-                                }}>
-                                    <Typography gutterBottom
-                                                variant={"caption"}
-                                                sx={{
-                                                    pr: 1,
-                                                }}>Alpha </Typography>
-                                    <Slider
-                                        valueLabelDisplay="auto"
-                                        value={backgroundAlpha}
-                                        size={"small"}
-                                        step={.05}
-                                        min={0}
-                                        max={1}
-                                        onChange={(event, newValue) => {
-                                            setBackgroundAlpha(newValue as number)
-                                        }}
+                            <Label
+                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800"
+                            >
+                                <span className="text-xs w-28 text-right">Wireframe</span>
+                                <div className={"w-full flex"}>
+                                    <Checkbox
+                                        checked={wireframe}
+                                        onCheckedChange={(checked: boolean) => setWireframe(checked)}
                                     />
-                                </Box>
-                            </Box>
+                                </div>
+                            </Label>
 
-                            <FormControlLabel
-                                value={wireframe}
-
-                                control={<Checkbox
-                                    checked={wireframe}
-                                    onChange={(evt: React.ChangeEvent<HTMLInputElement>) => setWireframe(evt.target.checked)}/>}
-                                label={<Typography
-                                    variant={"caption"}>Wireframe</Typography>}/>
 
                         </ExpandablePanel>
 
-                        <ExpandablePanel
-                            Title={
-                                <Typography variant={"button"}>
-                                    Grain
-                                </Typography>
-                            }>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "center",
-                            }}>
-
-                                <Box sx={{
-                                    flexGrow: 1
-                                }}>
-                                    <Typography gutterBottom
-                                                variant={"caption"}
-                                                sx={{
-                                                    pr: 1,
-                                                }}>Grain intensity </Typography>
-                                    <Slider
-                                        valueLabelDisplay="auto"
-                                        value={grainIntensity}
-                                        size={"small"}
-                                        step={.025}
-                                        min={0}
-                                        max={1}
-                                        onChange={(event, newValue) => {
-                                            setGrainIntensity(newValue as number)
-                                        }}
-                                    />
-                                </Box>
-                            </Box>
-
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "center",
-                            }}>
-
-                                <Box sx={{
-                                    flexGrow: 1
-                                }}>
-                                    <Typography gutterBottom
-                                                variant={"caption"}
-                                                sx={{
-                                                    pr: 1,
-                                                }}>Grain scale </Typography>
-                                    <Slider
-                                        valueLabelDisplay="auto"
-                                        value={grainScale}
-                                        size={"small"}
-                                        step={1}
-                                        min={0}
-                                        max={100}
-                                        onChange={(event, newValue) => {
-                                            setGrainScale(newValue as number)
-                                        }}
-                                    />
-                                </Box>
-                            </Box>
-                            <Box sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 1,
-                                alignItems: "center",
-                            }}>
-
-                                <Box sx={{
-                                    flexGrow: 1
-                                }}>
-                                    <Typography gutterBottom
-                                                variant={"caption"}
-                                                sx={{
-                                                    pr: 1,
-                                                }}>Grain speed </Typography>
-                                    <Slider
-                                        valueLabelDisplay="auto"
-                                        value={grainSpeed}
-                                        size={"small"}
-                                        step={.1}
-                                        min={0}
-                                        max={5}
-                                        onChange={(event, newValue) => {
-                                            setGrainSpeed(newValue as number)
-                                        }}
-                                    />
-                                </Box>
-                            </Box>
-
+                        <ExpandablePanel title={<span className="font-semibold text-sm">Grain</span>}
+                                         className={"border-none"}
+                                         innerClassName={"space-y-1"}>
+                            <div className="flex flex-row gap-2 items-center">
+                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                <Slider
+                                    size={"small"}
+                                    value={[grainIntensity]}
+                                    step={0.025}
+                                    min={0}
+                                    max={1}
+                                    onValueChange={(newValue) => setGrainIntensity(newValue[0] as number)}
+                                />
+                            </div>
+                            <div className="flex flex-row gap-2 items-center">
+                                <span className="w-28 text-right pr-2 text-xs">Scale</span>
+                                <Slider
+                                    size={"small"}
+                                    value={[grainScale]}
+                                    step={1}
+                                    min={0}
+                                    max={100}
+                                    onValueChange={(newValue) => setGrainScale(newValue[0] as number)}
+                                />
+                            </div>
+                            <div className="flex flex-row gap-2 items-center">
+                                <span className="w-28 text-right pr-2 text-xs">Speed</span>
+                                <Slider
+                                    size={"small"}
+                                    value={[grainSpeed]}
+                                    step={0.1}
+                                    min={0}
+                                    max={10}
+                                    onValueChange={(newValue) => setGrainSpeed(newValue[0] as number)}
+                                />
+                            </div>
 
                         </ExpandablePanel>
-                    </Box>
-                    <Box
-                        sx={{
-                            position: "fixed",
-                            left: 0,
-                            bottom: 0,
-                            right: 0,
-                            p: 2
-                        }}>
-                        <Button variant="contained"
-                                size="large"
-                                disableElevation
-                                onClick={onGetTheCodeClick}
-                                fullWidth>
+
+                    </div>
+
+                    <div className={"p-4"}>
+                        <Button
+                            size={"large"}
+                            className="w-full"
+                            onClick={onGetTheCodeClick}
+                        >
                             Get the code
                         </Button>
-                    </Box>
+                    </div>
 
-                    <Box sx={{ height: 80 }}/>
-                </Box>
-            </Drawer>
+                </div>
+            </Sheet>
 
-            <CodeDialog open={dialogOpen}
-                        onClose={() => setDialogOpen(false)}
-                        config={config}/>
+            <CodeDialog open={dialogOpen} onOpenChange={setDialogOpen} config={config}/>
 
-            <Box sx={{
-                height: "100vh",
-            }}>
-                <Box sx={{
-                    position: "fixed",
-                    height: "100%",
-                    width: "100%",
-                }}>
-                    <canvas
-                        style={{
-                            height: "100%",
-                            width: "100%",
-                        }}
-                        ref={canvasRef}
-                    />
-                </Box>
+            <div className={"fixed w-full h-full top-0 right-0"}>
+                <canvas
+                    style={{
+                        height: "100%",
+                        width: "100%",
+                    }}
+                    ref={canvasRef}
+                />
+            </div>
 
-                <Box>
-                    <Box sx={{
-                        color: lightText ? "rgb(255 255 255)" : "rgb(10 10 10)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontFamily: '"Roboto", roboto-condensed,sans-serif',
-                        height: "100vh",
-                    }}>
+            <div
+                className="relative flex flex-col items-center justify-center font-sans h-screen text-white text-center">
+                <div className="relative flex flex-col p-4">
+                    <h1
+                        className="font-semibold text-9xl mix-blend-soft-light opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
+                        style={{ color: complementaryColor }}
+                    >
+                        NEAT
+                    </h1>
+                    <h1
+                        className="absolute z-100 font-semibold text-9xl mix-blend-color-dodge opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
+                        style={{ color: complementaryColor }}
+                    >
+                        NEAT
+                    </h1>
+                </div>
+                {/*<div className={`relative flex flex-col p-4`}>*/}
+                {/*    <h1 className={`font-semibold text-9xl mix-blend-color-dodge opacity-80 text-[12rem] sm:text-[16rem] md:text-[24rem]`}*/}
+                {/*        style={{*/}
+                {/*            color: complementaryColor*/}
+                {/*        }}>NEAT</h1>*/}
 
-                        <Box sx={{
-                            mixBlendMode: lightText ? "overlay" : "multiply",
-                            margin: "auto",
-                            display: "flex",
-                            flexDirection: "column",
-                            pt: 4
-                        }}>
-                            <Typography component={"h1"}
-                                        sx={{
-                                            fontWeight: 900,
-                                            fontSize: "8rem",
-                                            width: "100%",
-                                            textAlign: "center",
-                                            lineHeight: 1.1,
-                                            m: 0
-                                        }}>NEAT</Typography>
+                {/*</div>*/}
+                <div className={cls({
+                    "text-black": !lightText,
+                    "text-white": lightText
+                }, "flex flex-col items-center gap-4")}>
+                    <h2 className={"max-w-full font-bold text-lg md:text-xl uppercase"}>
+                        Beautiful 3D gradient animations for your website
+                    </h2>
+                    <div className={"flex flex-row gap-4 items-center w-72"}>
+                        <IconButton
+                            className={"text-inherit"}
+                            onClick={prevPreset}>
+                            <KeyboardArrowLeftIcon/>
+                        </IconButton>
 
-                            <Typography
-                                component={"h2"}
-                                sx={{
-                                    fontWeight: 600,
-                                    fontSize: "1rem",
-                                    width: "100%",
-                                    textAlign: "center",
-                                    textTransform: "uppercase",
-                                }}>
-                                Beautiful 3D gradient animations for your website
-                            </Typography>
-                        </Box>
+                        <div className={"flex-grow font-bold text-4xl " + fontClass}>
+                            {selectedPreset}
+                        </div>
+                        <IconButton
+                            className={"text-inherit"}
+                            onClick={nextPreset}>
+                            <KeyboardArrowRightIcon/>
+                        </IconButton>
+                    </div>
 
-                        <Button variant="contained"
-                                sx={{ mt: 3 }}
-                                onClick={handleDrawerOpen}>EDIT THIS GRADIENT</Button>
-
-                        <Box sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            width: "540px",
-                            p: 2,
-                            maxWidth: "95vw",
-                            zIndex: 1,
-                        }}>
-
-                            <Box
-                                sx={{
-                                    mt: 4,
-                                    px: 4,
-                                    py: 2,
-                                    mixBlendMode: lightText ? "overlay" : "multiply",
-                                    backgroundColor: lightText ? "rgba(0,0,0,.23)" : "rgba(255, 255, 255, 0.63)",
-                                    borderRadius: 8,
-                                }}>
-                                <Box component={"p"}
-                                     sx={{
-                                         fontSize: "18px"
-                                     }}>
-                                    Neat is a <b>free tool</b> that generates beautiful
-                                    gradient
-                                    animations for your website.
-                                    It's easy to use and offers a wide range of
-                                    customization options.
-                                </Box>
-
-                                <Box component={"p"}
-                                     sx={{
-                                         mt: 4,
-                                         fontSize: "18px"
-                                     }}>
-                                    Install the package using npm or yarn, following the instructions in the <a
-                                    target={"_blank"}
-                                    href="https://github.com/FireCMSco/neat">GitHub page</a> and please leave a star ⭐.
-                                </Box>
-                            </Box>
-
-                            <Button
-                                variant={"contained"}
-                                component={"a"}
-                                target={"_blank"}
-                                color={"secondary"}
+                    <div className={"flex flex-row gap-4 items-center mt-8"}>
+                        <Button onClick={handleDrawerOpen}
                                 size={"large"}
-                                href="https://github.com/FireCMSco/neat"
-                                onClick={() => {
-                                    logEvent(analytics, 'get_started');
-                                }}
-                                sx={{
-                                    mt: 3,
-                                    fontWeight: "bold",
-                                }}>GET STARTED</Button>
+                                color={"secondary"}>
+                            <EditIcon className="mr-2" size={"small"}/>
+                            EDIT THIS GRADIENT
+                        </Button>
 
-                            <Box component={"p"}>
-                                Built with ❤️ by <a rel={"noopener"}
-                                                    href={"https://firecms.co"}>FireCMS</a>
-                            </Box>
-                        </Box>
-                    </Box>
-                </Box>
-            </Box>
-        </Box>
+                        <Button
+                            href="https://github.com/FireCMSco/neat"
+                            target="_blank"
+                            size={"large"}
+                            onClick={() => {
+                                logEvent(analytics, 'get_started');
+                            }}
+                        >
+                            USE THIS GRADIENT
+                        </Button>
+                    </div>
+                    <p className={"mt-2"}>Built with ❤️ by <a href="https://firecms.co"
+                                                              className="text-blue-500">FireCMS</a>
+                    </p>
+                </div>
+            </div>
+        </div>
     );
-
 }
