@@ -63,6 +63,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.backgroundColor !== undefined) setBackgroundColor(config.backgroundColor);
         if (config.resolution !== undefined) setResolution(config.resolution);
         if (config.grainIntensity !== undefined) setGrainIntensity(config.grainIntensity);
+        if (config.grainSparsity !== undefined) setGrainSparsity(config.grainSparsity);
         if (config.grainSpeed !== undefined) setGrainSpeed(config.grainSpeed);
         if (config.grainScale !== undefined) setGrainScale(config.grainScale);
     }
@@ -87,6 +88,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha);
     const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor);
     const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity);
+    const [grainSparsity, setGrainSparsity] = React.useState<number>(defaultConfig.grainSparsity);
     const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
     const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
 
@@ -125,6 +127,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             colorBrightness: brightness,
             grainSpeed,
             grainIntensity,
+            grainSparsity,
             grainScale,
             resolution
         });
@@ -151,11 +154,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             gradientRef.current.backgroundColor = backgroundColor;
             gradientRef.current.backgroundAlpha = backgroundAlpha;
             gradientRef.current.grainIntensity = grainIntensity;
+            gradientRef.current.grainSparsity = grainSparsity;
             gradientRef.current.grainScale = grainScale;
             gradientRef.current.grainSpeed = grainSpeed;
             gradientRef.current.resolution = resolution;
         }
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainScale, grainSpeed]);
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -192,6 +196,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         backgroundColor,
         backgroundAlpha,
         grainScale,
+        grainSparsity,
         grainIntensity,
         grainSpeed,
         resolution,
@@ -293,6 +298,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <Slider
                                 size={"small"}
                                 value={[speed]}
+                                step={.5}
                                 min={0}
                                 max={10}
                                 onValueChange={(newValue) => setSpeed(newValue[0] as number)}
@@ -505,6 +511,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 />
                             </div>
                             <div className="flex flex-row gap-2 items-center">
+                                <span className="w-28 text-right pr-2 text-xs">Sparsity</span>
+                                <Slider
+                                    size={"small"}
+                                    value={[grainSparsity]}
+                                    step={.02}
+                                    min={0}
+                                    max={1}
+                                    onValueChange={(newValue) => setGrainSparsity(newValue[0] as number)}
+                                />
+                            </div>
+                            <div className="flex flex-row gap-2 items-center">
                                 <span className="w-28 text-right pr-2 text-xs">Speed</span>
                                 <Slider
                                     size={"small"}
@@ -524,7 +541,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         <Button
                             size={"large"}
                             className="w-full"
-                            onClick={onGetTheCodeClick}
+                            onClick={() => {
+                                onGetTheCodeClick();
+                                logEvent(analytics, 'get_the_code');
+                            }}
                         >
                             Get the code
                         </Button>
@@ -601,18 +621,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </Button>
 
                         <Button
-                            href="https://github.com/FireCMSco/neat"
-                            target="_blank"
                             size={"large"}
                             onClick={() => {
-                                logEvent(analytics, 'get_started');
+                                onGetTheCodeClick();
+                                logEvent(analytics, 'use_this_gradient');
                             }}
                         >
                             USE THIS GRADIENT
                         </Button>
                     </div>
                     <p className={"mt-2"}>Built with ❤️ by <a href="https://firecms.co"
-                                                              className="text-blue-500">FireCMS</a>
+                                                              target="_blank"
+                                                              className="text-blue-900 bg-gray-100 bg-opacity-30 mx-1 px-2 py-0.5 rounded">FireCMS</a>
                     </p>
                 </div>
             </div>

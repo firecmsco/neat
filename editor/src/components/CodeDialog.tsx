@@ -29,8 +29,7 @@ export function CodeDialog({
                         <p className="mt-4">
                             Install the package using npm or yarn, following the instructions in the <a
                             href="https://github.com/FireCMSco/neat" target="_blank"
-                            className="text-blue-500 underline">GitHub
-                            page</a> and please leave a star ⭐.
+                            className="text-blue-500">GitHub page</a> and please <b>leave a star!</b> ⭐.
                         </p>
 
                         <p>

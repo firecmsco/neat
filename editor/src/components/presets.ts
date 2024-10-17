@@ -1,87 +1,88 @@
 export const NEAT_PRESET = {
-    "colors": [
+    colors: [
         {
-            "color": "#FF5772",
-            "enabled": true
+            color: '#FF5772',
+            enabled: true,
         },
         {
-            "color": "#4CB4BB",
-            "enabled": true
+            color: '#4CB4BB',
+            enabled: true,
         },
         {
-            "color": "#FFC600",
-            "enabled": true
+            color: '#FFC600',
+            enabled: true,
         },
         {
-            "color": "#8B6AE6",
-            "enabled": true
+            color: '#8B6AE6',
+            enabled: true,
         },
         {
-            "color": "#2E0EC7",
-            "enabled": true
-        }
+            color: '#2E0EC7',
+            enabled: true,
+        },
     ],
-    "speed": 4,
-    "horizontalPressure": 3,
-    "verticalPressure": 4,
-    "waveFrequencyX": 3,
-    "waveFrequencyY": 3,
-    "waveAmplitude": 8,
-    "shadows": 1,
-    "highlights": 5,
-    "colorBrightness": 1,
-    "colorSaturation": 7,
-    "wireframe": false,
-    "colorBlending": 8,
-    "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1,
-    "grainScale": 3,
-    "grainIntensity": 0.3,
-    "grainSpeed": 1,
-    "resolution": 1
+    speed: 2.5,
+    horizontalPressure: 3,
+    verticalPressure: 4,
+    waveFrequencyX: 2,
+    waveFrequencyY: 3,
+    waveAmplitude: 5,
+    shadows: 1,
+    highlights: 5,
+    colorBrightness: 1,
+    colorSaturation: 7,
+    wireframe: false,
+    colorBlending: 8,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 1,
+    grainScale: 3,
+    grainSparsity: 0.02,
+    grainIntensity: 0.3,
+    grainSpeed: 1,
+    resolution: 1,
 };
 
 export const STRIPE_PRESET = {
-    "colors": [
+    colors: [
         {
-            "color": "#FF5373",
-            "enabled": true
+            color: '#FD113F',
+            enabled: true,
         },
         {
-            "color": "#17E7FF",
-            "enabled": true
+            color: '#90E0FF',
+            enabled: true,
         },
         {
-            "color": "#FFC858",
-            "enabled": true
+            color: '#FFC858',
+            enabled: true,
         },
         {
-            "color": "#6D3BFF",
-            "enabled": true
+            color: '#753BFF',
+            enabled: true,
         },
         {
-            "color": "#f5e1e5",
-            "enabled": false
-        }
+            color: '#f5e1e5',
+            enabled: false,
+        },
     ],
-    "speed": 4,
-    "horizontalPressure": 3,
-    "verticalPressure": 4,
-    "waveFrequencyX": 2,
-    "waveFrequencyY": 2,
-    "waveAmplitude": 8,
-    "shadows": 0,
-    "highlights": 2,
-    "colorBrightness": 1,
-    "colorSaturation": 7,
-    "wireframe": false,
-    "colorBlending": 8,
-    "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1,
-    "grainScale": 0,
-    "grainIntensity": 0,
-    "grainSpeed": 0,
-    "resolution": 1
+    speed: 2,
+    horizontalPressure: 5,
+    verticalPressure: 6,
+    waveFrequencyX: 1,
+    waveFrequencyY: 2,
+    waveAmplitude: 10,
+    shadows: 0,
+    highlights: 7,
+    colorBrightness: 1.05,
+    colorSaturation: 0,
+    wireframe: false,
+    colorBlending: 9,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 1,
+    grainScale: 0,
+    grainIntensity: 0,
+    grainSpeed: 0,
+    resolution: 1,
 };
 
 export const FIRECMS_PRESET = {
@@ -122,6 +123,7 @@ export const FIRECMS_PRESET = {
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
     "grainScale": 0,
+    grainSparsity: 0,
     "grainIntensity": 0,
     "grainSpeed": 0,
     "resolution": 0.95
@@ -165,6 +167,7 @@ export const FLAME_PRESET = {
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
     "grainScale": 2,
+    grainSparsity: 0,
     "grainIntensity": 0.05,
     "grainSpeed": 1,
     "resolution": 0.5
@@ -208,6 +211,7 @@ export const BLOOM_PRESET = {
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
     "grainScale": 0,
+    grainSparsity: 0,
     "grainIntensity": 0,
     "grainSpeed": 0,
     "resolution": 1
@@ -250,6 +254,7 @@ export const SANDS_PRESET = {
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
     grainScale: 3,
+    grainSparsity: 0,
     grainIntensity: 0.3,
     grainSpeed: 5,
     resolution: 1,
@@ -293,6 +298,7 @@ export const MONTEREY_PRESET = {
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
     grainScale: 0,
+    grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 1,
@@ -335,6 +341,7 @@ export const ALEJANDRA_PRESET = {
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
     "grainScale": 4,
+    grainSparsity: 0,
     "grainIntensity": 0.25,
     "grainSpeed": 1,
     "resolution": 1
@@ -378,6 +385,7 @@ export const LEMON_PRESET = {
     "backgroundColor": "#00A2FF",
     "backgroundAlpha": 1,
     "grainScale": 4,
+    grainSparsity: 0,
     "grainIntensity": 0.2,
     "grainSpeed": 2.2,
     "resolution": 0.65
@@ -421,6 +429,7 @@ export const GLITCH_PRESET = {
     "backgroundColor": "#3600FF",
     "backgroundAlpha": 1,
     "grainScale": 0,
+    grainSparsity: 0,
     "grainIntensity": 0,
     "grainSpeed": 0,
     "resolution": 1.2
@@ -463,6 +472,7 @@ export const PASTEL_PRESET = {
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
     grainScale: 0,
+    grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 1,
@@ -506,6 +516,7 @@ export const CLOUDS_PRESET = {
     "backgroundColor": "#00A2FF",
     "backgroundAlpha": 1,
     "grainScale": 100,
+    grainSparsity: 0,
     "grainIntensity": 0.05,
     "grainSpeed": 0.3,
     "resolution": 0.5
@@ -549,6 +560,7 @@ export const NIGHTTIME = {
     "backgroundColor": "#003FFF",
     "backgroundAlpha": 1,
     "grainScale": 2,
+    grainSparsity: 0,
     "grainIntensity": 0.5,
     "grainSpeed": 1,
     "resolution": 1
@@ -592,6 +604,7 @@ export const PRUSSIAN_BLUE_PRESET = {
     backgroundColor: '#FF0000',
     backgroundAlpha: 1,
     grainScale: 0,
+    grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 0.5,

@@ -30,41 +30,46 @@ import { NeatConfig, NeatGradient } from "@firecms/neat";
 
 // Define your config
 export const config: NeatConfig = {
-    colors: [
+    "colors": [
         {
-            color: "#FF5373",
-            enabled: true
+            "color": "#FF5772",
+            "enabled": true
         },
         {
-            color: "#FFC858",
-            enabled: true
+            "color": "#4CB4BB",
+            "enabled": true
         },
         {
-            color: "#17E7FF",
-            enabled: true
+            "color": "#FFC600",
+            "enabled": true
         },
         {
-            color: "#6D3BFF",
-            enabled: true
+            "color": "#8B6AE6",
+            "enabled": true
         },
         {
-            color: "#f5e1e5",
-            enabled: false
+            "color": "#2E0EC7",
+            "enabled": true
         }
     ],
-    speed: 4,
-    horizontalPressure: 4,
-    verticalPressure: 5,
-    waveFrequencyX: 2,
-    waveFrequencyY: 3,
-    waveAmplitude: 5,
-    shadows: 0,
-    highlights: 2,
-    saturation: 7,
-    wireframe: false,
-    colorBlending: 6,
-    backgroundColor: "#003FFF",
-    backgroundAlpha: 1
+    "speed": 4,
+    "horizontalPressure": 3,
+    "verticalPressure": 4,
+    "waveFrequencyX": 3,
+    "waveFrequencyY": 3,
+    "waveAmplitude": 8,
+    "shadows": 1,
+    "highlights": 5,
+    "colorBrightness": 1,
+    "colorSaturation": 7,
+    "wireframe": false,
+    "colorBlending": 8,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "grainScale": 3,
+    "grainIntensity": 0.3,
+    "grainSpeed": 1,
+    "resolution": 1
 };
 
 

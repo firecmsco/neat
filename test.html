@@ -1,0 +1,55 @@
+<html>
+<head>
+    <title>NEAT, beautiful 3D gradients for your website</title>
+
+</head>
+
+<body>
+
+<canvas id="gradient"/>
+
+<script type="module">
+    import * as NEAT from 'https://cdn.jsdelivr.net/npm/@firecms/neat@0.3.0/+esm';
+    const {  NeatGradient } = NEAT;
+
+    // import { NeatConfig, NeatGradient } from 'https://cdn.jsdelivr.net/npm/@firecms/neat@0.3.0/+esm';
+
+    const config = {
+        colors: [
+            { color: "#FF5373", enabled: true },
+            { color: "#FFC858", enabled: true },
+            { color: "#17E7FF", enabled: true },
+            { color: "#6D3BFF", enabled: true },
+            { color: "#f5e1e5", enabled: false }
+        ],
+        speed: 4,
+        horizontalPressure: 4,
+        verticalPressure: 5,
+        waveFrequencyX: 2,
+        waveFrequencyY: 3,
+        waveAmplitude: 5,
+        shadows: 0,
+        highlights: 2,
+        saturation: 7,
+        wireframe: false,
+        colorBlending: 6,
+        backgroundColor: "#003FFF",
+        backgroundAlpha: 1
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const neat = new NeatGradient({
+            ref: document.getElementById("gradient"),
+            ...config
+        });
+
+        // you can change the config at any time
+        neat.speed = 6;
+    });
+</script>
+<div>
+    Hey there
+</div>
+
+</body>
+</html>

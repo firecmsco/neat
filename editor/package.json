@@ -37,7 +37,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "yarn build && firebase deploy --only=hosting --project=neat-co"
+    "deploy": "npm run build && firebase deploy --only=hosting --project=neat-co"
   },
   "eslintConfig": {
     "extends": [

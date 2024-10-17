@@ -34,6 +34,7 @@ export type NeatConfig = {
     colorBlending?: number;
     grainScale?: number;
     grainIntensity?: number;
+    grainSparsity?: number;
     grainSpeed?: number;
     wireframe?: boolean;
     backgroundColor?: string;
@@ -73,6 +74,7 @@ export class NeatGradient implements NeatController {
 
     private _grainScale: number = -1;
     private _grainIntensity: number = -1;
+    private _grainSparsity: number = -1;
     private _grainSpeed: number = -1;
 
     private _colorBlending: number = -1;
@@ -105,6 +107,7 @@ export class NeatGradient implements NeatController {
             colorBlending = 5,
             grainScale = 2,
             grainIntensity = 0.55,
+            grainSparsity = 0.0,
             grainSpeed = 0.1,
             wireframe = false,
             backgroundColor = "#FFFFFF",
@@ -129,6 +132,7 @@ export class NeatGradient implements NeatController {
         this.colorBlending = colorBlending;
         this.grainScale = grainScale;
         this.grainIntensity = grainIntensity;
+        this.grainSparsity = grainSparsity;
         this.grainSpeed = grainSpeed;
         this.colors = colors;
         this.shadows = shadows;
@@ -204,6 +208,8 @@ export class NeatGradient implements NeatController {
                 mesh.material.uniforms.u_brightness = { value: this._brightness };
                 // @ts-ignore
                 mesh.material.uniforms.u_grain_intensity = { value: this._grainIntensity };
+                // @ts-ignore
+                mesh.material.uniforms.u_grain_sparsity = { value: this._grainSparsity };
                 // @ts-ignore
                 mesh.material.uniforms.u_grain_speed = { value: this._grainSpeed };
                 // @ts-ignore
@@ -300,6 +306,10 @@ export class NeatGradient implements NeatController {
         this._grainIntensity = grainIntensity;
     }
 
+    set grainSparsity(grainSparsity: number) {
+        this._grainSparsity = grainSparsity;
+    }
+
     set grainSpeed(grainSpeed: number) {
         this._grainSpeed = grainSpeed;
     }
@@ -389,6 +399,7 @@ export class NeatGradient implements NeatController {
             u_shadows: { value: this._shadows },
             u_highlights: { value: this._highlights },
             u_grain_intensity: { value: this._grainIntensity },
+            u_grain_sparsity: { value: this._grainSparsity },
             u_grain_scale: { value: this._grainScale },
             u_grain_speed: { value: this._grainSpeed },
         };
@@ -516,7 +527,6 @@ float fbm(vec3 x) {
     float value = 0.0;
     float amplitude = 0.5;
     float frequency = 1.0;
-
     for (int i = 0; i < 4; i++) {
         value += amplitude * snoise(x * frequency);
         frequency *= 2.0;
@@ -524,33 +534,32 @@ float fbm(vec3 x) {
     }
     return value;
 }
-    
-void main(){
+
+void main() {
     vec3 color = v_color;
-    
     color += pow(v_displacement_amount, 1.0) * u_highlights;
     color -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
     color = saturation(color, 1.0 + u_saturation);
     color = color * u_brightness;
-    
+
     // Generate grain using fbm
     vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
-
-    float grain = (u_grain_speed != 0.0) 
-        ? fbm(vec3(noiseCoords, u_time * u_grain_speed)) 
-        : fbm(vec3(noiseCoords, 0.0));
+    float grain = (u_grain_speed != 0.0) ? fbm(vec3(noiseCoords, u_time * u_grain_speed)) : fbm(vec3(noiseCoords, 0.0));
 
     // Center the grain around zero
     grain = grain * 0.5 + 0.5;
     grain -= 0.5;
+
+    // Add sparsity control
+    grain = (grain > u_grain_sparsity) ? grain : 0.0;
 
     // Apply grain intensity
     grain *= u_grain_intensity;
 
     // Add grain to color
     color += vec3(grain);
-            
-    gl_FragColor = vec4(color,1.0);
+
+    gl_FragColor = vec4(color, 1.0);
 }
 `;
 }
@@ -565,6 +574,7 @@ struct Color {
 };
 
 uniform float u_grain_intensity; 
+uniform float u_grain_sparsity; 
 uniform float u_grain_scale; 
 uniform float u_grain_speed; 
 uniform float u_time;
