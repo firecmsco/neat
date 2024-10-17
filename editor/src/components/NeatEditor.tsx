@@ -5,6 +5,7 @@ import {
     Checkbox,
     ChevronLeftIcon,
     cls,
+    DownloadIcon,
     EditIcon,
     ExpandablePanel,
     IconButton,
@@ -613,6 +614,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     </div>
 
                     <div className={"flex flex-row gap-4 items-center mt-8"}>
+                        <IconButton
+                            className={"text-inherit"}
+                            onClick={() => {
+                            gradientRef.current?.downloadAsPNG();
+                        }}
+                                    size={"large"}>
+                            <DownloadIcon  size={"small"}/>
+                        </IconButton>
                         <Button onClick={handleDrawerOpen}
                                 size={"large"}
                                 color={"secondary"}>

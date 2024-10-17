@@ -250,6 +250,13 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    downloadAsPNG(filename = "neat.png") {
+        console.log("Downloading as PNG",this._ref);
+        const dataURL = this._ref.toDataURL("image/png");
+        console.log("data",dataURL);
+        downloadURI(dataURL, filename);
+    }
+
     set speed(speed: number) {
         this._speed = speed / 20;
     }
@@ -338,6 +345,7 @@ export class NeatGradient implements NeatController {
         const renderer = new THREE.WebGLRenderer({
             // antialias: true,
             alpha: true,
+            preserveDrawingBuffer: true,
             canvas: this._ref
         });
 
@@ -913,4 +921,13 @@ function generateRandomString(length: number = 6): string {
         result += characters.charAt(randomIndex);
     }
     return result;
+}
+
+function downloadURI(uri:string, name:string) {
+    const link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

@@ -1,7 +1,5 @@
 import React, { useEffect } from 'react';
-import { createTheme, ThemeProvider } from '@mui/material';
 import NeatEditor from "./components/NeatEditor";
-import { yellow, blue, grey } from '@mui/material/colors';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { Analytics } from "@firebase/analytics";
@@ -24,34 +22,10 @@ function App() {
         setAnalytics(analytics);
     }, []);
 
-    const theme = createTheme({
-        typography: {
-            fontFamily: [
-                'Sofia Sans',
-                'Roboto',
-                '"Helvetica Neue"',
-                'Arial',
-                'sans-serif',
-                '"Apple Color Emoji"',
-                '"Segoe UI Emoji"',
-                '"Segoe UI Symbol"',
-            ].join(','),
-        },
-        palette: {
-            primary: {
-                main: yellow[700],
-            },
-            secondary: {
-                main: grey[900],
-            },
-        },
-    });
     return (
-        <ThemeProvider theme={theme}>
-
+        <>
             {analytics && <NeatEditor analytics={analytics}/>}
-
-        </ThemeProvider>
+        </>
 
     );
 }
