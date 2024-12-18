@@ -596,7 +596,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     <h2 className={"max-w-full font-bold text-lg md:text-xl uppercase"}>
                         Beautiful 3D gradient animations for your website
                     </h2>
-                    <div className={"flex flex-row gap-4 items-center w-72"}>
+                    <div className={"flex flex-row gap-4 items-center w-96"}>
                         <IconButton
                             className={"text-inherit"}
                             onClick={prevPreset}>

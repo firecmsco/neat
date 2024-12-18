@@ -522,49 +522,50 @@ export const CLOUDS_PRESET = {
     "resolution": 0.5
 };
 
-export const NIGHTTIME = {
-    "colors": [
+export const DARK_MODE = {
+    colors: [
         {
-            "color": "#FF3087",
-            "enabled": true
+            color: '#554226',
+            enabled: true,
         },
         {
-            "color": "#1B36A6",
-            "enabled": true
+            color: '#03162D',
+            enabled: true,
         },
         {
-            "color": "#002027",
-            "enabled": true
+            color: '#002027',
+            enabled: true,
         },
         {
-            "color": "#6D3BFF",
-            "enabled": true
+            color: '#020210',
+            enabled: true,
         },
         {
-            "color": "#f5e1e5",
-            "enabled": false
-        }
+            color: '#02152A',
+            enabled: true,
+        },
     ],
-    "speed": 4,
-    "horizontalPressure": 3,
-    "verticalPressure": 5,
-    "waveFrequencyX": 2,
-    "waveFrequencyY": 3,
-    "waveAmplitude": 5,
-    "shadows": 0,
-    "highlights": 2,
-    "colorBrightness": 1,
-    "colorSaturation": 7,
-    "wireframe": false,
-    "colorBlending": 7,
-    "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1,
-    "grainScale": 2,
+    speed: 2,
+    horizontalPressure: 3,
+    verticalPressure: 5,
+    waveFrequencyX: 1,
+    waveFrequencyY: 3,
+    waveAmplitude: 8,
+    shadows: 0,
+    highlights: 2,
+    colorBrightness: 1,
+    colorSaturation: 6,
+    wireframe: false,
+    colorBlending: 7,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 1,
+    grainScale: 2,
     grainSparsity: 0,
-    "grainIntensity": 0.5,
-    "grainSpeed": 1,
-    "resolution": 1
+    grainIntensity: 0.175,
+    grainSpeed: 1,
+    resolution: 1,
 };
+
 
 export const PRUSSIAN_BLUE_PRESET = {
     colors: [
@@ -608,6 +609,50 @@ export const PRUSSIAN_BLUE_PRESET = {
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 0.5,
+};
+
+export const NIGHTTIME = {
+    "colors": [
+        {
+            "color": "#FF3087",
+            "enabled": true
+        },
+        {
+            "color": "#1B36A6",
+            "enabled": true
+        },
+        {
+            "color": "#002027",
+            "enabled": true
+        },
+        {
+            "color": "#6D3BFF",
+            "enabled": true
+        },
+        {
+            "color": "#f5e1e5",
+            "enabled": false
+        }
+    ],
+    "speed": 4,
+    "horizontalPressure": 3,
+    "verticalPressure": 5,
+    "waveFrequencyX": 2,
+    "waveFrequencyY": 3,
+    "waveAmplitude": 5,
+    "shadows": 0,
+    "highlights": 2,
+    "colorBrightness": 1,
+    "colorSaturation": 7,
+    "wireframe": false,
+    "colorBlending": 7,
+    "backgroundColor": "#003FFF",
+    "backgroundAlpha": 1,
+    "grainScale": 2,
+    grainSparsity: 0,
+    "grainIntensity": 0.5,
+    "grainSpeed": 1,
+    "resolution": 1
 };
 
 export const PSYCHEDELIC_PRESET = {
@@ -749,12 +794,13 @@ export const PRESETS = {
     "Lemon": LEMON_PRESET,
     "Glitch": GLITCH_PRESET,
     "Flame": FLAME_PRESET,
+    "Dark Mode": DARK_MODE,
     "Alejandra": ALEJANDRA_PRESET,
     "Monterey": MONTEREY_PRESET,
-    "Nighttime": NIGHTTIME,
     "Bloom": BLOOM_PRESET,
     "Sands": SANDS_PRESET,
     "Stripe": STRIPE_PRESET,
+    "Nighttime": NIGHTTIME,
     "Prussian": PRUSSIAN_BLUE_PRESET,
     "Clouds": CLOUDS_PRESET,
     "Psychedelic": PSYCHEDELIC_PRESET,
@@ -770,14 +816,15 @@ export const fontMap = {
     Lemon: 'font-londrina',
     Glitch: 'font-vt323',
     Flame: 'font-fredoka',
+    "Dark Mode": 'font-source-serif-pro',
     Alejandra: 'font-lobster',
-    Monterey: 'font-merriweather',
-    Nighttime: 'font-lobster',
     Bloom: 'font-quicksand',
     Sands: 'font-inconsolata',
     Stripe: 'font-oswald',
+    Nighttime: 'font-lobster',
     Prussian: 'font-alegreya',
     Clouds: 'font-nunito-sans',
+    Monterey: 'font-merriweather',
     Psychedelic: 'font-concert-one',
     Splash: 'font-pacifico',
     Pastel: 'font-poppins',
