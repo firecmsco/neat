@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@firecms/neat": "0.1.0",
+    "@firecms/neat": "0.3.1",
     "@firecms/ui": "^3.0.0-canary.136",
     "@fontsource/roboto": "^4.5.8",
     "@fontsource/sofia-sans": "^4.5.0",
@@ -22,6 +22,7 @@
     "mui-color-input": "^1.0.2",
     "react": "^18.2.0",
     "react-color": "^3.0.0-beta.3",
+    "react-compiler-runtime": "^19.0.0-beta-714736e-20250131",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.13",
     "three": "^0.169.0",

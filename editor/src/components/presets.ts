@@ -788,6 +788,50 @@ export const FOREST_PRESET = {
     "resolution": 1.2
 };
 
+const OCEANS_ELEVEN_PRESET = {
+    colors: [
+        {
+            color: '#5365FF',
+            enabled: true,
+        },
+        {
+            color: '#5864FF',
+            enabled: true,
+        },
+        {
+            color: '#322085',
+            enabled: true,
+        },
+        {
+            color: '#3B94FF',
+            enabled: true,
+        },
+        {
+            color: '#E1F0F5',
+            enabled: false,
+        },
+    ],
+    speed: 4,
+    horizontalPressure: 2,
+    verticalPressure: 10,
+    waveFrequencyX: 2,
+    waveFrequencyY: 10,
+    waveAmplitude: 10,
+    shadows: 10,
+    highlights: 0,
+    colorBrightness: 1.2,
+    colorSaturation: -3,
+    wireframe: false,
+    colorBlending: 10,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 0,
+    grainScale: 0,
+    grainSparsity: 0,
+    grainIntensity: 0,
+    grainSpeed: 10,
+    resolution: 1,
+};
+
 export const PRESETS = {
     "Neat": NEAT_PRESET,
     "FireCMS": FIRECMS_PRESET,
@@ -807,7 +851,8 @@ export const PRESETS = {
     "Splash": SPLASH_PRESET,
     "Pastel": PASTEL_PRESET,
     "Oceanic": OCEANIC_PRESET,
-    "Forest": FOREST_PRESET
+    "Forest": FOREST_PRESET,
+    "Oceans Eleven": OCEANS_ELEVEN_PRESET,
 };
 
 export const fontMap = {
@@ -830,4 +875,11 @@ export const fontMap = {
     Pastel: 'font-poppins',
     Oceanic: 'font-libre-baskerville',
     Forest: 'font-source-serif-pro',
+    "Oceans Eleven": 'font-lobster',
 };
+
+export const attributionMap = {
+    "Oceans Eleven": {
+        "x": "@DeanBeanLeeroy"
+    },
+}

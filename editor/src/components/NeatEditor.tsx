@@ -19,7 +19,7 @@ import {
     Tooltip
 } from "@firecms/ui";
 import { ColorSwatch } from "./ColorSwatch";
-import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
+import { attributionMap, fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor } from "../utils/colors";
 import { CodeDialog } from "./CodeDialog";
 import { Analytics } from "@firebase/analytics";
@@ -211,6 +211,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     }
 
     const fontClass = fontMap[selectedPreset] || 'font-sans';
+    const attribution = attributionMap[selectedPreset];
 
     const prevPreset = () => {
         setSelectedPresetIndex((selectedPresetIndex - 1 + Object.keys(PRESETS).length) % Object.keys(PRESETS).length);
@@ -263,6 +264,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     <div className="p-4 pt-20 flex flex-col gap-4 overflow-auto flex-grow ">
                         <span className="text-xs font-bold">PRESET</span>
                         <Select value={selectedPreset}
+                                fullWidth={true}
                                 className={fontClass + " text-xl"}
                                 onValueChange={(preset) => {
                                     logEvent(analytics, 'select_preset', {
@@ -612,15 +614,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <KeyboardArrowRightIcon/>
                         </IconButton>
                     </div>
-
+                    {attribution &&
+                        <a href={"https://x.com/" + attribution.x}
+                           target={"_blank"}
+                           rel={"noreferrer noopener"}
+                           className={"text-sm text-inherit"}>{attribution.x}</a>}
+                    {!attribution && <a className={"text-sm"}></a>                    }
                     <div className={"flex flex-row gap-4 items-center mt-8"}>
                         <IconButton
                             className={"text-inherit"}
                             onClick={() => {
-                            gradientRef.current?.downloadAsPNG();
-                        }}
-                                    size={"large"}>
-                            <DownloadIcon  size={"small"}/>
+                                gradientRef.current?.downloadAsPNG();
+                            }}
+                            size={"large"}>
+                            <DownloadIcon size={"small"}/>
                         </IconButton>
                         <Button onClick={handleDrawerOpen}
                                 size={"large"}
