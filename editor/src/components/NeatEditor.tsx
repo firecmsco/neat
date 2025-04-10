@@ -619,7 +619,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                            target={"_blank"}
                            rel={"noreferrer noopener"}
                            className={"text-sm text-inherit"}>{attribution.x}</a>}
-                    {!attribution && <a className={"text-sm"}></a>                    }
+                    {!attribution && <a className={"text-sm"}>&nbsp;</a>}
                     <div className={"flex flex-row gap-4 items-center mt-8"}>
                         <IconButton
                             className={"text-inherit"}
