@@ -14,14 +14,16 @@ the license and the credits.
 ### Installation:
 
 ```
-yarn install @firecms/neat three.js
+yarn install @firecms/neat three
 ```
 
 or
 
 ```
-npm install @firecms/neat three.js
+npm install @firecms/neat three
 ```
+
+Ensure you do not install `three.js`, that is a different incompatible package.
 
 ### Usage:
 
