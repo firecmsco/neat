@@ -67,6 +67,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.grainSparsity !== undefined) setGrainSparsity(config.grainSparsity);
         if (config.grainSpeed !== undefined) setGrainSpeed(config.grainSpeed);
         if (config.grainScale !== undefined) setGrainScale(config.grainScale);
+        if (config.yOffset !== undefined) setYOffset(config.yOffset);
+
     }
 
     const scrollRef = useRef<number>(0);
@@ -92,6 +94,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [grainSparsity, setGrainSparsity] = React.useState<number>(defaultConfig.grainSparsity);
     const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
     const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
+    const [yOffset, setYOffset] = React.useState<number>(0);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -130,7 +133,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainIntensity,
             grainSparsity,
             grainScale,
-            resolution
+            resolution,
+            yOffset
         });
 
         return gradientRef.current.destroy;
@@ -159,8 +163,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             gradientRef.current.grainScale = grainScale;
             gradientRef.current.grainSpeed = grainSpeed;
             gradientRef.current.resolution = resolution;
+            gradientRef.current.yOffset = yOffset;
         }
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed]);
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed, yOffset]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -201,6 +206,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainIntensity,
         grainSpeed,
         resolution,
+        yOffset
     };
 
     const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
@@ -537,6 +543,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             </div>
 
                         </ExpandablePanel>
+
+                        <div className="flex flex-row gap-2 items-end">
+                            <span className="w-28 text-right pr-2 text-xs">Vertical Offset</span>
+                            <Slider
+                                size={"small"}
+                                value={[yOffset]}
+                                step={1}
+                                min={0}
+                                max={2000}
+                                onValueChange={(newValue) => setYOffset(newValue[0] as number)}
+                            />
+                        </div>
 
                     </div>
 

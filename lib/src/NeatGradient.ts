@@ -39,6 +39,7 @@ export type NeatConfig = {
     wireframe?: boolean;
     backgroundColor?: string;
     backgroundAlpha?: number;
+    yOffset?: number;
 };
 
 export type NeatColor = {
@@ -89,6 +90,8 @@ export class NeatGradient implements NeatController {
     private sizeObserver: ResizeObserver;
     private sceneState: SceneState;
 
+    private _yOffset: number = 0;
+
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
         const {
@@ -113,7 +116,8 @@ export class NeatGradient implements NeatController {
             backgroundColor = "#FFFFFF",
             backgroundAlpha = 1.0,
             resolution = 1,
-            seed
+            seed,
+            yOffset = 0
         } = config;
 
 
@@ -142,6 +146,7 @@ export class NeatGradient implements NeatController {
         this.wireframe = wireframe;
         this.backgroundColor = backgroundColor;
         this.backgroundAlpha = backgroundAlpha;
+        this.yOffset = yOffset;
 
         this.sceneState = this._initScene(resolution);
 
@@ -215,6 +220,8 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_grain_scale = { value: this._grainScale };
                 // @ts-ignore
+                mesh.material.uniforms.u_y_offset = { value: this._yOffset };
+                // @ts-ignore
                 mesh.material.wireframe = this._wireframe;
             });
 
@@ -251,9 +258,9 @@ export class NeatGradient implements NeatController {
     }
 
     downloadAsPNG(filename = "neat.png") {
-        console.log("Downloading as PNG",this._ref);
+        console.log("Downloading as PNG", this._ref);
         const dataURL = this._ref.toDataURL("image/png");
-        console.log("data",dataURL);
+        console.log("data", dataURL);
         downloadURI(dataURL, filename);
     }
 
@@ -335,6 +342,10 @@ export class NeatGradient implements NeatController {
 
     set backgroundAlpha(backgroundAlpha: number) {
         this._backgroundAlpha = backgroundAlpha;
+    }
+
+    set yOffset(yOffset: number) {
+        this._yOffset = yOffset;
     }
 
     _initScene(resolution: number): SceneState {
@@ -474,26 +485,31 @@ void main() {
         u_wave_frequency_y * position.y + u_time,
         u_time
     ));
-    
+
     vec3 color;
 
     // float t = mod(u_base_color, 100.0);
     color = u_colors[0].color;
-    
+
+    // Apply y_offset to the noise coordinates
     vec2 noise_cord = vUv * u_color_pressure;
-    
+    // Apply the y-offset to shift the pattern vertically (1:1 pixel ratio)
+    // Scale the offset to match the UV coordinate space
+    float scaledOffset = u_y_offset / u_resolution.y;
+    noise_cord.y -= scaledOffset;
+
     const float minNoise = .0;
     const float maxNoise = .9;
-    
+
     for (int i = 1; i < u_colors_count; i++) {
-    
+
         if(u_colors[i].is_active == 1.0){
             float noiseFlow = (1. + float(i)) / 30.;
             float noiseSpeed = (1. + float(i)) * 0.11;
             float noiseSeed = 13. + float(i) * 7.;
-            
+
             int reverseIndex = u_colors_count - i;
-            
+
             float noise = snoise(
                 vec3(
                     noise_cord.x * u_color_pressure.x + u_time * noiseFlow * 2.,
@@ -501,25 +517,18 @@ void main() {
                     u_time * noiseSpeed
                 ) + noiseSeed
             ) - (.1 * float(i)) + (.5 * u_color_blending);
-            
+
             noise = clamp(minNoise, maxNoise + float(i) * 0.02, noise);
             vec3 nextColor = u_colors[i].color;
             color = mix(color, nextColor, smoothstep(0.0, u_color_blending, noise));
-            
-            // vec3 colorOklab = oklab2rgb(color);
-            // vec3 nextColorOklab = oklab2rgb(nextColor);
-            // vec3 mixColor = mix(colorOklab, nextColorOklab, smoothstep(0.0, u_color_blending, noise));
-            // color = rgb2oklab(mixColor);
-            
         }
-        
     }
-    
+
     v_color = color;
-    
+
     vec3 newPosition = position + normal * v_displacement_amount * u_wave_amplitude;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
-    
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+
     v_new_position = gl_Position;
 }
 `;
@@ -569,7 +578,7 @@ void main() {
 
     gl_FragColor = vec4(color, 1.0);
 }
-`;
+    `;
 }
 
 const buildUniforms = () => `
@@ -606,6 +615,8 @@ uniform float u_color_blending;
 uniform int u_colors_count;
 uniform Color u_colors[5];
 uniform vec2 u_resolution;
+
+uniform float u_y_offset;
 
 varying vec2 vUv;
 varying vec4 v_new_position;
@@ -923,7 +934,7 @@ function generateRandomString(length: number = 6): string {
     return result;
 }
 
-function downloadURI(uri:string, name:string) {
+function downloadURI(uri: string, name: string) {
     const link = document.createElement("a");
     link.download = name;
     link.href = uri;
