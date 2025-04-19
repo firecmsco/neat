@@ -525,6 +525,51 @@ export const CLOUDS_PRESET = {
 export const DARK_MODE = {
     colors: [
         {
+            color: '#000000',
+            enabled: true,
+        },
+        {
+            color: '#001129',
+            enabled: true,
+        },
+        {
+            color: '#0F0025',
+            enabled: true,
+        },
+        {
+            color: '#14080A',
+            enabled: true,
+        },
+        {
+            color: '#001129',
+            enabled: true,
+        },
+    ],
+    speed: 2,
+    horizontalPressure: 4,
+    verticalPressure: 4,
+    waveFrequencyX: 3,
+    waveFrequencyY: 2,
+    waveAmplitude: 1,
+    shadows: 2,
+    highlights: 2,
+    colorBrightness: 1,
+    colorSaturation: -1,
+    wireframe: false,
+    colorBlending: 7,
+    backgroundColor: '#010101',
+    backgroundAlpha: 1,
+    grainScale: 2,
+    grainSparsity: 0,
+    grainIntensity: 0,
+    grainSpeed: 1,
+    resolution: 0.75,
+    yOffset: 0,
+};
+
+export const NIGHT_DUNES = {
+    colors: [
+        {
             color: '#554226',
             enabled: true,
         },
@@ -835,10 +880,10 @@ const OCEANS_ELEVEN_PRESET = {
 export const PRESETS = {
     "Neat": NEAT_PRESET,
     "FireCMS": FIRECMS_PRESET,
+    "Dark Mode": DARK_MODE,
     "Lemon": LEMON_PRESET,
     "Glitch": GLITCH_PRESET,
     "Flame": FLAME_PRESET,
-    "Dark Mode": DARK_MODE,
     "Alejandra": ALEJANDRA_PRESET,
     "Monterey": MONTEREY_PRESET,
     "Bloom": BLOOM_PRESET,
@@ -850,6 +895,7 @@ export const PRESETS = {
     "Psychedelic": PSYCHEDELIC_PRESET,
     "Splash": SPLASH_PRESET,
     "Pastel": PASTEL_PRESET,
+    "Night Dunes": NIGHT_DUNES,
     "Oceanic": OCEANIC_PRESET,
     "Forest": FOREST_PRESET,
     "Oceans Eleven": OCEANS_ELEVEN_PRESET,

@@ -609,7 +609,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         NEAT
                     </h1>
                     <h1
-                        className="absolute z-100 font-semibold text-9xl mix-blend-color-dodge opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
+                        className="absolute z-100 font-semibold text-9xl mix-blend-color-burn opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
                         style={{ color: complementaryColor }}
                     >
                         NEAT
