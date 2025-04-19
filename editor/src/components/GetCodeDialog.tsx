@@ -4,7 +4,7 @@ import JSON5 from 'json5';
 import { NeatConfig } from "@firecms/neat";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@firecms/ui";
 
-export function CodeDialog({
+export function GetCodeDialog({
                                open,
                                onOpenChange,
                                config
@@ -17,11 +17,13 @@ export function CodeDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"4xl"}>
 
+            <DialogTitle variant={"h5"} className={"mb-4"}>That gradient looks NEAT</DialogTitle>
+
+
             <DialogContent>
                 <div className={"grid grid-cols-12 gap-4"}>
 
-                    <div className={"space-y-2 col-span-4"}>
-                        <DialogTitle variant={"h5"} className={"my-4"}>That gradient looks great!</DialogTitle>
+                    <div className={"space-y-2 col-span-5"}>
                         <p>
                             Neat is a <b>free tool</b> that generates beautiful gradient animations
                             for your website. It's easy to use and offers a wide range of customization options.
@@ -42,7 +44,7 @@ export function CodeDialog({
                         </p>
 
                     </div>
-                    <div className={"col-span-8"}>
+                    <div className={"col-span-7"}>
                         <pre className={"text-xs font-bold rounded-8xl bg-gray-800 text-white p-2 rounded-lg"}>
                             {JSON5.stringify(config, null, 4)}
                         </pre>

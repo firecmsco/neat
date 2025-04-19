@@ -8,7 +8,7 @@ import {
     DownloadIcon,
     EditIcon,
     ExpandablePanel,
-    IconButton,
+    IconButton, ImportExportIcon,
     KeyboardArrowLeftIcon,
     KeyboardArrowRightIcon,
     Label,
@@ -21,10 +21,11 @@ import {
 import { ColorSwatch } from "./ColorSwatch";
 import { attributionMap, fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor } from "../utils/colors";
-import { CodeDialog } from "./CodeDialog";
+import { GetCodeDialog } from "./GetCodeDialog";
 import { Analytics } from "@firebase/analytics";
 import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
+import { ImportConfigDialog } from "./ImportConfigDialog";
 
 const drawerWidth = 360;
 const defaultConfig = NEAT_PRESET;
@@ -36,6 +37,7 @@ export type NeatEditorProps = {
 export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
     const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+    const [importDialogOpen, setImportDialogOpen] = React.useState(false);
 
     const handleDrawerOpen = () => {
         setDrawerOpen(true);
@@ -44,6 +46,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const handleDrawerClose = () => {
         setDrawerOpen(false);
     };
+
+    const handleConfigImport = (importedConfig: NeatConfig) => {
+        updatePresetConfig(importedConfig);
+    };
+
 
     const updatePresetConfig = (config: NeatConfig) => {
 
@@ -574,7 +581,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 </div>
             </Sheet>
 
-            <CodeDialog open={dialogOpen} onOpenChange={setDialogOpen} config={config}/>
+            <GetCodeDialog open={dialogOpen} onOpenChange={setDialogOpen} config={config}/>
+
+            <ImportConfigDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
+                onConfigImport={handleConfigImport}
+            />
 
             <div className={"fixed w-full h-full top-0 right-0"}>
                 <canvas
@@ -647,9 +660,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             size={"large"}>
                             <DownloadIcon size={"small"}/>
                         </IconButton>
+
+                        <Button onClick={() => setImportDialogOpen(true)}
+                                size={"large"}
+                                className={"text-inherit"}
+                                variant={"text"}
+                                color={"primary"}>
+                            <ImportExportIcon className="mr-2" size={"small"}/>
+                            Use existing config
+                        </Button>
                         <Button onClick={handleDrawerOpen}
                                 size={"large"}
-                                color={"secondary"}>
+                                className={"text-inherit"}
+                                variant={"outlined"}
+                                color={"primary"}>
                             <EditIcon className="mr-2" size={"small"}/>
                             EDIT THIS GRADIENT
                         </Button>
