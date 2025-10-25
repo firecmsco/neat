@@ -34,6 +34,78 @@ a {
   @apply text-blue-600 dark:text-blue-400 dark:hover:text-blue-600 hover:text-blue-800 font-bold
 }
 
-/*a[href="https://neat.firecms.co"] {*/
-/*  display: none !important;*/
-/*}*/
+/* Custom visual enhancement utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/15 backdrop-blur-xl border border-white/20 shadow-2xl;
+  }
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-lg border border-white/10 shadow-xl;
+  }
+  .btn-smooth {
+    @apply transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0;
+  }
+  .hover-glow {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 24px rgba(255,255,255,0.25);
+    transform: translateY(-2px);
+  }
+  .neon-text {
+    text-shadow: 0 0 12px currentColor, 0 0 36px currentColor;
+  }
+  .soft-vignette {
+    pointer-events: none;
+    background: radial-gradient(80% 60% at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.25) 100%);
+  }
+  .dot-grid {
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.25) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -12px -12px;
+    mask-image: radial-gradient(70% 50% at 50% 50%, #000 60%, transparent 100%);
+  }
+  .gradient-border {
+    border: 1px solid transparent;
+    border-image: linear-gradient(120deg, rgba(255,255,255,0.6), rgba(255,255,255,0.1)) 1;
+    border-radius: inherit;
+  }
+}
+
+/* Keyframes */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes shine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shiny-text {
+  background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.9), rgba(255,255,255,0.2));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 3s linear infinite;
+}
+
+/* Subtle scrollbars for the side panel */
+.panel-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 999px;
+}
+.panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hide host link in embed contexts (optional) */
+/* a[href="https://neat.firecms.co"] { display: none !important; } */

@@ -27,7 +27,6 @@ import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
 import { ImportConfigDialog } from "./ImportConfigDialog";
 
-const drawerWidth = 360;
 const defaultConfig = NEAT_PRESET;
 
 export type NeatEditorProps = {
@@ -254,31 +253,34 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         <div className="relative w-full h-full">
             <IconButton
                 onClick={handleDrawerOpen}
-                className={`fixed right-4 top-4 bg-black bg-opacity-20 hover:bg-black hover:bg-opacity-30 rounded-full z-10 ${drawerOpen ? 'hidden' : ''}`}
+                className={`fixed right-4 top-4 glass-dark hover-glow rounded-full z-20 ${drawerOpen ? 'hidden' : ''}`}
+                style={{ animation: "float 6s ease-in-out infinite" }}
             >
                 <EditIcon className="w-6 h-6 text-white"/>
             </IconButton>
 
             <Sheet open={drawerOpen}
-                // modal={false}
                    includeBackgroundOverlay={false}
-                   className={"w-[360px] bg-white bg-opacity-50 backdrop-blur border-none h-full"}
+                   className={"w-[380px] glass-dark gradient-border h-full"}
                    onOpenChange={setDrawerOpen}
                    side={"right"}
             >
                 <IconButton
                     onClick={handleDrawerClose}
-                    className="fixed left-4 top-4 bg-black bg-opacity-10 p-2 rounded-full"
+                    className="fixed left-4 top-4 glass hover-glow p-2 rounded-full"
                 >
                     <ChevronLeftIcon className="w-6 h-6"/>
                 </IconButton>
 
                 <div className="flex flex-col h-full gap-4">
-                    <div className="p-4 pt-20 flex flex-col gap-4 overflow-auto flex-grow ">
-                        <span className="text-xs font-bold">PRESET</span>
+                    <div className="p-4 pt-20 flex flex-col gap-4 overflow-auto flex-grow panel-scroll">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] tracking-widest font-bold uppercase opacity-70">Preset</span>
+                            <span className="text-[10px] opacity-50">← → to browse</span>
+                        </div>
                         <Select value={selectedPreset}
                                 fullWidth={true}
-                                className={fontClass + " text-xl"}
+                                className={fontClass + " text-xl glass gradient-border rounded-lg px-2 py-1"}
                                 onValueChange={(preset) => {
                                     logEvent(analytics, 'select_preset', {
                                         preset
@@ -298,15 +300,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             )}
 
                         </Select>
-                        <div className="flex space-x-4 justify-evenly mt-4 mb-2">
-                            {colors.map((color, index) => (
-                                <ColorSwatch
-                                    key={index}
-                                    color={color}
-                                    showEnabled={true}
-                                    onChange={(newColor) => handleColorChange(newColor, index)}
-                                />
-                            ))}
+                        <div className="glass gradient-border rounded-xl p-3">
+                            <div className="flex space-x-4 justify-evenly mt-1 mb-1">
+                                {colors.map((color, index) => (
+                                    <ColorSwatch
+                                        key={index}
+                                        color={color}
+                                        showEnabled={true}
+                                        onChange={(newColor) => handleColorChange(newColor, index)}
+                                    />
+                                ))}
+                            </div>
                         </div>
 
                         <div className="flex flex-row my-2 ml-2">
@@ -568,7 +572,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     <div className={"p-4"}>
                         <Button
                             size={"large"}
-                            className="w-full"
+                            className="w-full btn-smooth hover-glow"
                             onClick={() => {
                                 onGetTheCodeClick();
                                 logEvent(analytics, 'get_the_code');
@@ -589,7 +593,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 onConfigImport={handleConfigImport}
             />
 
-            <div className={"fixed w-full h-full top-0 right-0"}>
+            <div className={"fixed w-full h-full top-0 right-0 z-0"}>
                 <canvas
                     style={{
                         height: "100%",
@@ -599,48 +603,44 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 />
             </div>
 
+            {/* Decorative overlays above canvas */}
+            <div className="fixed inset-0 soft-vignette z-10" />
+
             <div
-                className="relative flex flex-col items-center justify-center font-sans h-screen text-white text-center">
-                <div className="relative flex flex-col p-4">
+                className="relative z-20 flex flex-col items-center justify-center font-sans h-screen text-white text-center px-4">
+                <div className="relative flex flex-col p-2 select-none">
                     <h1
-                        className="font-semibold text-9xl mix-blend-soft-light opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
+                        className="font-semibold mix-blend-soft-light opacity-50 text-[12rem] sm:text-[16rem] md:text-[22rem] leading-none neon-text"
                         style={{ color: complementaryColor }}
                     >
                         NEAT
                     </h1>
                     <h1
-                        className="absolute z-100 font-semibold text-9xl mix-blend-color-burn opacity-60 text-[12rem] sm:text-[16rem] md:text-[24rem]"
+                        className="absolute inset-0 flex items-center justify-center font-semibold mix-blend-color-dodge opacity-70 text-[12rem] sm:text-[16rem] md:text-[22rem] leading-none shiny-text"
                         style={{ color: complementaryColor }}
                     >
                         NEAT
                     </h1>
                 </div>
-                {/*<div className={`relative flex flex-col p-4`}>*/}
-                {/*    <h1 className={`font-semibold text-9xl mix-blend-color-dodge opacity-80 text-[12rem] sm:text-[16rem] md:text-[24rem]`}*/}
-                {/*        style={{*/}
-                {/*            color: complementaryColor*/}
-                {/*        }}>NEAT</h1>*/}
-
-                {/*</div>*/}
                 <div className={cls({
                     "text-black": !lightText,
                     "text-white": lightText
                 }, "flex flex-col items-center gap-4")}>
-                    <h2 className={"max-w-full font-bold text-lg md:text-xl uppercase"}>
+                    <h2 className={"max-w-full font-bold text-lg md:text-xl uppercase tracking-wider drop-shadow"}>
                         Beautiful 3D gradient animations for your website
                     </h2>
-                    <div className={"flex flex-row gap-4 items-center w-96"}>
+                    <div className={"flex flex-row gap-2 md:gap-4 items-center w-full max-w-xl md:max-w-2xl"}>
                         <IconButton
-                            className={"text-inherit"}
+                            className={"text-inherit glass-dark hover-glow btn-smooth"}
                             onClick={prevPreset}>
                             <KeyboardArrowLeftIcon/>
                         </IconButton>
 
-                        <div className={"flex-grow font-bold text-4xl " + fontClass}>
+                        <div className={"flex-grow font-bold text-3xl md:text-4xl " + fontClass}>
                             {selectedPreset}
                         </div>
                         <IconButton
-                            className={"text-inherit"}
+                            className={"text-inherit glass-dark hover-glow btn-smooth"}
                             onClick={nextPreset}>
                             <KeyboardArrowRightIcon/>
                         </IconButton>
@@ -649,11 +649,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         <a href={"https://x.com/" + attribution.x}
                            target={"_blank"}
                            rel={"noreferrer noopener"}
-                           className={"text-sm text-inherit"}>{attribution.x}</a>}
+                           className={"text-sm text-inherit opacity-80 hover:opacity-100 transition-opacity"}>{attribution.x}</a>}
                     {!attribution && <a className={"text-sm"}>&nbsp;</a>}
-                    <div className={"flex flex-row gap-4 items-center mt-8"}>
+                    <div className={"flex flex-row flex-wrap justify-center gap-3 md:gap-4 items-center mt-8"}>
                         <IconButton
-                            className={"text-inherit"}
+                            className={"text-inherit glass-dark hover-glow btn-smooth"}
                             onClick={() => {
                                 gradientRef.current?.downloadAsPNG();
                             }}
@@ -663,7 +663,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         <Button onClick={() => setImportDialogOpen(true)}
                                 size={"large"}
-                                className={"text-inherit"}
+                                className={"text-inherit btn-smooth hover-glow"}
                                 variant={"text"}
                                 color={"primary"}>
                             <ImportExportIcon className="mr-2" size={"small"}/>
@@ -671,7 +671,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </Button>
                         <Button onClick={handleDrawerOpen}
                                 size={"large"}
-                                className={"text-inherit"}
+                                className={"text-inherit btn-smooth hover-glow"}
                                 variant={"outlined"}
                                 color={"primary"}>
                             <EditIcon className="mr-2" size={"small"}/>
@@ -680,6 +680,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                         <Button
                             size={"large"}
+                            className={"btn-smooth hover-glow"}
                             onClick={() => {
                                 onGetTheCodeClick();
                                 logEvent(analytics, 'use_this_gradient');
@@ -688,7 +689,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             USE THIS GRADIENT
                         </Button>
                     </div>
-                    <p className={"mt-2"}>Built with ❤️ by <a href="https://firecms.co"
+                    <p className={"mt-2 opacity-90"}>Built with ❤️ by <a href="https://firecms.co"
                                                               target="_blank"
                                                               className="text-blue-900 bg-gray-100 bg-opacity-30 mx-1 px-2 py-0.5 rounded">FireCMS</a>
                     </p>

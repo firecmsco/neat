@@ -35,11 +35,12 @@ export const NEAT_PRESET = {
     colorBlending: 8,
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
-    grainScale: 3,
-    grainSparsity: 0.02,
-    grainIntensity: 0.3,
+    grainScale: 0,
+    grainSparsity: 0.0,
+    grainIntensity: 0,
     grainSpeed: 1,
     resolution: 1,
+    colorDodge: true,
 };
 
 export const STRIPE_PRESET = {

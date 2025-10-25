@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@firecms/neat": "0.3.1",
-    "@firecms/ui": "^3.0.0-canary.136",
+    "@firecms/neat": "0.4.0",
+    "@firecms/ui": "^3.0.0-rc.2",
     "@fontsource/roboto": "^4.5.8",
     "@fontsource/sofia-sans": "^4.5.0",
     "@tailwindcss/typography": "^0.5.15",
