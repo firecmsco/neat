@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import JSON5 from 'json5';
 
 import { NeatConfig } from "@firecms/neat";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextareaAutosize } from "@firecms/ui";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { TextareaAutosize } from "./ui/textarea";
 import { NEAT_PRESET } from "./presets";
 
 export function ImportConfigDialog({
@@ -60,23 +62,23 @@ export function ImportConfigDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"4xl"}>
-            <DialogTitle variant={"h5"} className={"mb-4"}>Import Configuration</DialogTitle>
+            <DialogTitle>Import Configuration</DialogTitle>
 
             <DialogContent>
-                <div className={"space-y-4"}>
+                <div className={"space-y-4 text-white"}>
                     <p>
                         Paste a valid NEAT configuration JSON to import. Any missing fields will use default values.
                     </p>
 
                     <TextareaAutosize
-                        className={"w-full h-64 p-3 font-mono text-sm"}
+                        className={"w-full h-64 p-3 font-mono text-sm rounded-md bg-black/40 text-white placeholder:text-white/50 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"}
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
                         placeholder={`Paste your configuration here...\n\nExample:\n${JSON5.stringify(NEAT_PRESET, null, 2)}`}
                     />
 
                     {error && (
-                        <div className={"text-red-500 text-sm mt-2"}>
+                        <div className={"text-red-400 text-sm mt-2"}>
                             Error: {error}
                         </div>
                     )}

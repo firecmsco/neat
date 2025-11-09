@@ -1,8 +1,7 @@
-@import "@firecms/ui/dist/index.css";
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Web fonts for preset-specific typography */
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Concert+One&family=Fredoka:wdth,wght@89.8,600&family=Inconsolata:wght@400;700&family=Lobster&family=Londrina+Shadow&family=Merriweather:wght@400;700&family=Nunito+Sans:wght@400;700&family=Oswald:wght@400;600&family=Pacifico&family=Poppins:wght@400;600&family=Quicksand:wght@500;700&family=Rubik:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=VT323&display=swap');
 
 :root {
   --fcms-primary: #0070F4;
@@ -33,6 +32,25 @@ code {
 a {
   @apply text-blue-600 dark:text-blue-400 dark:hover:text-blue-600 hover:text-blue-800 font-bold
 }
+
+/* Preset font utilities (Tailwind v4) */
+@utility font-rubik { font-family: Rubik, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+@utility font-londrina { font-family: "Londrina Shadow", cursive; }
+@utility font-vt323 { font-family: VT323, monospace; }
+@utility font-fredoka { font-family: Fredoka, system-ui, sans-serif; }
+@utility font-quicksand { font-family: Quicksand, system-ui, sans-serif; }
+@utility font-inconsolata { font-family: Inconsolata, monospace; }
+@utility font-oswald { font-family: Oswald, system-ui, sans-serif; }
+@utility font-alegreya { font-family: Alegreya, serif; }
+@utility font-nunito-sans { font-family: "Nunito Sans", system-ui, sans-serif; }
+@utility font-merriweather { font-family: Merriweather, serif; }
+@utility font-lobster { font-family: Lobster, cursive; }
+@utility font-concert-one { font-family: "Concert One", cursive; }
+@utility font-pacifico { font-family: Pacifico, cursive; }
+@utility font-poppins { font-family: Poppins, system-ui, sans-serif; }
+@utility font-libre-baskerville { font-family: "Libre Baskerville", serif; }
+@utility font-source-serif-pro { font-family: "Source Serif 4", serif; }
+@utility font-sofia { font-family: "Sofia Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
 
 /* Custom visual enhancement utilities */
 @layer utilities {
