@@ -97,8 +97,11 @@ export const STRIPE_PRESET = {
     grainSpeed: 0,
     resolution: 1,
     enableProceduralTexture: false,
-    flowEnabled: true,
-};
+    flowEnabled: false,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
+} satisfies NeatConfig;
 
 export const FIRECMS_PRESET = {
     "colors": [
@@ -147,7 +150,79 @@ export const FIRECMS_PRESET = {
     "grainSpeed": 0,
     "resolution": 0.95,
     enableProceduralTexture: false,
+    flowEnabled: false,
+    mouseDistortionStrength: 0.12,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
+};
+export const FUNKY_PRESET = {
+    colors: [
+        {
+            color: '#FB5066',
+            enabled: true,
+        },
+        {
+            color: '#36CCD6',
+            enabled: true,
+        },
+        {
+            color: '#FFC600',
+            enabled: true,
+        },
+        {
+            color: '#8B6AE6',
+            enabled: true,
+        },
+        {
+            color: '#2E0EC7',
+            enabled: true,
+        },
+        {
+            color: '#FF9A9E',
+            enabled: true,
+        },
+    ],
+    speed: 1,
+    horizontalPressure: 3,
+    verticalPressure: 3,
+    waveFrequencyX: 3,
+    waveFrequencyY: 5,
+    waveAmplitude: 10,
+    shadows: 2,
+    highlights: 6,
+    colorBrightness: 1.05,
+    colorSaturation: 1,
+    wireframe: false,
+    colorBlending: 3,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 1,
+    grainScale: 0,
+    grainSparsity: 0,
+    grainIntensity: 0,
+    grainSpeed: 2.4,
+    resolution: 0.1,
+    yOffset: 0,
+    flowDistortionA: 1.4,
+    flowDistortionB: 2.6,
+    flowScale: 1.5,
+    flowEase: 0.41,
     flowEnabled: true,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
+    mouseDarken: 0.24,
+    enableProceduralTexture: true,
+    textureVoidLikelihood: 0.32,
+    textureVoidWidthMin: 10,
+    textureVoidWidthMax: 170,
+    textureBandDensity: 0.4,
+    textureColorBlending: 0.28,
+    textureSeed: 333,
+    proceduralBackgroundColor: '#003FFF',
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
 };
 
 export const FLUID_PRESET = {
@@ -201,7 +276,10 @@ export const FLUID_PRESET = {
     flowDistortionB: 1.4,
     flowScale: 2.9,
     flowEase: 0.32,
-    mouseDistortion: 0.13,
+    flowEnabled: true,
+    mouseDistortionStrength: 0.5,
+    mouseDistortionRadius: 0.6,
+    mouseDecayRate: 0.99,
     mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.27,
@@ -210,8 +288,11 @@ export const FLUID_PRESET = {
     textureBandDensity: 1.2,
     textureColorBlending: 0.06,
     textureSeed: 333,
-    proceduralBackgroundColor: '#3D2D2D',
-    flowEnabled: true,
+    proceduralBackgroundColor: '#0E0707',
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
 };
 
 export const YEX_PRESET = {
@@ -242,30 +323,33 @@ export const YEX_PRESET = {
         },
     ],
     speed: 1,
-    horizontalPressure: 4,
-    verticalPressure: 4,
-    waveFrequencyX: 2,
-    waveFrequencyY: 3,
-    waveAmplitude: 5,
+    horizontalPressure: 3,
+    verticalPressure: 3,
+    waveFrequencyX: 3,
+    waveFrequencyY: 2,
+    waveAmplitude: 7,
     shadows: 3,
     highlights: 4,
     colorBrightness: 1.05,
     colorSaturation: -2,
     wireframe: true,
-    colorBlending: 5,
+    colorBlending: 4,
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
     grainScale: 0,
     grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 2.4,
-    resolution: 1,
+    resolution: 0.8,
     yOffset: 162,
     flowDistortionA: 1.5,
     flowDistortionB: 2.4,
     flowScale: 1.5,
     flowEase: 0.41,
-    mouseDistortion: 0.13,
+    flowEnabled: true,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
     mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.06,
@@ -275,9 +359,11 @@ export const YEX_PRESET = {
     textureColorBlending: 0.06,
     textureSeed: 333,
     proceduralBackgroundColor: '#003FFF',
-    flowEnabled: true,
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
 }
-
 
 export const FLAME_PRESET = {
     "colors": [
@@ -413,7 +499,10 @@ export const SANDS_PRESET = {
     grainSpeed: 5,
     resolution: 1,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.08,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const MONTEREY_PRESET = {
@@ -467,7 +556,7 @@ export const MONTEREY_PRESET = {
     flowDistortionB: 10,
     flowScale: 3.3,
     flowEase: 0.37,
-    mouseDistortion: 0.15,
+    mouseDistortionStrength: 0.15,
     mouseDarken: 0.24,
     enableProceduralTexture: false,
     textureVoidLikelihood: 0.06,
@@ -485,49 +574,69 @@ export const MONTEREY_PRESET = {
 };
 
 export const ALEJANDRA_PRESET = {
-    "colors": [
+    colors: [
         {
-            "color": "#FF5373",
-            "enabled": true
+            color: '#FF5373',
+            enabled: true,
         },
         {
-            "color": "#17E7FF",
-            "enabled": true
+            color: '#17E7FF',
+            enabled: true,
         },
         {
-            "color": "#FFC858",
-            "enabled": true
+            color: '#FFC858',
+            enabled: true,
         },
         {
-            "color": "#6D3BFF",
-            "enabled": true
+            color: '#6D3BFF',
+            enabled: true,
         },
         {
-            "color": "#f5e1e5",
-            "enabled": false
-        }
+            color: '#f5e1e5',
+            enabled: false,
+        },
     ],
-    "speed": 6,
-    "horizontalPressure": 7,
-    "verticalPressure": 8,
-    "waveFrequencyX": 2,
-    "waveFrequencyY": 1,
-    "waveAmplitude": 8,
-    "shadows": 4,
-    "highlights": 6,
-    "colorBrightness": 0.95,
-    "colorSaturation": -8,
-    "wireframe": false,
-    "colorBlending": 10,
-    "backgroundColor": "#003FFF",
-    "backgroundAlpha": 1,
-    "grainScale": 4,
+    speed: 6,
+    horizontalPressure: 7,
+    verticalPressure: 8,
+    waveFrequencyX: 1,
+    waveFrequencyY: 2,
+    waveAmplitude: 8,
+    shadows: 4,
+    highlights: 6,
+    colorBrightness: 0.95,
+    colorSaturation: -8,
+    wireframe: false,
+    colorBlending: 10,
+    backgroundColor: '#003FFF',
+    backgroundAlpha: 1,
+    grainScale: 4,
     grainSparsity: 0,
-    "grainIntensity": 0.25,
-    "grainSpeed": 1,
-    "resolution": 1,
-    enableProceduralTexture: false,
+    grainIntensity: 0.25,
+    grainSpeed: 1,
+    resolution: 1,
+    yOffset: 0,
+    flowDistortionA: 1.1,
+    flowDistortionB: 0.8,
+    flowScale: 1.6,
+    flowEase: 0.32,
     flowEnabled: true,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
+    mouseDarken: 0.24,
+    enableProceduralTexture: false,
+    textureVoidLikelihood: 0.27,
+    textureVoidWidthMin: 60,
+    textureVoidWidthMax: 420,
+    textureBandDensity: 1.2,
+    textureColorBlending: 0.06,
+    textureSeed: 333,
+    proceduralBackgroundColor: '#0E0707',
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
 };
 
 export const LEMON_PRESET = {
@@ -757,7 +866,10 @@ export const DARK_MODE = {
     resolution: 0.75,
     yOffset: 0,
     enableProceduralTexture: false,
-    flowEnabled: true,
+    flowEnabled: false,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const NIGHT_DUNES = {
@@ -807,7 +919,10 @@ export const NIGHT_DUNES = {
     grainSpeed: 1,
     resolution: 1,
     enableProceduralTexture: false,
-    flowEnabled: true,
+    flowEnabled: false,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 
@@ -858,7 +973,10 @@ export const PRUSSIAN_BLUE_PRESET = {
     grainSpeed: 0,
     resolution: 0.5,
     enableProceduralTexture: false,
-    flowEnabled: true,
+    flowEnabled: false,
+    mouseDistortionStrength: 0.12,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const NIGHTTIME = {
@@ -904,7 +1022,10 @@ export const NIGHTTIME = {
     "grainSpeed": 1,
     "resolution": 1,
     enableProceduralTexture: false,
-    flowEnabled: true,
+    flowEnabled: false,
+    mouseDistortionStrength: 0.12,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const PSYCHEDELIC_PRESET = {
@@ -923,7 +1044,10 @@ export const PSYCHEDELIC_PRESET = {
     "horizontalPressure": 7,
     "verticalPressure": 7,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.15,
+    mouseDistortionRadius: 0.3,
+    mouseDecayRate: 0.95,
 };
 
 
@@ -969,7 +1093,10 @@ export const SPLASH_PRESET = {
     "grainSpeed": 0,
     "resolution": 1,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.12,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 
@@ -1015,7 +1142,10 @@ export const OCEANIC_PRESET = {
     "grainSpeed": 1,
     "resolution": 1,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const FOREST_PRESET = {
@@ -1045,7 +1175,10 @@ export const FOREST_PRESET = {
     "grainSpeed": 0.8,
     "resolution": 1.2,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.08,
+    mouseDistortionRadius: 0.2,
+    mouseDecayRate: 0.97,
 };
 
 const OCEANS_ELEVEN_PRESET = {
@@ -1091,33 +1224,35 @@ const OCEANS_ELEVEN_PRESET = {
     grainSpeed: 10,
     resolution: 1,
     enableProceduralTexture: false,
-    flowEnabled: true
+    flowEnabled: false,
+    mouseDistortionStrength: 0.1,
+    mouseDistortionRadius: 0.25,
+    mouseDecayRate: 0.96,
 };
 
 export const PRESETS = {
     "Neat": NEAT_PRESET,
-    "FireCMS": FIRECMS_PRESET,
     "Fluid": FLUID_PRESET,
-    "Yex": YEX_PRESET,
-    "Dark Mode": DARK_MODE,
-    "Lemon": LEMON_PRESET,
-    "Glitch": GLITCH_PRESET,
     "Flame": FLAME_PRESET,
+    "Funky": FUNKY_PRESET,
     "Alejandra": ALEJANDRA_PRESET,
     "Monterey": MONTEREY_PRESET,
-    "Bloom": BLOOM_PRESET,
     "Sands": SANDS_PRESET,
-    "Stripe": STRIPE_PRESET,
     "Nighttime": NIGHTTIME,
     "Prussian": PRUSSIAN_BLUE_PRESET,
     "Clouds": CLOUDS_PRESET,
+    "Yex": YEX_PRESET,
+    "Lemon": LEMON_PRESET,
+    "Dark Mode": DARK_MODE,
     "Psychedelic": PSYCHEDELIC_PRESET,
     "Splash": SPLASH_PRESET,
+    "FireCMS": FIRECMS_PRESET,
     "Pastel": PASTEL_PRESET,
+    "Stripe": STRIPE_PRESET,
+    "Bloom": BLOOM_PRESET,
+    "Glitch": GLITCH_PRESET,
     "Night Dunes": NIGHT_DUNES,
-    "Oceanic": OCEANIC_PRESET,
-    "Forest": FOREST_PRESET,
-    "Oceans Eleven": OCEANS_ELEVEN_PRESET,
+    "Oceanic": OCEANIC_PRESET
 };
 
 export const fontMap = {
@@ -1140,12 +1275,6 @@ export const fontMap = {
     Splash: 'font-pacifico',
     Pastel: 'font-poppins',
     Oceanic: 'font-libre-baskerville',
-    Forest: 'font-source-serif-pro',
-    "Oceans Eleven": 'font-lobster',
+    // Forest: 'font-source-serif-pro',
+    // "Oceans Eleven": 'font-lobster',
 };
-
-export const attributionMap = {
-    "Oceans Eleven": {
-        "x": "@DeanBeanLeeroy"
-    },
-}

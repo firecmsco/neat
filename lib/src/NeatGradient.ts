@@ -47,7 +47,12 @@ export type NeatConfig = {
     flowEase?: number;
     flowEnabled?: boolean;
     // Mouse interaction
-    mouseDistortion?: number;
+    /** Strength of mouse-driven distortion */
+    mouseDistortionStrength?: number;
+    /** Radius / area of mouse-driven distortion in UV space (0–1-ish) */
+    mouseDistortionRadius?: number;
+    /** How quickly mouse trails decay/fade (0.9=slow/wobbly, 0.99=fast/sharp) */
+    mouseDecayRate?: number;
     mouseDarken?: number;
     // Texture generation
     enableProceduralTexture?: boolean;
@@ -116,7 +121,9 @@ export class NeatGradient implements NeatController {
     private _flowEnabled: boolean = true;
 
     // Mouse interaction properties
-    private _mouseDistortion: number = 0.0;
+    private _mouseDistortionStrength: number = 0.0;
+    private _mouseDistortionRadius: number = 0.25;
+    private _mouseDecayRate: number = 0.96;
     private _mouseDarken: number = 0.0;
     private _mouse: THREE.Vector2 = new THREE.Vector2(-1000, -1000);
     private _mouseFBO: THREE.WebGLRenderTarget | null = null;
@@ -180,7 +187,9 @@ export class NeatGradient implements NeatController {
             flowEase = 0.0,
             flowEnabled = true,
             // Mouse interaction
-            mouseDistortion = 0.0,
+            mouseDistortionStrength = 0.0,
+            mouseDistortionRadius = 0.25,
+            mouseDecayRate = 0.96,
             mouseDarken = 0.0,
             // Texture generation
             enableProceduralTexture = false,
@@ -233,7 +242,9 @@ export class NeatGradient implements NeatController {
         this.flowEnabled = flowEnabled;
 
         // Mouse interaction
-        this.mouseDistortion = mouseDistortion;
+        this.mouseDistortionStrength = mouseDistortionStrength;
+        this.mouseDistortionRadius = mouseDistortionRadius;
+        this.mouseDecayRate = mouseDecayRate;
         this.mouseDarken = mouseDarken;
 
         // Texture generation
@@ -253,10 +264,8 @@ export class NeatGradient implements NeatController {
 
         this.sceneState = this._initScene(resolution);
 
-        // Setup mouse interaction if enabled
-        if (mouseDistortion > 0 || mouseDarken > 0) {
-            this._setupMouseInteraction();
-        }
+        // Always setup mouse interaction so distortion/darken work reliably
+        this._setupMouseInteraction();
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
         const render = () => {
@@ -340,7 +349,9 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_flow_enabled = { value: this._flowEnabled ? 1.0 : 0.0 };
                 // @ts-ignore
-                mesh.material.uniforms.u_mouse_distortion = { value: this._mouseDistortion };
+                mesh.material.uniforms.u_mouse_distortion_strength = { value: this._mouseDistortionStrength };
+                // @ts-ignore
+                mesh.material.uniforms.u_mouse_distortion_radius = { value: this._mouseDistortionRadius };
                 // @ts-ignore
                 mesh.material.uniforms.u_mouse_darken = { value: this._mouseDarken };
                 // @ts-ignore
@@ -353,12 +364,12 @@ export class NeatGradient implements NeatController {
 
             // Render mouse interaction to FBO
             if (this._mouseFBO && this._sceneMouse && this._cameraMouse) {
-                // Update mouse objects
+                // Update mouse objects - decay rate controls how fast trails fade
                 this._mouseObjects.forEach(obj => {
                     if (obj.mesh.visible) {
                         obj.mesh.rotation.z += 0.02;
                         if (obj.mesh.material instanceof THREE.MeshBasicMaterial) {
-                            obj.mesh.material.opacity *= 0.96;
+                            obj.mesh.material.opacity *= this._mouseDecayRate;
                         }
                         obj.mesh.scale.multiplyScalar(1.02);
                         if (obj.mesh.material instanceof THREE.MeshBasicMaterial && obj.mesh.material.opacity < 0.01) {
@@ -526,8 +537,19 @@ export class NeatGradient implements NeatController {
         return this._flowEnabled;
     }
 
-    set mouseDistortion(value: number) {
-        this._mouseDistortion = value;
+
+    set mouseDistortionStrength(value: number) {
+        this._mouseDistortionStrength = Math.max(0, value);
+    }
+
+    set mouseDistortionRadius(value: number) {
+        // Clamp to a sane range in UV space
+        this._mouseDistortionRadius = Math.max(0.01, Math.min(value, 1.0));
+    }
+
+    set mouseDecayRate(value: number) {
+        // Clamp between 0.9 (slow decay, more wobble) and 0.99 (fast decay, less wobble)
+        this._mouseDecayRate = Math.max(0.9, Math.min(value, 0.99));
     }
 
     set mouseDarken(value: number) {
@@ -687,7 +709,8 @@ export class NeatGradient implements NeatController {
             u_flow_ease: { value: this._flowEase },
             u_flow_enabled: { value: this._flowEnabled ? 1.0 : 0.0 },
             // Mouse interaction
-            u_mouse_distortion: { value: this._mouseDistortion },
+            u_mouse_distortion_strength: { value: this._mouseDistortionStrength },
+            u_mouse_distortion_radius: { value: this._mouseDistortionRadius },
             u_mouse_darken: { value: this._mouseDarken },
             u_mouse_texture: { value: this._mouseFBO ? this._mouseFBO.texture : null },
             // Procedural texture
@@ -725,14 +748,16 @@ export class NeatGradient implements NeatController {
         );
         this._cameraMouse.position.set(0, 0, 100);
 
-        // Create brush texture
+        // Create brush texture - More visible and impactful
         const brushCanvas = document.createElement('canvas');
         brushCanvas.width = 128;
         brushCanvas.height = 128;
         const bCtx = brushCanvas.getContext('2d');
         if (bCtx) {
             const grd = bCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            grd.addColorStop(0, 'rgba(255,255,255,0.25)');
+            // Stronger opacity for better visibility
+            grd.addColorStop(0, 'rgba(255,255,255,0.5)');
+            grd.addColorStop(0.5, 'rgba(255,255,255,0.2)');
             grd.addColorStop(1, 'rgba(255,255,255,0)');
             bCtx.fillStyle = grd;
             bCtx.fillRect(0, 0, 128, 128);
@@ -742,8 +767,10 @@ export class NeatGradient implements NeatController {
             map: brushTex,
             transparent: true,
             opacity: 0.8,
-            depthTest: false
+            depthTest: false,
+            blending: THREE.NormalBlending // Use normal blending like original
         });
+        // Fixed brush size like original - 300x300
         const brushGeo = new THREE.PlaneGeometry(300, 300);
 
         // Create brush pool
@@ -761,7 +788,6 @@ export class NeatGradient implements NeatController {
 
     _onMouseMove(e: MouseEvent) {
         if (!this._ref || !this._sceneMouse) return;
-
         const rect = this._ref.getBoundingClientRect();
         const width = this._ref.width;
         const height = this._ref.height;
@@ -770,15 +796,14 @@ export class NeatGradient implements NeatController {
         this._mouse.y = -(e.clientY - rect.top - height / 2);
 
         const brush = this._mouseObjects[this._currentBrush];
+        brush.mesh.scale.set(1.0, 1.0, 1.0);
         brush.active = true;
         brush.mesh.visible = true;
         brush.mesh.position.set(this._mouse.x, this._mouse.y, 0);
         brush.mesh.rotation.z = Math.random() * Math.PI * 2;
-        brush.mesh.scale.set(1.0, 1.0, 1.0);
         if (brush.mesh.material instanceof THREE.MeshBasicMaterial) {
-            brush.mesh.material.opacity = 0.8;
+            brush.mesh.material.opacity = 1.0;
         }
-
         this._currentBrush = (this._currentBrush + 1) % this._mouseObjects.length;
     }
 
@@ -1014,18 +1039,15 @@ void main() {
         u_time
     ));
 
-    // Flow UV: if flow is disabled, just use plain vUv
-    vec2 flowUv = vUv;
+    // Base UV - no mouse distortion here, that happens in fragment shader
+    vec2 baseUv = vUv;
+
+    // Flow UV: if flow is disabled, just use baseUv
+    vec2 flowUv = baseUv;
     if (u_flow_enabled > 0.5) {
         // Only apply flow when enabled
         if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
-            // Mouse distortion
-            vec4 mouseColor = texture2D(u_mouse_texture, vUv);
-            float mfSin = sin(mouseColor.r);
-            vec2 mouseDisp = u_mouse_distortion * vec2(mfSin, mfSin);
-
-            vec2 disturbedUv = vUv - mouseDisp * 0.2;
-            vec2 ppp = -1.0 + 2.0 * disturbedUv;
+            vec2 ppp = -1.0 + 2.0 * baseUv;
 
             // Flow field calculations
             ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
@@ -1036,7 +1058,7 @@ void main() {
             float r = length(ppp);
 
             // Blend between original UV and flow-distorted UV
-            flowUv = mix(vUv, vec2(vUv.x * (1.0 - u_flow_ease) + r * u_flow_ease, vUv.y), u_flow_ease);
+            flowUv = mix(baseUv, vec2(baseUv.x * (1.0 - u_flow_ease) + r * u_flow_ease, baseUv.y), u_flow_ease);
         }
     }
 
@@ -1045,13 +1067,10 @@ void main() {
 
     vec3 color;
 
-    // float t = mod(u_base_color, 100.0);
     color = u_colors[0].color;
 
     // Apply y_offset to the noise coordinates
     vec2 noise_cord = flowUv * u_color_pressure;
-    // Apply the y-offset to shift the pattern vertically (1:1 pixel ratio)
-    // Scale the offset to match the UV coordinate space
     float scaledOffset = u_y_offset / u_resolution.y;
     noise_cord.y -= scaledOffset;
 
@@ -1064,8 +1083,6 @@ void main() {
             float noiseFlow = (1. + float(i)) / 30.;
             float noiseSpeed = (1. + float(i)) * 0.11;
             float noiseSeed = 13. + float(i) * 7.;
-
-            int reverseIndex = u_colors_count - i;
 
             float noise = snoise(
                 vec3(
@@ -1110,14 +1127,35 @@ float fbm(vec3 x) {
 }
 
 void main() {
+    // MOUSE DISTORTION - Applied in fragment shader as UV offset (local effect)
+    vec2 finalUv = vFlowUv;
+    
+    if (u_mouse_distortion_strength > 0.0) {
+        // Sample mouse texture at current fragment
+        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
+        float mouseValue = mouseColor.r;
+        
+        // Only apply distortion where mouse texture has values (local effect!)
+        if (mouseValue > 0.001) {
+            // Use sin for smoother displacement like original
+            float mfSin = sin(mouseValue * 3.14159);
+            
+            // Create displacement vector - strength controls intensity, radius scales the effect
+            vec2 mouseDisp = u_mouse_distortion_strength * u_mouse_distortion_radius * vec2(mfSin, mfSin);
+            
+            // Apply displacement to UV (like original: disturbedUv = vUv - mouseDisp * 0.2)
+            finalUv -= mouseDisp * 0.2;
+        }
+    }
+    
     // Decide base color pipeline:
     // - if procedural texture disabled: original gradient (v_color)
-    // - if enabled: procedural texture sampled with full flow UV, no overlay
+    // - if enabled: procedural texture sampled with mouse-distorted UV
     vec3 baseColor;
 
     if (u_enable_procedural_texture > 0.5) {
-        // Use full flowUv as texture coordinates, like the experiment's effectUv/centeredUv
-        vec2 texUv = vFlowUv;
+        // Use mouse-distorted flowUv as texture coordinates
+        vec2 texUv = finalUv;
 
         // Optionally tile a bit to avoid stretching; keep subtle to preserve randomness
         texUv *= 1.5;
@@ -1154,12 +1192,7 @@ void main() {
     // Add grain to color
     color += vec3(grain);
 
-    // Apply mouse darkening effect
-    if (u_mouse_darken > 0.0) {
-        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
-        float mouseDark = u_mouse_distortion * u_mouse_darken * mouseColor.r;
-        color *= (1.0 - mouseDark);
-    }
+    // Mouse darkening effect removed for cleaner interaction
 
     gl_FragColor = vec4(color, 1.0);
 }
@@ -1211,7 +1244,8 @@ uniform float u_flow_ease;
 uniform float u_flow_enabled;
 
 // Mouse interaction uniforms
-uniform float u_mouse_distortion;
+uniform float u_mouse_distortion_strength;
+uniform float u_mouse_distortion_radius;
 uniform float u_mouse_darken;
 uniform sampler2D u_mouse_texture;
 
@@ -1483,7 +1517,6 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 `;
-
 
 const setLinkStyles = (link: HTMLAnchorElement) => {
     link.id = LINK_ID;

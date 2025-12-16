@@ -68,8 +68,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.flowScale !== undefined) setFlowScale(config.flowScale);
         if (config.flowEase !== undefined) setFlowEase(config.flowEase);
         if (config.flowEnabled !== undefined) setFlowEnabled(config.flowEnabled);
-        // Mouse interaction
-        if (config.mouseDistortion !== undefined) setMouseDistortion(config.mouseDistortion);
+        // Mouse interaction - support legacy mouseDistortion as fallback for strength
+        if (config.mouseDistortionStrength !== undefined) setMouseDistortionStrength(config.mouseDistortionStrength);
+        else if (config.mouseDistortion !== undefined) setMouseDistortionStrength(config.mouseDistortion);
+        if (config.mouseDistortionRadius !== undefined) setMouseDistortionRadius(config.mouseDistortionRadius);
+        if (config.mouseDecayRate !== undefined) setMouseDecayRate(config.mouseDecayRate);
         if (config.mouseDarken !== undefined) setMouseDarken(config.mouseDarken);
         // Texture generation
         if (config.enableProceduralTexture !== undefined) setEnableProceduralTexture(config.enableProceduralTexture);
@@ -120,7 +123,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [flowEnabled, setFlowEnabled] = React.useState<boolean>(defaultConfig.flowEnabled ?? true);
 
     // Mouse interaction parameters
-    const [mouseDistortion, setMouseDistortion] = React.useState<number>(defaultConfig.mouseDistortion ?? 0.0);
+    const [mouseDistortionStrength, setMouseDistortionStrength] = React.useState<number>(defaultConfig.mouseDistortionStrength ?? defaultConfig.mouseDistortion ?? 0.0);
+    const [mouseDistortionRadius, setMouseDistortionRadius] = React.useState<number>(defaultConfig.mouseDistortionRadius ?? 0.25);
+    const [mouseDecayRate, setMouseDecayRate] = React.useState<number>(defaultConfig.mouseDecayRate ?? 0.96);
     const [mouseDarken, setMouseDarken] = React.useState<number>(defaultConfig.mouseDarken ?? 0.0);
 
     // Texture generation parameters
@@ -174,7 +179,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB: number;
         flowScale: number;
         flowEase: number;
-        mouseDistortion: number;
+        mouseDistortionStrength: number;
+        mouseDistortionRadius: number;
+        mouseDecayRate: number;
         mouseDarken: number;
     };
 
@@ -201,7 +208,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB: defaultConfig.flowDistortionB ?? 0,
         flowScale: defaultConfig.flowScale ?? 1.0,
         flowEase: defaultConfig.flowEase ?? 0.0,
-        mouseDistortion: defaultConfig.mouseDistortion ?? 0.0,
+        mouseDistortionStrength: defaultConfig.mouseDistortionStrength ?? defaultConfig.mouseDistortion ?? 0.0,
+        mouseDistortionRadius: defaultConfig.mouseDistortionRadius ?? 0.25,
+        mouseDecayRate: defaultConfig.mouseDecayRate ?? 0.96,
         mouseDarken: defaultConfig.mouseDarken ?? 0.0,
     }));
 
@@ -210,7 +219,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const tweenToRef = React.useRef<TweenState | null>(null);
     const tweenRafRef = React.useRef<number | null>(null);
 
-    // Whenever any animated numeric param (excluding procedural texture) changes, kick off a 400ms tween
+    // Whenever any animated numeric param changes, kick off tween
     useEffect(() => {
         const target: TweenState = {
             speed,
@@ -235,7 +244,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             flowDistortionB,
             flowScale,
             flowEase,
-            mouseDistortion,
+            mouseDistortionStrength,
+            mouseDistortionRadius,
+            mouseDecayRate,
             mouseDarken,
         };
 
@@ -296,12 +307,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB,
         flowScale,
         flowEase,
-        mouseDistortion,
+        mouseDistortionStrength,
+        mouseDistortionRadius,
+        mouseDecayRate,
         mouseDarken,
     ]);
 
-    // When creating / updating NeatGradient, use tweened for main motion params,
-    // but pass procedural texture params directly so they update immediately
+    // When creating NeatGradient
     useEffect(() => {
         if (!canvasRef.current) return;
         gradientRef.current = new NeatGradient({
@@ -325,15 +337,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainScale: tweened.grainScale,
             resolution: tweened.resolution,
             yOffset: tweened.yOffset,
-            // Flow: pass params, but library will ignore them when flowEnabled is false
+            // Flow
             flowDistortionA: tweened.flowDistortionA,
             flowDistortionB: tweened.flowDistortionB,
             flowScale: tweened.flowScale,
             flowEase: tweened.flowEase,
             flowEnabled,
-            mouseDistortion: tweened.mouseDistortion,
+            // Mouse interaction
+            mouseDistortionStrength: tweened.mouseDistortionStrength,
+            mouseDistortionRadius: tweened.mouseDistortionRadius,
+            mouseDecayRate: tweened.mouseDecayRate,
             mouseDarken: tweened.mouseDarken,
-            // Procedural texture: NO tween
+            // Procedural texture
             enableProceduralTexture,
             textureVoidLikelihood,
             textureVoidWidthMin,
@@ -350,6 +365,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         return gradientRef.current.destroy;
     }, []);
 
+    // Keep NeatGradient in sync when tweened changes
     useEffect(() => {
         if (!gradientRef.current) return;
         gradientRef.current.colors = colors;
@@ -373,15 +389,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.grainSpeed = tweened.grainSpeed;
         gradientRef.current.resolution = tweened.resolution;
         gradientRef.current.yOffset = tweened.yOffset;
-        // Flow values: always set, but NeatGradient will ignore them when flowEnabled is false
+        // Flow
         gradientRef.current.flowDistortionA = tweened.flowDistortionA;
         gradientRef.current.flowDistortionB = tweened.flowDistortionB;
         gradientRef.current.flowScale = tweened.flowScale;
         gradientRef.current.flowEase = tweened.flowEase;
         gradientRef.current.flowEnabled = flowEnabled;
-        gradientRef.current.mouseDistortion = tweened.mouseDistortion;
+        // Mouse
+        gradientRef.current.mouseDistortionStrength = tweened.mouseDistortionStrength;
+        gradientRef.current.mouseDistortionRadius = tweened.mouseDistortionRadius;
+        gradientRef.current.mouseDecayRate = tweened.mouseDecayRate;
         gradientRef.current.mouseDarken = tweened.mouseDarken;
-        // Procedural texture: direct updates (no tween)
+        // Procedural
         gradientRef.current.enableProceduralTexture = enableProceduralTexture;
         gradientRef.current.textureVoidLikelihood = textureVoidLikelihood;
         gradientRef.current.textureVoidWidthMin = textureVoidWidthMin;
@@ -464,7 +483,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowEase,
         flowEnabled,
         // Mouse interaction
-        mouseDistortion,
+        mouseDistortionStrength,
+        mouseDistortionRadius,
+        mouseDecayRate,
         mouseDarken,
         // Texture generation
         enableProceduralTexture,
@@ -918,25 +939,36 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                             {/* Mouse Interaction section */}
                             <div className="space-y-2">
-                                <div
-                                    className="font-semibold text-sm mb-2">Mouse
-                                    Interaction
+                                <div className="font-semibold text-sm mb-2">Mouse Interaction</div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Strength</span>
+                                    <Slider
+                                        value={[mouseDistortionStrength]}
+                                        step={0.01}
+                                        min={0}
+                                        max={0.5}
+                                        onValueChange={(v) => setMouseDistortionStrength(v[0] as number)}
+                                    />
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Distortion</span>
-                                    <Slider value={[mouseDistortion]}
-                                            step={0.01} min={0} max={0.5}
-                                            onValueChange={(v) => setMouseDistortion(v[0] as number)}/>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                    <Slider
+                                        value={[mouseDistortionRadius]}
+                                        step={0.01}
+                                        min={0.05}
+                                        max={0.6}
+                                        onValueChange={(v) => setMouseDistortionRadius(v[0] as number)}
+                                    />
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Darken Trail</span>
-                                    <Slider value={[mouseDarken]} step={0.01}
-                                            min={0} max={1}
-                                            onValueChange={(v) => setMouseDarken(v[0] as number)}/>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Decay Rate</span>
+                                    <Slider
+                                        value={[mouseDecayRate]}
+                                        step={0.001}
+                                        min={0.90}
+                                        max={0.99}
+                                        onValueChange={(v) => setMouseDecayRate(v[0] as number)}
+                                    />
                                 </div>
                             </div>
 
