@@ -56,7 +56,11 @@ export type NeatConfig = {
     textureBandDensity?: number;
     textureColorBlending?: number;
     textureSeed?: number;
-    proceduralBackgroundColor?: string; // NEW
+    proceduralBackgroundColor?: string;
+    textureShapeTriangles?: number;
+    textureShapeCircles?: number;
+    textureShapeBars?: number;
+    textureShapeSquiggles?: number;
 };
 
 export type NeatColor = {
@@ -128,7 +132,12 @@ export class NeatGradient implements NeatController {
     private _textureColorBlending: number = 0.01;
     private _textureSeed: number = 333;
     private _proceduralTexture: THREE.Texture | null = null;
-    private _proceduralBackgroundColor: string = "#000000"; // NEW
+    private _proceduralBackgroundColor: string = "#000000";
+
+    private _textureShapeTriangles: number = 20;
+    private _textureShapeCircles: number = 15;
+    private _textureShapeBars: number = 15;
+    private _textureShapeSquiggles: number = 10;
 
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
@@ -178,7 +187,11 @@ export class NeatGradient implements NeatController {
             textureBandDensity = 2.15,
             textureColorBlending = 0.01,
             textureSeed = 333,
-            proceduralBackgroundColor = "#000000", // NEW
+            proceduralBackgroundColor = "#000000",
+            textureShapeTriangles = 20,
+            textureShapeCircles = 15,
+            textureShapeBars = 15,
+            textureShapeSquiggles = 10,
         } = config;
 
 
@@ -227,7 +240,12 @@ export class NeatGradient implements NeatController {
         this.textureBandDensity = textureBandDensity;
         this.textureColorBlending = textureColorBlending;
         this.textureSeed = textureSeed;
-        this._proceduralBackgroundColor = proceduralBackgroundColor; // NEW
+        this._proceduralBackgroundColor = proceduralBackgroundColor;
+
+        this._textureShapeTriangles = textureShapeTriangles;
+        this._textureShapeCircles = textureShapeCircles;
+        this._textureShapeBars = textureShapeBars;
+        this._textureShapeSquiggles = textureShapeSquiggles;
 
         this.sceneState = this._initScene(resolution);
 
@@ -558,6 +576,23 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    set textureShapeTriangles(value: number) {
+        this._textureShapeTriangles = value;
+        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+    }
+    set textureShapeCircles(value: number) {
+        this._textureShapeCircles = value;
+        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+    }
+    set textureShapeBars(value: number) {
+        this._textureShapeBars = value;
+        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+    }
+    set textureShapeSquiggles(value: number) {
+        this._textureShapeSquiggles = value;
+        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+    }
+
     _initScene(resolution: number): SceneState {
 
         const width = this._ref.width,
@@ -741,11 +776,17 @@ export class NeatGradient implements NeatController {
         if (!sCtx) return new THREE.Texture();
 
         let seed = this._textureSeed;
+        const baseSeed = this._textureSeed;
 
         function random() {
             const x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
         }
+
+        // Helper to reset seed for isolated shape generation
+        const setSeed = (offset: number) => {
+            seed = baseSeed + offset;
+        };
 
         const colors = this._colors.filter(c => c.enabled).map(c => c.color);
         if (colors.length === 0) return new THREE.Texture();
@@ -789,8 +830,8 @@ export class NeatGradient implements NeatController {
         sCtx.fillStyle = bgGrad;
         sCtx.fillRect(0, 0, texSize, texSize);
 
-        // Triangles
-        for (let i = 0; i < 20; i++) {
+        // Triangles: use configurable count
+        for (let i = 0; i < this._textureShapeTriangles; i++) {
             sCtx.fillStyle = getInterColor();
             sCtx.beginPath();
             const x = random() * texSize;
@@ -802,8 +843,8 @@ export class NeatGradient implements NeatController {
             sCtx.fill();
         }
 
-        // Circles / rings
-        for (let i = 0; i < 15; i++) {
+        // Circles / rings: use configurable count
+        for (let i = 0; i < this._textureShapeCircles; i++) {
             sCtx.strokeStyle = getInterColor();
             sCtx.lineWidth = 10 + random() * 50;
             sCtx.beginPath();
@@ -814,8 +855,8 @@ export class NeatGradient implements NeatController {
             sCtx.stroke();
         }
 
-        // Bars
-        for (let i = 0; i < 15; i++) {
+        // Bars: use configurable count
+        for (let i = 0; i < this._textureShapeBars; i++) {
             sCtx.fillStyle = getInterColor();
             sCtx.save();
             sCtx.translate(random() * texSize, random() * texSize);
@@ -824,10 +865,10 @@ export class NeatGradient implements NeatController {
             sCtx.restore();
         }
 
-        // Squiggles
+        // Squiggles: use configurable count
         sCtx.lineWidth = 15;
         sCtx.lineCap = 'round';
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < this._textureShapeSquiggles; i++) {
             sCtx.strokeStyle = getInterColor();
             sCtx.beginPath();
             let x = random() * texSize;
@@ -846,6 +887,8 @@ export class NeatGradient implements NeatController {
         }
 
         // === MASKED CANVAS ===
+        // Masking: Seed isolation
+        setSeed(50000);
         const canvas = document.createElement('canvas');
         canvas.width = texSize;
         canvas.height = texSize;

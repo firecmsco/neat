@@ -77,6 +77,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.textureColorBlending !== undefined) setTextureColorBlending(config.textureColorBlending);
         if (config.textureSeed !== undefined) setTextureSeed(config.textureSeed);
         if (config.proceduralBackgroundColor !== undefined) setProceduralBackgroundColor(config.proceduralBackgroundColor);
+        // Shape counts: use defaults if not defined on the preset
+        setTextureShapeTriangles(config.textureShapeTriangles ?? 20);
+        setTextureShapeCircles(config.textureShapeCircles ?? 15);
+        setTextureShapeBars(config.textureShapeBars ?? 15);
+        setTextureShapeSquiggles(config.textureShapeSquiggles ?? 10);
     }
 
     const scrollRef = useRef<number>(0);
@@ -123,6 +128,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [textureColorBlending, setTextureColorBlending] = React.useState<number>(defaultConfig.textureColorBlending ?? 0.01);
     const [textureSeed, setTextureSeed] = React.useState<number>(defaultConfig.textureSeed ?? 333);
     const [proceduralBackgroundColor, setProceduralBackgroundColor] = React.useState<string>(defaultConfig.proceduralBackgroundColor ?? "#000000");
+    const [textureShapeTriangles, setTextureShapeTriangles] = React.useState<number>(defaultConfig.textureShapeTriangles ?? 20);
+    const [textureShapeCircles, setTextureShapeCircles] = React.useState<number>(defaultConfig.textureShapeCircles ?? 15);
+    const [textureShapeBars, setTextureShapeBars] = React.useState<number>(defaultConfig.textureShapeBars ?? 15);
+    const [textureShapeSquiggles, setTextureShapeSquiggles] = React.useState<number>(defaultConfig.textureShapeSquiggles ?? 10);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -177,6 +186,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             textureColorBlending,
             textureSeed,
             proceduralBackgroundColor,
+            textureShapeTriangles,
+            textureShapeCircles,
+            textureShapeBars,
+            textureShapeSquiggles,
         });
         return gradientRef.current.destroy;
     }, []);
@@ -221,7 +234,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.textureColorBlending = textureColorBlending;
         gradientRef.current.textureSeed = textureSeed;
         gradientRef.current.proceduralBackgroundColor = proceduralBackgroundColor;
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed, yOffset, flowDistortionA, flowDistortionB, flowScale, flowEase, mouseDistortion, mouseDarken, enableProceduralTexture, textureVoidLikelihood, textureVoidWidthMin, textureVoidWidthMax, textureBandDensity, textureColorBlending, textureSeed, proceduralBackgroundColor]);
+        // Shape counts
+        // @ts-ignore - extended fields
+        gradientRef.current.textureShapeTriangles = textureShapeTriangles;
+        // @ts-ignore
+        gradientRef.current.textureShapeCircles = textureShapeCircles;
+        // @ts-ignore
+        gradientRef.current.textureShapeBars = textureShapeBars;
+        // @ts-ignore
+        gradientRef.current.textureShapeSquiggles = textureShapeSquiggles;
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed, yOffset, flowDistortionA, flowDistortionB, flowScale, flowEase, mouseDistortion, mouseDarken, enableProceduralTexture, textureVoidLikelihood, textureVoidWidthMin, textureVoidWidthMax, textureBandDensity, textureColorBlending, textureSeed, proceduralBackgroundColor, textureShapeTriangles, textureShapeCircles, textureShapeBars, textureShapeSquiggles]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -279,6 +301,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureColorBlending,
         textureSeed,
         proceduralBackgroundColor,
+        textureShapeTriangles,
+        textureShapeCircles,
+        textureShapeBars,
+        textureShapeSquiggles,
     };
 
     const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
@@ -659,6 +685,22 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     onChange={(c) => setProceduralBackgroundColor(c.color)}
                                                 />
                                             </div>
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Triangles</span>
+                                            <Slider value={[textureShapeTriangles]} step={1} min={0} max={100} onValueChange={(v) => setTextureShapeTriangles(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Circles</span>
+                                            <Slider value={[textureShapeCircles]} step={1} min={0} max={100} onValueChange={(v) => setTextureShapeCircles(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Bars</span>
+                                            <Slider value={[textureShapeBars]} step={1} min={0} max={100} onValueChange={(v) => setTextureShapeBars(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Squiggles</span>
+                                            <Slider value={[textureShapeSquiggles]} step={1} min={0} max={100} onValueChange={(v) => setTextureShapeSquiggles(v[0] as number)} />
                                         </div>
                                     </>
                                 )}
