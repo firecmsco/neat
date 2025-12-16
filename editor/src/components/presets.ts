@@ -1,3 +1,5 @@
+import { NeatConfig } from "@firecms/neat";
+
 export const NEAT_PRESET = {
     colors: [
         {
@@ -44,9 +46,8 @@ export const NEAT_PRESET = {
     grainIntensity: 0,
     grainSpeed: 1,
     resolution: 1,
-    colorDodge: true,
     enableProceduralTexture: false,
-};
+} satisfies NeatConfig;
 
 export const STRIPE_PRESET = {
     colors: [
