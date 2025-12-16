@@ -9,9 +9,10 @@ export interface SliderProps {
   step?: number;
   size?: "small" | "default";
   className?: string;
+  disabled?: boolean;
 }
 
-export function Slider({ value, onValueChange, min = 0, max = 100, step = 1, className }: SliderProps) {
+export function Slider({ value, onValueChange, min = 0, max = 100, step = 1, className, disabled = false }: SliderProps) {
   return (
     <RadixSlider.Root
       className={"relative flex w-full touch-none select-none items-center " + (className ?? "")}
@@ -20,6 +21,7 @@ export function Slider({ value, onValueChange, min = 0, max = 100, step = 1, cla
       step={step}
       value={value}
       onValueChange={(v) => onValueChange([v[0]])}
+      disabled={disabled}
     >
       <RadixSlider.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-white/20">
         <RadixSlider.Range className="absolute h-full bg-white" />
