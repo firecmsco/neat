@@ -45,6 +45,7 @@ export type NeatConfig = {
     flowDistortionB?: number;
     flowScale?: number;
     flowEase?: number;
+    flowEnabled?: boolean;
     // Mouse interaction
     mouseDistortion?: number;
     mouseDarken?: number;
@@ -112,6 +113,7 @@ export class NeatGradient implements NeatController {
     private _flowDistortionB: number = 0;
     private _flowScale: number = 1.0;
     private _flowEase: number = 0.0;
+    private _flowEnabled: boolean = true;
 
     // Mouse interaction properties
     private _mouseDistortion: number = 0.0;
@@ -176,6 +178,7 @@ export class NeatGradient implements NeatController {
             flowDistortionB = 0,
             flowScale = 1.0,
             flowEase = 0.0,
+            flowEnabled = true,
             // Mouse interaction
             mouseDistortion = 0.0,
             mouseDarken = 0.0,
@@ -227,6 +230,7 @@ export class NeatGradient implements NeatController {
         this.flowDistortionB = flowDistortionB;
         this.flowScale = flowScale;
         this.flowEase = flowEase;
+        this.flowEnabled = flowEnabled;
 
         // Mouse interaction
         this.mouseDistortion = mouseDistortion;
@@ -333,6 +337,8 @@ export class NeatGradient implements NeatController {
                 mesh.material.uniforms.u_flow_scale = { value: this._flowScale };
                 // @ts-ignore
                 mesh.material.uniforms.u_flow_ease = { value: this._flowEase };
+                // @ts-ignore
+                mesh.material.uniforms.u_flow_enabled = { value: this._flowEnabled ? 1.0 : 0.0 };
                 // @ts-ignore
                 mesh.material.uniforms.u_mouse_distortion = { value: this._mouseDistortion };
                 // @ts-ignore
@@ -512,6 +518,14 @@ export class NeatGradient implements NeatController {
         this._flowEase = value;
     }
 
+    set flowEnabled(value: boolean) {
+        this._flowEnabled = value;
+    }
+
+    get flowEnabled(): boolean {
+        return this._flowEnabled;
+    }
+
     set mouseDistortion(value: number) {
         this._mouseDistortion = value;
     }
@@ -671,6 +685,7 @@ export class NeatGradient implements NeatController {
             u_flow_distortion_b: { value: this._flowDistortionB },
             u_flow_scale: { value: this._flowScale },
             u_flow_ease: { value: this._flowEase },
+            u_flow_enabled: { value: this._flowEnabled ? 1.0 : 0.0 },
             // Mouse interaction
             u_mouse_distortion: { value: this._mouseDistortion },
             u_mouse_darken: { value: this._mouseDarken },
@@ -999,29 +1014,32 @@ void main() {
         u_time
     ));
 
-    // Apply flow field distortion if enabled
+    // Flow UV: if flow is disabled, just use plain vUv
     vec2 flowUv = vUv;
-    if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
-        // Mouse distortion
-        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
-        float mfSin = sin(mouseColor.r);
-        vec2 mouseDisp = u_mouse_distortion * vec2(mfSin, mfSin);
-        
-        vec2 disturbedUv = vUv - mouseDisp * 0.2;
-        vec2 ppp = -1.0 + 2.0 * disturbedUv;
-        
-        // Flow field calculations
-        ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
-        ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
-        ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
-        ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
-        
-        float r = length(ppp);
-        
-        // Blend between original UV and flow-distorted UV
-        flowUv = mix(vUv, vec2(vUv.x * (1.0 - u_flow_ease) + r * u_flow_ease, vUv.y), u_flow_ease);
+    if (u_flow_enabled > 0.5) {
+        // Only apply flow when enabled
+        if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
+            // Mouse distortion
+            vec4 mouseColor = texture2D(u_mouse_texture, vUv);
+            float mfSin = sin(mouseColor.r);
+            vec2 mouseDisp = u_mouse_distortion * vec2(mfSin, mfSin);
+
+            vec2 disturbedUv = vUv - mouseDisp * 0.2;
+            vec2 ppp = -1.0 + 2.0 * disturbedUv;
+
+            // Flow field calculations
+            ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
+            ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
+            ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
+            ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
+
+            float r = length(ppp);
+
+            // Blend between original UV and flow-distorted UV
+            flowUv = mix(vUv, vec2(vUv.x * (1.0 - u_flow_ease) + r * u_flow_ease, vUv.y), u_flow_ease);
+        }
     }
-    
+
     // Pass flow UV to fragment shader
     vFlowUv = flowUv;
 
@@ -1190,6 +1208,7 @@ uniform float u_flow_distortion_a;
 uniform float u_flow_distortion_b;
 uniform float u_flow_scale;
 uniform float u_flow_ease;
+uniform float u_flow_enabled;
 
 // Mouse interaction uniforms
 uniform float u_mouse_distortion;

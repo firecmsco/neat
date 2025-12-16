@@ -47,6 +47,7 @@ export const NEAT_PRESET = {
     grainSpeed: 1,
     resolution: 1,
     enableProceduralTexture: false,
+    flowEnabled: true,
 } satisfies NeatConfig;
 
 export const STRIPE_PRESET = {
@@ -54,6 +55,7 @@ export const STRIPE_PRESET = {
         {
             color: '#FD113F',
             enabled: true,
+
         },
         {
             color: '#90E0FF',
@@ -95,6 +97,7 @@ export const STRIPE_PRESET = {
     grainSpeed: 0,
     resolution: 1,
     enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const FIRECMS_PRESET = {
@@ -144,6 +147,7 @@ export const FIRECMS_PRESET = {
     "grainSpeed": 0,
     "resolution": 0.95,
     enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const FLUID_PRESET = {
@@ -207,6 +211,7 @@ export const FLUID_PRESET = {
     textureColorBlending: 0.06,
     textureSeed: 333,
     proceduralBackgroundColor: '#3D2D2D',
+    flowEnabled: true,
 };
 
 export const YEX_PRESET = {
@@ -236,7 +241,7 @@ export const YEX_PRESET = {
             enabled: true,
         },
     ],
-        speed: 1,
+    speed: 1,
     horizontalPressure: 4,
     verticalPressure: 4,
     waveFrequencyX: 2,
@@ -270,6 +275,7 @@ export const YEX_PRESET = {
     textureColorBlending: 0.06,
     textureSeed: 333,
     proceduralBackgroundColor: '#003FFF',
+    flowEnabled: true,
 }
 
 
@@ -316,6 +322,7 @@ export const FLAME_PRESET = {
     "grainSpeed": 1,
     "resolution": 0.5,
     enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const BLOOM_PRESET = {
@@ -360,7 +367,8 @@ export const BLOOM_PRESET = {
     "grainIntensity": 0,
     "grainSpeed": 0,
     "resolution": 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 export const SANDS_PRESET = {
     colors: [
@@ -404,7 +412,8 @@ export const SANDS_PRESET = {
     grainIntensity: 0.3,
     grainSpeed: 5,
     resolution: 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 export const MONTEREY_PRESET = {
@@ -430,9 +439,9 @@ export const MONTEREY_PRESET = {
             enabled: false,
         },
         {
-            "color": "#FF9A9E",
-            "enabled": false
-        }
+            color: '#FF9A9E',
+            enabled: false,
+        },
     ],
     speed: 4,
     horizontalPressure: 7,
@@ -448,13 +457,33 @@ export const MONTEREY_PRESET = {
     colorBlending: 9,
     backgroundColor: '#003FFF',
     backgroundAlpha: 1,
-    grainScale: 0,
+    grainScale: 6,
     grainSparsity: 0,
-    grainIntensity: 0,
+    grainIntensity: 0.125,
     grainSpeed: 0,
-    resolution: 1,
-    enableProceduralTexture: false
+    resolution: 1.15,
+    yOffset: 150,
+    flowDistortionA: 0.4,
+    flowDistortionB: 10,
+    flowScale: 3.3,
+    flowEase: 0.37,
+    mouseDistortion: 0.15,
+    mouseDarken: 0.24,
+    enableProceduralTexture: false,
+    textureVoidLikelihood: 0.06,
+    textureVoidWidthMin: 10,
+    textureVoidWidthMax: 500,
+    textureBandDensity: 0.8,
+    textureColorBlending: 0.06,
+    textureSeed: 333,
+    proceduralBackgroundColor: '#003FFF',
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
+    flowEnabled: true,
 };
+
 export const ALEJANDRA_PRESET = {
     "colors": [
         {
@@ -497,7 +526,8 @@ export const ALEJANDRA_PRESET = {
     "grainIntensity": 0.25,
     "grainSpeed": 1,
     "resolution": 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const LEMON_PRESET = {
@@ -542,7 +572,8 @@ export const LEMON_PRESET = {
     "grainIntensity": 0.2,
     "grainSpeed": 2.2,
     "resolution": 0.65,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 }
 
 export const GLITCH_PRESET = {
@@ -587,7 +618,8 @@ export const GLITCH_PRESET = {
     "grainIntensity": 0,
     "grainSpeed": 0,
     "resolution": 1.2,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 }
 export const PASTEL_PRESET = {
     colors: [
@@ -631,7 +663,8 @@ export const PASTEL_PRESET = {
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const CLOUDS_PRESET = {
@@ -676,7 +709,8 @@ export const CLOUDS_PRESET = {
     "grainIntensity": 0.05,
     "grainSpeed": 0.3,
     "resolution": 0.5,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const DARK_MODE = {
@@ -722,7 +756,8 @@ export const DARK_MODE = {
     grainSpeed: 1,
     resolution: 0.75,
     yOffset: 0,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const NIGHT_DUNES = {
@@ -771,7 +806,8 @@ export const NIGHT_DUNES = {
     grainIntensity: 0.175,
     grainSpeed: 1,
     resolution: 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 
@@ -821,7 +857,8 @@ export const PRUSSIAN_BLUE_PRESET = {
     grainIntensity: 0,
     grainSpeed: 0,
     resolution: 0.5,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const NIGHTTIME = {
@@ -866,7 +903,8 @@ export const NIGHTTIME = {
     "grainIntensity": 0.5,
     "grainSpeed": 1,
     "resolution": 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true,
 };
 
 export const PSYCHEDELIC_PRESET = {
@@ -884,7 +922,8 @@ export const PSYCHEDELIC_PRESET = {
     "speed": 4,
     "horizontalPressure": 7,
     "verticalPressure": 7,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 
@@ -929,7 +968,8 @@ export const SPLASH_PRESET = {
     "grainIntensity": 0.3,
     "grainSpeed": 0,
     "resolution": 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 
@@ -974,7 +1014,8 @@ export const OCEANIC_PRESET = {
     "grainIntensity": 0.3,
     "grainSpeed": 1,
     "resolution": 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 export const FOREST_PRESET = {
@@ -1003,7 +1044,8 @@ export const FOREST_PRESET = {
     "grainIntensity": 0.2,
     "grainSpeed": 0.8,
     "resolution": 1.2,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 const OCEANS_ELEVEN_PRESET = {
@@ -1048,7 +1090,8 @@ const OCEANS_ELEVEN_PRESET = {
     grainIntensity: 0,
     grainSpeed: 10,
     resolution: 1,
-    enableProceduralTexture: false
+    enableProceduralTexture: false,
+    flowEnabled: true
 };
 
 export const PRESETS = {

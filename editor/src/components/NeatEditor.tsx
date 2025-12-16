@@ -18,7 +18,7 @@ import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat";
 import { ImportConfigDialog } from "./ImportConfigDialog";
 
-const defaultConfig: NeatConfig = NEAT_PRESET;
+const defaultConfig: NeatConfig = NEAT_PRESET as NeatConfig;
 
 export type NeatEditorProps = {
     analytics: Analytics;
@@ -67,6 +67,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.flowDistortionB !== undefined) setFlowDistortionB(config.flowDistortionB);
         if (config.flowScale !== undefined) setFlowScale(config.flowScale);
         if (config.flowEase !== undefined) setFlowEase(config.flowEase);
+        if (config.flowEnabled !== undefined) setFlowEnabled(config.flowEnabled);
         // Mouse interaction
         if (config.mouseDistortion !== undefined) setMouseDistortion(config.mouseDistortion);
         if (config.mouseDarken !== undefined) setMouseDarken(config.mouseDarken);
@@ -89,26 +90,26 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const scrollRef = useRef<number>(0);
 
     const [selectedPresetIndex, setSelectedPresetIndex] = React.useState<number>(0);
-    const [colors, setColors] = React.useState<NeatColor[]>(defaultConfig.colors);
-    const [wireframe, setWireframe] = React.useState<boolean>(defaultConfig.wireframe);
-    const [speed, setSpeed] = React.useState<number>(defaultConfig.speed);
-    const [colorBlending, setColorBlending] = React.useState<number>(defaultConfig.colorBlending);
-    const [horizontalPressure, setHorizontalPressure] = React.useState<number>(defaultConfig.horizontalPressure);
-    const [verticalPressure, setVerticalPressure] = React.useState<number>(defaultConfig.verticalPressure);
-    const [shadows, setShadows] = React.useState<number>(defaultConfig.shadows);
-    const [highlights, setHighlights] = React.useState<number>(defaultConfig.highlights);
-    const [saturation, setSaturation] = React.useState<number>(defaultConfig.colorSaturation);
-    const [brightness, setBrightness] = React.useState<number>(defaultConfig.colorBrightness);
-    const [waveFrequencyX, setWaveFrequencyX] = React.useState<number>(defaultConfig.waveFrequencyX);
-    const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY);
-    const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude);
-    const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution);
-    const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha);
-    const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor);
-    const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity);
-    const [grainSparsity, setGrainSparsity] = React.useState<number>(defaultConfig.grainSparsity);
-    const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
-    const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
+    const [colors, setColors] = React.useState<NeatColor[]>(defaultConfig.colors ?? []);
+    const [wireframe, setWireframe] = React.useState<boolean>(defaultConfig.wireframe ?? false);
+    const [speed, setSpeed] = React.useState<number>(defaultConfig.speed ?? 4);
+    const [colorBlending, setColorBlending] = React.useState<number>(defaultConfig.colorBlending ?? 5);
+    const [horizontalPressure, setHorizontalPressure] = React.useState<number>(defaultConfig.horizontalPressure ?? 3);
+    const [verticalPressure, setVerticalPressure] = React.useState<number>(defaultConfig.verticalPressure ?? 3);
+    const [shadows, setShadows] = React.useState<number>(defaultConfig.shadows ?? 4);
+    const [highlights, setHighlights] = React.useState<number>(defaultConfig.highlights ?? 4);
+    const [saturation, setSaturation] = React.useState<number>(defaultConfig.colorSaturation ?? 0);
+    const [brightness, setBrightness] = React.useState<number>(defaultConfig.colorBrightness ?? 1);
+    const [waveFrequencyX, setWaveFrequencyX] = React.useState<number>(defaultConfig.waveFrequencyX ?? 5);
+    const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY ?? 5);
+    const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude ?? 3);
+    const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution ?? 1);
+    const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha ?? 1);
+    const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor ?? "#000000");
+    const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity ?? 0.55);
+    const [grainSparsity, setGrainSparsity] = React.useState<number>(defaultConfig.grainSparsity ?? 0);
+    const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale ?? 2);
+    const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed ?? 0.1);
     const [yOffset, setYOffset] = React.useState<number>(0);
 
     // Flow field parameters
@@ -116,6 +117,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [flowDistortionB, setFlowDistortionB] = React.useState<number>(defaultConfig.flowDistortionB ?? 0);
     const [flowScale, setFlowScale] = React.useState<number>(defaultConfig.flowScale ?? 1.0);
     const [flowEase, setFlowEase] = React.useState<number>(defaultConfig.flowEase ?? 0.0);
+    const [flowEnabled, setFlowEnabled] = React.useState<boolean>(defaultConfig.flowEnabled ?? true);
 
     // Mouse interaction parameters
     const [mouseDistortion, setMouseDistortion] = React.useState<number>(defaultConfig.mouseDistortion ?? 0.0);
@@ -149,24 +151,51 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     }, []);
 
     // Tweened values that drive NeatGradient (we animate towards the raw state)
-    const [tweened, setTweened] = React.useState(() => ({
-        speed: defaultConfig.speed,
-        horizontalPressure: defaultConfig.horizontalPressure,
-        verticalPressure: defaultConfig.verticalPressure,
-        waveFrequencyX: defaultConfig.waveFrequencyX,
-        waveFrequencyY: defaultConfig.waveFrequencyY,
-        waveAmplitude: defaultConfig.waveAmplitude,
-        shadows: defaultConfig.shadows,
-        highlights: defaultConfig.highlights,
-        saturation: defaultConfig.colorSaturation,
-        brightness: defaultConfig.colorBrightness,
-        colorBlending: defaultConfig.colorBlending,
-        resolution: defaultConfig.resolution,
-        backgroundAlpha: defaultConfig.backgroundAlpha,
-        grainIntensity: defaultConfig.grainIntensity,
-        grainSparsity: defaultConfig.grainSparsity,
-        grainScale: defaultConfig.grainScale,
-        grainSpeed: defaultConfig.grainSpeed,
+    type TweenState = {
+        speed: number;
+        horizontalPressure: number;
+        verticalPressure: number;
+        waveFrequencyX: number;
+        waveFrequencyY: number;
+        waveAmplitude: number;
+        shadows: number;
+        highlights: number;
+        saturation: number;
+        brightness: number;
+        colorBlending: number;
+        resolution: number;
+        backgroundAlpha: number;
+        grainIntensity: number;
+        grainSparsity: number;
+        grainScale: number;
+        grainSpeed: number;
+        yOffset: number;
+        flowDistortionA: number;
+        flowDistortionB: number;
+        flowScale: number;
+        flowEase: number;
+        mouseDistortion: number;
+        mouseDarken: number;
+    };
+
+    const [tweened, setTweened] = React.useState<TweenState>(() => ({
+        speed: defaultConfig.speed ?? 4,
+        horizontalPressure: defaultConfig.horizontalPressure ?? 3,
+        verticalPressure: defaultConfig.verticalPressure ?? 3,
+        waveFrequencyX: defaultConfig.waveFrequencyX ?? 5,
+        waveFrequencyY: defaultConfig.waveFrequencyY ?? 5,
+        waveAmplitude: defaultConfig.waveAmplitude ?? 3,
+        shadows: defaultConfig.shadows ?? 4,
+        highlights: defaultConfig.highlights ?? 4,
+        saturation: defaultConfig.colorSaturation ?? 0,
+        brightness: defaultConfig.colorBrightness ?? 1,
+        colorBlending: defaultConfig.colorBlending ?? 5,
+        resolution: defaultConfig.resolution ?? 1,
+        backgroundAlpha: defaultConfig.backgroundAlpha ?? 1,
+        grainIntensity: defaultConfig.grainIntensity ?? 0.55,
+        grainSparsity: defaultConfig.grainSparsity ?? 0,
+        grainScale: defaultConfig.grainScale ?? 2,
+        grainSpeed: defaultConfig.grainSpeed ?? 0.1,
         yOffset: 0,
         flowDistortionA: defaultConfig.flowDistortionA ?? 0,
         flowDistortionB: defaultConfig.flowDistortionB ?? 0,
@@ -174,17 +203,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowEase: defaultConfig.flowEase ?? 0.0,
         mouseDistortion: defaultConfig.mouseDistortion ?? 0.0,
         mouseDarken: defaultConfig.mouseDarken ?? 0.0,
-        // NOTE: procedural texture parameters are intentionally NOT tweened
     }));
 
     const tweenStartRef = React.useRef<number | null>(null);
-    const tweenFromRef = React.useRef<typeof tweened | null>(null);
-    const tweenToRef = React.useRef<typeof tweened | null>(null);
+    const tweenFromRef = React.useRef<TweenState | null>(null);
+    const tweenToRef = React.useRef<TweenState | null>(null);
     const tweenRafRef = React.useRef<number | null>(null);
 
     // Whenever any animated numeric param (excluding procedural texture) changes, kick off a 400ms tween
     useEffect(() => {
-        const target = {
+        const target: TweenState = {
             speed,
             horizontalPressure,
             verticalPressure,
@@ -297,10 +325,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainScale: tweened.grainScale,
             resolution: tweened.resolution,
             yOffset: tweened.yOffset,
+            // Flow: pass params, but library will ignore them when flowEnabled is false
             flowDistortionA: tweened.flowDistortionA,
             flowDistortionB: tweened.flowDistortionB,
             flowScale: tweened.flowScale,
             flowEase: tweened.flowEase,
+            flowEnabled,
             mouseDistortion: tweened.mouseDistortion,
             mouseDarken: tweened.mouseDarken,
             // Procedural texture: NO tween
@@ -343,10 +373,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.grainSpeed = tweened.grainSpeed;
         gradientRef.current.resolution = tweened.resolution;
         gradientRef.current.yOffset = tweened.yOffset;
+        // Flow values: always set, but NeatGradient will ignore them when flowEnabled is false
         gradientRef.current.flowDistortionA = tweened.flowDistortionA;
         gradientRef.current.flowDistortionB = tweened.flowDistortionB;
         gradientRef.current.flowScale = tweened.flowScale;
         gradientRef.current.flowEase = tweened.flowEase;
+        gradientRef.current.flowEnabled = flowEnabled;
         gradientRef.current.mouseDistortion = tweened.mouseDistortion;
         gradientRef.current.mouseDarken = tweened.mouseDarken;
         // Procedural texture: direct updates (no tween)
@@ -383,6 +415,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureShapeCircles,
         textureShapeBars,
         textureShapeSquiggles,
+        flowEnabled,
     ]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
@@ -429,6 +462,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB,
         flowScale,
         flowEase,
+        flowEnabled,
         // Mouse interaction
         mouseDistortion,
         mouseDarken,
@@ -850,34 +884,32 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 <div className="font-semibold text-sm mb-2">Flow
                                     Field
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Wave Amplitude</span>
+                                <Label className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                    <span className="text-xs w-28 text-right">Enable Flow</span>
+                                    <div className={"w-full flex"}>
+                                        <Checkbox checked={flowEnabled} onChange={(checked: boolean) => setFlowEnabled(checked)} />
+                                    </div>
+                                </Label>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Amplitude</span>
                                     <Slider value={[flowDistortionA]} step={0.1}
                                             min={0} max={5}
                                             onValueChange={(v) => setFlowDistortionA(v[0] as number)}/>
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Wave Frequency</span>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Frequency</span>
                                     <Slider value={[flowDistortionB]} step={0.1}
                                             min={0} max={10}
                                             onValueChange={(v) => setFlowDistortionB(v[0] as number)}/>
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Wave Scale</span>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Scale</span>
                                     <Slider value={[flowScale]} step={0.1}
                                             min={0} max={5}
                                             onValueChange={(v) => setFlowScale(v[0] as number)}/>
                                 </div>
-                                <div
-                                    className="flex flex-row gap-2 items-center">
-                                    <span
-                                        className="w-28 text-right pr-2 text-xs">Ease (Blend)</span>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Ease (Blend)</span>
                                     <Slider value={[flowEase]} step={0.01}
                                             min={0} max={1}
                                             onValueChange={(v) => setFlowEase(v[0] as number)}/>
