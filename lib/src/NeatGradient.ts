@@ -808,6 +808,8 @@ export class NeatGradient implements NeatController {
     }
 
     _createProceduralTexture(): THREE.Texture {
+        // Texture size - 1024 provides good balance between quality and performance
+        // Can be increased to 2048 for even better quality if needed
         const texSize = 1024;
         const sourceCanvas = document.createElement('canvas');
         sourceCanvas.width = texSize;
@@ -978,10 +980,19 @@ export class NeatGradient implements NeatController {
         }
 
         const tex = new THREE.CanvasTexture(canvas);
-        tex.minFilter = THREE.LinearFilter;
+        // Use mipmapping for better quality when texture is scaled
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
+
+        // Enable anisotropic filtering for much better quality when texture is stretched
+        // 16 is a commonly supported value that dramatically improves quality
+        tex.anisotropy = 16;
+
+        // Ensure mipmaps are generated
+        tex.needsUpdate = true;
+
         return tex;
     }
 
