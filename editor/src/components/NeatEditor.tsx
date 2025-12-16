@@ -60,6 +60,23 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.grainSpeed !== undefined) setGrainSpeed(config.grainSpeed);
         if (config.grainScale !== undefined) setGrainScale(config.grainScale);
         if (config.yOffset !== undefined) setYOffset(config.yOffset);
+        // Flow field
+        if (config.flowDistortionA !== undefined) setFlowDistortionA(config.flowDistortionA);
+        if (config.flowDistortionB !== undefined) setFlowDistortionB(config.flowDistortionB);
+        if (config.flowScale !== undefined) setFlowScale(config.flowScale);
+        if (config.flowEase !== undefined) setFlowEase(config.flowEase);
+        // Mouse interaction
+        if (config.mouseDistortion !== undefined) setMouseDistortion(config.mouseDistortion);
+        if (config.mouseDarken !== undefined) setMouseDarken(config.mouseDarken);
+        // Texture generation
+        if (config.enableProceduralTexture !== undefined) setEnableProceduralTexture(config.enableProceduralTexture);
+        if (config.textureVoidLikelihood !== undefined) setTextureVoidLikelihood(config.textureVoidLikelihood);
+        if (config.textureVoidWidthMin !== undefined) setTextureVoidWidthMin(config.textureVoidWidthMin);
+        if (config.textureVoidWidthMax !== undefined) setTextureVoidWidthMax(config.textureVoidWidthMax);
+        if (config.textureBandDensity !== undefined) setTextureBandDensity(config.textureBandDensity);
+        if (config.textureColorBlending !== undefined) setTextureColorBlending(config.textureColorBlending);
+        if (config.textureSeed !== undefined) setTextureSeed(config.textureSeed);
+        if (config.proceduralBackgroundColor !== undefined) setProceduralBackgroundColor(config.proceduralBackgroundColor);
     }
 
     const scrollRef = useRef<number>(0);
@@ -86,6 +103,26 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [grainScale, setGrainScale] = React.useState<number>(defaultConfig.grainScale);
     const [grainSpeed, setGrainSpeed] = React.useState<number>(defaultConfig.grainSpeed);
     const [yOffset, setYOffset] = React.useState<number>(0);
+
+    // Flow field parameters
+    const [flowDistortionA, setFlowDistortionA] = React.useState<number>(defaultConfig.flowDistortionA ?? 0);
+    const [flowDistortionB, setFlowDistortionB] = React.useState<number>(defaultConfig.flowDistortionB ?? 0);
+    const [flowScale, setFlowScale] = React.useState<number>(defaultConfig.flowScale ?? 1.0);
+    const [flowEase, setFlowEase] = React.useState<number>(defaultConfig.flowEase ?? 0.0);
+
+    // Mouse interaction parameters
+    const [mouseDistortion, setMouseDistortion] = React.useState<number>(defaultConfig.mouseDistortion ?? 0.0);
+    const [mouseDarken, setMouseDarken] = React.useState<number>(defaultConfig.mouseDarken ?? 0.0);
+
+    // Texture generation parameters
+    const [enableProceduralTexture, setEnableProceduralTexture] = React.useState<boolean>(defaultConfig.enableProceduralTexture ?? false);
+    const [textureVoidLikelihood, setTextureVoidLikelihood] = React.useState<number>(defaultConfig.textureVoidLikelihood ?? 0.45);
+    const [textureVoidWidthMin, setTextureVoidWidthMin] = React.useState<number>(defaultConfig.textureVoidWidthMin ?? 200);
+    const [textureVoidWidthMax, setTextureVoidWidthMax] = React.useState<number>(defaultConfig.textureVoidWidthMax ?? 486);
+    const [textureBandDensity, setTextureBandDensity] = React.useState<number>(defaultConfig.textureBandDensity ?? 2.15);
+    const [textureColorBlending, setTextureColorBlending] = React.useState<number>(defaultConfig.textureColorBlending ?? 0.01);
+    const [textureSeed, setTextureSeed] = React.useState<number>(defaultConfig.textureSeed ?? 333);
+    const [proceduralBackgroundColor, setProceduralBackgroundColor] = React.useState<string>(defaultConfig.proceduralBackgroundColor ?? "#000000");
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -122,7 +159,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainSparsity,
             grainScale,
             resolution,
-            yOffset
+            yOffset,
+            // Flow field
+            flowDistortionA,
+            flowDistortionB,
+            flowScale,
+            flowEase,
+            // Mouse interaction
+            mouseDistortion,
+            mouseDarken,
+            // Texture generation
+            enableProceduralTexture,
+            textureVoidLikelihood,
+            textureVoidWidthMin,
+            textureVoidWidthMax,
+            textureBandDensity,
+            textureColorBlending,
+            textureSeed,
+            proceduralBackgroundColor,
         });
         return gradientRef.current.destroy;
     }, []);
@@ -150,7 +204,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.grainSpeed = grainSpeed;
         gradientRef.current.resolution = resolution;
         gradientRef.current.yOffset = yOffset;
-    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed, yOffset]);
+        // Flow field
+        gradientRef.current.flowDistortionA = flowDistortionA;
+        gradientRef.current.flowDistortionB = flowDistortionB;
+        gradientRef.current.flowScale = flowScale;
+        gradientRef.current.flowEase = flowEase;
+        // Mouse interaction
+        gradientRef.current.mouseDistortion = mouseDistortion;
+        gradientRef.current.mouseDarken = mouseDarken;
+        // Texture generation
+        gradientRef.current.enableProceduralTexture = enableProceduralTexture;
+        gradientRef.current.textureVoidLikelihood = textureVoidLikelihood;
+        gradientRef.current.textureVoidWidthMin = textureVoidWidthMin;
+        gradientRef.current.textureVoidWidthMax = textureVoidWidthMax;
+        gradientRef.current.textureBandDensity = textureBandDensity;
+        gradientRef.current.textureColorBlending = textureColorBlending;
+        gradientRef.current.textureSeed = textureSeed;
+        gradientRef.current.proceduralBackgroundColor = proceduralBackgroundColor;
+    }, [speed, horizontalPressure, verticalPressure, waveFrequencyX, waveFrequencyY, waveAmplitude, colors, shadows, highlights, saturation, brightness, wireframe, colorBlending, resolution, backgroundColor, backgroundAlpha, grainIntensity, grainSparsity, grainScale, grainSpeed, yOffset, flowDistortionA, flowDistortionB, flowScale, flowEase, mouseDistortion, mouseDarken, enableProceduralTexture, textureVoidLikelihood, textureVoidWidthMin, textureVoidWidthMax, textureBandDensity, textureColorBlending, textureSeed, proceduralBackgroundColor]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -190,7 +261,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainIntensity,
         grainSpeed,
         resolution,
-        yOffset
+        yOffset,
+        // Flow field
+        flowDistortionA,
+        flowDistortionB,
+        flowScale,
+        flowEase,
+        // Mouse interaction
+        mouseDistortion,
+        mouseDarken,
+        // Texture generation
+        enableProceduralTexture,
+        textureVoidLikelihood,
+        textureVoidWidthMin,
+        textureVoidWidthMax,
+        textureBandDensity,
+        textureColorBlending,
+        textureSeed,
+        proceduralBackgroundColor,
     };
 
     const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
@@ -491,6 +579,89 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <div className="flex flex-row gap-2 items-end">
                                 <span className="w-28 text-right pr-2 text-xs">Vertical Offset</span>
                                 <Slider value={[yOffset]} step={1} min={0} max={2000} onValueChange={(v) => setYOffset(v[0] as number)} />
+                            </div>
+
+                            {/* Flow Field section */}
+                            <div className="space-y-2">
+                                <div className="font-semibold text-sm mb-2">Flow Field</div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Amplitude</span>
+                                    <Slider value={[flowDistortionA]} step={0.1} min={0} max={5} onValueChange={(v) => setFlowDistortionA(v[0] as number)} />
+                                </div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Frequency</span>
+                                    <Slider value={[flowDistortionB]} step={0.1} min={0} max={10} onValueChange={(v) => setFlowDistortionB(v[0] as number)} />
+                                </div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Wave Scale</span>
+                                    <Slider value={[flowScale]} step={0.1} min={0} max={5} onValueChange={(v) => setFlowScale(v[0] as number)} />
+                                </div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Ease (Blend)</span>
+                                    <Slider value={[flowEase]} step={0.01} min={0} max={1} onValueChange={(v) => setFlowEase(v[0] as number)} />
+                                </div>
+                            </div>
+
+                            {/* Mouse Interaction section */}
+                            <div className="space-y-2">
+                                <div className="font-semibold text-sm mb-2">Mouse Interaction</div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Distortion</span>
+                                    <Slider value={[mouseDistortion]} step={0.01} min={0} max={0.5} onValueChange={(v) => setMouseDistortion(v[0] as number)} />
+                                </div>
+                                <div className="flex flex-row gap-2 items-center">
+                                    <span className="w-28 text-right pr-2 text-xs">Darken Trail</span>
+                                    <Slider value={[mouseDarken]} step={0.01} min={0} max={1} onValueChange={(v) => setMouseDarken(v[0] as number)} />
+                                </div>
+                            </div>
+
+                            {/* Procedural Texture section */}
+                            <div className="space-y-2">
+                                <div className="font-semibold text-sm mb-2">Procedural Texture</div>
+                                <Label className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                    <span className="text-xs w-28 text-right">Enable</span>
+                                    <div className={"w-full flex"}>
+                                        <Checkbox checked={enableProceduralTexture} onChange={(checked: boolean) => setEnableProceduralTexture(checked)} />
+                                    </div>
+                                </Label>
+                                {enableProceduralTexture && (
+                                    <>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Gap Frequency</span>
+                                            <Slider value={[textureVoidLikelihood]} step={0.01} min={0} max={1} onValueChange={(v) => setTextureVoidLikelihood(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Min Gap Width</span>
+                                            <Slider value={[textureVoidWidthMin]} step={10} min={10} max={200} onValueChange={(v) => setTextureVoidWidthMin(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Max Gap Width</span>
+                                            <Slider value={[textureVoidWidthMax]} step={10} min={50} max={600} onValueChange={(v) => setTextureVoidWidthMax(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Band Density</span>
+                                            <Slider value={[textureBandDensity]} step={0.1} min={0.1} max={3} onValueChange={(v) => setTextureBandDensity(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Color Blending</span>
+                                            <Slider value={[textureColorBlending]} step={0.01} min={0} max={1} onValueChange={(v) => setTextureColorBlending(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Seed</span>
+                                            <Slider value={[textureSeed]} step={1} min={0} max={1000} onValueChange={(v) => setTextureSeed(v[0] as number)} />
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Void Color</span>
+                                            <div className="flex items-center gap-2 w-full">
+                                                <ColorSwatch
+                                                    color={{ color: proceduralBackgroundColor, enabled: true }}
+                                                    showEnabled={false}
+                                                    onChange={(c) => setProceduralBackgroundColor(c.color)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 

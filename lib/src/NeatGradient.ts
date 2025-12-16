@@ -4,7 +4,7 @@ const PLANE_WIDTH = 50;
 const PLANE_HEIGHT = 80;
 
 const WIREFRAME = true;
-const COLORS_COUNT = 5;
+const COLORS_COUNT = 6;
 
 const clock = new THREE.Clock();
 
@@ -40,6 +40,23 @@ export type NeatConfig = {
     backgroundColor?: string;
     backgroundAlpha?: number;
     yOffset?: number;
+    // Flow field parameters
+    flowDistortionA?: number;
+    flowDistortionB?: number;
+    flowScale?: number;
+    flowEase?: number;
+    // Mouse interaction
+    mouseDistortion?: number;
+    mouseDarken?: number;
+    // Texture generation
+    enableProceduralTexture?: boolean;
+    textureVoidLikelihood?: number;
+    textureVoidWidthMin?: number;
+    textureVoidWidthMax?: number;
+    textureBandDensity?: number;
+    textureColorBlending?: number;
+    textureSeed?: number;
+    proceduralBackgroundColor?: string; // NEW
 };
 
 export type NeatColor = {
@@ -86,6 +103,33 @@ export class NeatGradient implements NeatController {
     private _backgroundColor: string = "#FFFFFF";
     private _backgroundAlpha: number = 1.0;
 
+    // Flow field properties
+    private _flowDistortionA: number = 0;
+    private _flowDistortionB: number = 0;
+    private _flowScale: number = 1.0;
+    private _flowEase: number = 0.0;
+
+    // Mouse interaction properties
+    private _mouseDistortion: number = 0.0;
+    private _mouseDarken: number = 0.0;
+    private _mouse: THREE.Vector2 = new THREE.Vector2(-1000, -1000);
+    private _mouseFBO: THREE.WebGLRenderTarget | null = null;
+    private _sceneMouse: THREE.Scene | null = null;
+    private _cameraMouse: THREE.OrthographicCamera | null = null;
+    private _mouseObjects: Array<{ mesh: THREE.Mesh, active: boolean }> = [];
+    private _currentBrush: number = 0;
+
+    // Texture generation properties
+    private _enableProceduralTexture: boolean = false;
+    private _textureVoidLikelihood: number = 0.45;
+    private _textureVoidWidthMin: number = 200;
+    private _textureVoidWidthMax: number = 486;
+    private _textureBandDensity: number = 2.15;
+    private _textureColorBlending: number = 0.01;
+    private _textureSeed: number = 333;
+    private _proceduralTexture: THREE.Texture | null = null;
+    private _proceduralBackgroundColor: string = "#000000"; // NEW
+
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
     private sceneState: SceneState;
@@ -117,7 +161,24 @@ export class NeatGradient implements NeatController {
             backgroundAlpha = 1.0,
             resolution = 1,
             seed,
-            yOffset = 0
+            yOffset = 0,
+            // Flow field parameters
+            flowDistortionA = 0,
+            flowDistortionB = 0,
+            flowScale = 1.0,
+            flowEase = 0.0,
+            // Mouse interaction
+            mouseDistortion = 0.0,
+            mouseDarken = 0.0,
+            // Texture generation
+            enableProceduralTexture = false,
+            textureVoidLikelihood = 0.45,
+            textureVoidWidthMin = 200,
+            textureVoidWidthMax = 486,
+            textureBandDensity = 2.15,
+            textureColorBlending = 0.01,
+            textureSeed = 333,
+            proceduralBackgroundColor = "#000000", // NEW
         } = config;
 
 
@@ -148,7 +209,32 @@ export class NeatGradient implements NeatController {
         this.backgroundAlpha = backgroundAlpha;
         this.yOffset = yOffset;
 
+        // Flow field
+        this.flowDistortionA = flowDistortionA;
+        this.flowDistortionB = flowDistortionB;
+        this.flowScale = flowScale;
+        this.flowEase = flowEase;
+
+        // Mouse interaction
+        this.mouseDistortion = mouseDistortion;
+        this.mouseDarken = mouseDarken;
+
+        // Texture generation
+        this.enableProceduralTexture = enableProceduralTexture;
+        this.textureVoidLikelihood = textureVoidLikelihood;
+        this.textureVoidWidthMin = textureVoidWidthMin;
+        this.textureVoidWidthMax = textureVoidWidthMax;
+        this.textureBandDensity = textureBandDensity;
+        this.textureColorBlending = textureColorBlending;
+        this.textureSeed = textureSeed;
+        this._proceduralBackgroundColor = proceduralBackgroundColor; // NEW
+
         this.sceneState = this._initScene(resolution);
+
+        // Setup mouse interaction if enabled
+        if (mouseDistortion > 0 || mouseDarken > 0) {
+            this._setupMouseInteraction();
+        }
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
         const render = () => {
@@ -222,8 +308,52 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_y_offset = { value: this._yOffset };
                 // @ts-ignore
+                mesh.material.uniforms.u_flow_distortion_a = { value: this._flowDistortionA };
+                // @ts-ignore
+                mesh.material.uniforms.u_flow_distortion_b = { value: this._flowDistortionB };
+                // @ts-ignore
+                mesh.material.uniforms.u_flow_scale = { value: this._flowScale };
+                // @ts-ignore
+                mesh.material.uniforms.u_flow_ease = { value: this._flowEase };
+                // @ts-ignore
+                mesh.material.uniforms.u_mouse_distortion = { value: this._mouseDistortion };
+                // @ts-ignore
+                mesh.material.uniforms.u_mouse_darken = { value: this._mouseDarken };
+                // @ts-ignore
+                mesh.material.uniforms.u_enable_procedural_texture = { value: this._enableProceduralTexture ? 1.0 : 0.0 };
+                // @ts-ignore
+                mesh.material.uniforms.u_procedural_texture = { value: this._proceduralTexture };
+                // @ts-ignore
                 mesh.material.wireframe = this._wireframe;
             });
+
+            // Render mouse interaction to FBO
+            if (this._mouseFBO && this._sceneMouse && this._cameraMouse) {
+                // Update mouse objects
+                this._mouseObjects.forEach(obj => {
+                    if (obj.mesh.visible) {
+                        obj.mesh.rotation.z += 0.02;
+                        if (obj.mesh.material instanceof THREE.MeshBasicMaterial) {
+                            obj.mesh.material.opacity *= 0.96;
+                        }
+                        obj.mesh.scale.multiplyScalar(1.02);
+                        if (obj.mesh.material instanceof THREE.MeshBasicMaterial && obj.mesh.material.opacity < 0.01) {
+                            obj.mesh.visible = false;
+                        }
+                    }
+                });
+
+                renderer.setRenderTarget(this._mouseFBO);
+                renderer.clear();
+                renderer.render(this._sceneMouse, this._cameraMouse);
+                renderer.setRenderTarget(null);
+
+                // Update mouse texture uniform
+                meshes.forEach((mesh) => {
+                    // @ts-ignore
+                    mesh.material.uniforms.u_mouse_texture = { value: this._mouseFBO.texture };
+                });
+            }
 
             renderer.render(scene, camera);
             this.requestRef = requestAnimationFrame(render);
@@ -348,6 +478,86 @@ export class NeatGradient implements NeatController {
         this._yOffset = yOffset;
     }
 
+    set flowDistortionA(value: number) {
+        this._flowDistortionA = value;
+    }
+
+    set flowDistortionB(value: number) {
+        this._flowDistortionB = value;
+    }
+
+    set flowScale(value: number) {
+        this._flowScale = value;
+    }
+
+    set flowEase(value: number) {
+        this._flowEase = value;
+    }
+
+    set mouseDistortion(value: number) {
+        this._mouseDistortion = value;
+    }
+
+    set mouseDarken(value: number) {
+        this._mouseDarken = value;
+    }
+
+    set enableProceduralTexture(value: boolean) {
+        this._enableProceduralTexture = value;
+        if (value && !this._proceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureVoidLikelihood(value: number) {
+        this._textureVoidLikelihood = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureVoidWidthMin(value: number) {
+        this._textureVoidWidthMin = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureVoidWidthMax(value: number) {
+        this._textureVoidWidthMax = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureBandDensity(value: number) {
+        this._textureBandDensity = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureColorBlending(value: number) {
+        this._textureColorBlending = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set textureSeed(value: number) {
+        this._textureSeed = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
+    set proceduralBackgroundColor(value: string) {
+        this._proceduralBackgroundColor = value;
+        if (this._enableProceduralTexture) {
+            this._proceduralTexture = this._createProceduralTexture();
+        }
+    }
+
     _initScene(resolution: number): SceneState {
 
         const width = this._ref.width,
@@ -421,6 +631,18 @@ export class NeatGradient implements NeatController {
             u_grain_sparsity: { value: this._grainSparsity },
             u_grain_scale: { value: this._grainScale },
             u_grain_speed: { value: this._grainSpeed },
+            // Flow field
+            u_flow_distortion_a: { value: this._flowDistortionA },
+            u_flow_distortion_b: { value: this._flowDistortionB },
+            u_flow_scale: { value: this._flowScale },
+            u_flow_ease: { value: this._flowEase },
+            // Mouse interaction
+            u_mouse_distortion: { value: this._mouseDistortion },
+            u_mouse_darken: { value: this._mouseDarken },
+            u_mouse_texture: { value: this._mouseFBO ? this._mouseFBO.texture : null },
+            // Procedural texture
+            u_procedural_texture: { value: this._proceduralTexture },
+            u_enable_procedural_texture: { value: this._enableProceduralTexture ? 1.0 : 0.0 },
         };
 
         const material = new THREE.ShaderMaterial({
@@ -431,6 +653,253 @@ export class NeatGradient implements NeatController {
 
         material.wireframe = WIREFRAME;
         return material;
+    }
+
+    _setupMouseInteraction() {
+        if (!this._ref) return;
+
+        const width = this._ref.width;
+        const height = this._ref.height;
+
+        // Create mouse FBO
+        this._mouseFBO = new THREE.WebGLRenderTarget(width / 2, height / 2);
+
+        // Create mouse scene and camera
+        this._sceneMouse = new THREE.Scene();
+        const fSize = height / 2;
+        const aspect = width / height;
+        this._cameraMouse = new THREE.OrthographicCamera(
+            -fSize * aspect, fSize * aspect,
+            fSize, -fSize,
+            0, 10000
+        );
+        this._cameraMouse.position.set(0, 0, 100);
+
+        // Create brush texture
+        const brushCanvas = document.createElement('canvas');
+        brushCanvas.width = 128;
+        brushCanvas.height = 128;
+        const bCtx = brushCanvas.getContext('2d');
+        if (bCtx) {
+            const grd = bCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grd.addColorStop(0, 'rgba(255,255,255,0.25)');
+            grd.addColorStop(1, 'rgba(255,255,255,0)');
+            bCtx.fillStyle = grd;
+            bCtx.fillRect(0, 0, 128, 128);
+        }
+        const brushTex = new THREE.CanvasTexture(brushCanvas);
+        const brushMat = new THREE.MeshBasicMaterial({
+            map: brushTex,
+            transparent: true,
+            opacity: 0.8,
+            depthTest: false
+        });
+        const brushGeo = new THREE.PlaneGeometry(300, 300);
+
+        // Create brush pool
+        const brushPoolSize = 50;
+        for (let i = 0; i < brushPoolSize; i++) {
+            const m = new THREE.Mesh(brushGeo, brushMat.clone());
+            m.visible = false;
+            this._sceneMouse!.add(m);
+            this._mouseObjects.push({ mesh: m, active: false });
+        }
+
+        // Add mouse move listener
+        this._ref.addEventListener('mousemove', this._onMouseMove.bind(this));
+    }
+
+    _onMouseMove(e: MouseEvent) {
+        if (!this._ref || !this._sceneMouse) return;
+
+        const rect = this._ref.getBoundingClientRect();
+        const width = this._ref.width;
+        const height = this._ref.height;
+
+        this._mouse.x = e.clientX - rect.left - width / 2;
+        this._mouse.y = -(e.clientY - rect.top - height / 2);
+
+        const brush = this._mouseObjects[this._currentBrush];
+        brush.active = true;
+        brush.mesh.visible = true;
+        brush.mesh.position.set(this._mouse.x, this._mouse.y, 0);
+        brush.mesh.rotation.z = Math.random() * Math.PI * 2;
+        brush.mesh.scale.set(1.0, 1.0, 1.0);
+        if (brush.mesh.material instanceof THREE.MeshBasicMaterial) {
+            brush.mesh.material.opacity = 0.8;
+        }
+
+        this._currentBrush = (this._currentBrush + 1) % this._mouseObjects.length;
+    }
+
+    _createProceduralTexture(): THREE.Texture {
+        const texSize = 1024;
+        const sourceCanvas = document.createElement('canvas');
+        sourceCanvas.width = texSize;
+        sourceCanvas.height = texSize;
+        const sCtx = sourceCanvas.getContext('2d');
+        if (!sCtx) return new THREE.Texture();
+
+        let seed = this._textureSeed;
+
+        function random() {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        const colors = this._colors.filter(c => c.enabled).map(c => c.color);
+        if (colors.length === 0) return new THREE.Texture();
+
+        // Helper functions
+        function hexToRgb(hex: string) {
+            const bigint = parseInt(hex.replace('#', ''), 16);
+            return {
+                r: (bigint >> 16) & 255,
+                g: (bigint >> 8) & 255,
+                b: bigint & 255
+            };
+        }
+
+        function rgbToHex(r: number, g: number, b: number) {
+            return "#" + ((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1);
+        }
+
+        const getInterColor = () => {
+            const c1 = colors[Math.floor(random() * colors.length)];
+            const c2 = colors[Math.floor(random() * colors.length)];
+            const mix = random() * this._textureColorBlending;
+            const rgb1 = hexToRgb(c1);
+            const rgb2 = hexToRgb(c2);
+            const r = rgb1.r + (rgb2.r - rgb1.r) * mix;
+            const g = rgb1.g + (rgb2.g - rgb1.g) * mix;
+            const b = rgb1.b + (rgb2.b - rgb1.b) * mix;
+            return rgbToHex(r, g, b);
+        };
+
+        // === SOURCE CANVAS ===
+        // Base with procedural background color so even sparse areas pick it up
+        const baseColor = this._proceduralBackgroundColor || "#000000";
+        sCtx.fillStyle = baseColor;
+        sCtx.fillRect(0, 0, texSize, texSize);
+
+        // Then lay a vertical gradient of mixed colors on top for richness
+        const bgGrad = sCtx.createLinearGradient(0, 0, 0, texSize);
+        bgGrad.addColorStop(0, getInterColor());
+        bgGrad.addColorStop(1, getInterColor());
+        sCtx.fillStyle = bgGrad;
+        sCtx.fillRect(0, 0, texSize, texSize);
+
+        // Triangles
+        for (let i = 0; i < 20; i++) {
+            sCtx.fillStyle = getInterColor();
+            sCtx.beginPath();
+            const x = random() * texSize;
+            const y = random() * texSize;
+            const s = 100 + random() * 300;
+            sCtx.moveTo(x, y);
+            sCtx.lineTo(x + (random() - 0.5) * s, y + (random() - 0.5) * s);
+            sCtx.lineTo(x + (random() - 0.5) * s, y + (random() - 0.5) * s);
+            sCtx.fill();
+        }
+
+        // Circles / rings
+        for (let i = 0; i < 15; i++) {
+            sCtx.strokeStyle = getInterColor();
+            sCtx.lineWidth = 10 + random() * 50;
+            sCtx.beginPath();
+            const x = random() * texSize;
+            const y = random() * texSize;
+            const r = 50 + random() * 150;
+            sCtx.arc(x, y, r, 0, Math.PI * 2);
+            sCtx.stroke();
+        }
+
+        // Bars
+        for (let i = 0; i < 15; i++) {
+            sCtx.fillStyle = getInterColor();
+            sCtx.save();
+            sCtx.translate(random() * texSize, random() * texSize);
+            sCtx.rotate(random() * Math.PI);
+            sCtx.fillRect(-150, -25, 300, 50);
+            sCtx.restore();
+        }
+
+        // Squiggles
+        sCtx.lineWidth = 15;
+        sCtx.lineCap = 'round';
+        for (let i = 0; i < 10; i++) {
+            sCtx.strokeStyle = getInterColor();
+            sCtx.beginPath();
+            let x = random() * texSize;
+            let y = random() * texSize;
+            sCtx.moveTo(x, y);
+            for (let j = 0; j < 4; j++) {
+                sCtx.bezierCurveTo(
+                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300,
+                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300,
+                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300
+                );
+                x += (random() - 0.5) * 300;
+                y += (random() - 0.5) * 300;
+            }
+            sCtx.stroke();
+        }
+
+        // === MASKED CANVAS ===
+        const canvas = document.createElement('canvas');
+        canvas.width = texSize;
+        canvas.height = texSize;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return new THREE.Texture();
+
+        // Start filled with the chosen void color so gaps show that color
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(0, 0, texSize, texSize);
+
+        // Determine layout segments (matter vs void)
+        let layoutHead = 0;
+        const segments: Array<{ type: 'void' | 'matter', x: number, width: number }> = [];
+
+        while (layoutHead < texSize) {
+            const isVoid = random() < this._textureVoidLikelihood;
+            if (isVoid) {
+                const w = this._textureVoidWidthMin + random() * (this._textureVoidWidthMax - this._textureVoidWidthMin);
+                segments.push({ type: 'void', x: layoutHead, width: w });
+                layoutHead += w;
+            } else {
+                const w = 50 + random() * 200;
+                segments.push({ type: 'matter', x: layoutHead, width: w });
+                layoutHead += w;
+            }
+        }
+
+        // Render only matter bands from the source into the masked canvas
+        for (const seg of segments) {
+            if (seg.type === 'matter') {
+                const startX = seg.x;
+                const endX = Math.min(seg.x + seg.width, texSize);
+                let currentX = startX;
+
+                while (currentX < endX) {
+                    const stripeWidth = (2 + random() * 20) / this._textureBandDensity;
+                    const sourceX = Math.floor(random() * texSize);
+                    ctx.drawImage(
+                        sourceCanvas,
+                        sourceX, 0, stripeWidth, texSize,
+                        currentX, 0, stripeWidth, texSize
+                    );
+                    currentX += stripeWidth;
+                }
+            }
+            // void segments: leave as baseColor
+        }
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
     }
 
 
@@ -480,11 +949,38 @@ void main() {
 
     vUv = uv;
 
+    // Original displacement
     v_displacement_amount = cnoise( vec3(
         u_wave_frequency_x * position.x + u_time,
         u_wave_frequency_y * position.y + u_time,
         u_time
     ));
+
+    // Apply flow field distortion if enabled
+    vec2 flowUv = vUv;
+    if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
+        // Mouse distortion
+        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
+        float mfSin = sin(mouseColor.r);
+        vec2 mouseDisp = u_mouse_distortion * vec2(mfSin, mfSin);
+        
+        vec2 disturbedUv = vUv - mouseDisp * 0.2;
+        vec2 ppp = -1.0 + 2.0 * disturbedUv;
+        
+        // Flow field calculations
+        ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
+        ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
+        ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
+        ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
+        
+        float r = length(ppp);
+        
+        // Blend between original UV and flow-distorted UV
+        flowUv = mix(vUv, vec2(vUv.x * (1.0 - u_flow_ease) + r * u_flow_ease, vUv.y), u_flow_ease);
+    }
+    
+    // Pass flow UV to fragment shader
+    vFlowUv = flowUv;
 
     vec3 color;
 
@@ -492,7 +988,7 @@ void main() {
     color = u_colors[0].color;
 
     // Apply y_offset to the noise coordinates
-    vec2 noise_cord = vUv * u_color_pressure;
+    vec2 noise_cord = flowUv * u_color_pressure;
     // Apply the y-offset to shift the pattern vertically (1:1 pixel ratio)
     // Scale the offset to match the UV coordinate space
     float scaledOffset = u_y_offset / u_resolution.y;
@@ -553,7 +1049,28 @@ float fbm(vec3 x) {
 }
 
 void main() {
-    vec3 color = v_color;
+    // Decide base color pipeline:
+    // - if procedural texture disabled: original gradient (v_color)
+    // - if enabled: procedural texture sampled with full flow UV, no overlay
+    vec3 baseColor;
+
+    if (u_enable_procedural_texture > 0.5) {
+        // Use full flowUv as texture coordinates, like the experiment's effectUv/centeredUv
+        vec2 texUv = vFlowUv;
+
+        // Optionally tile a bit to avoid stretching; keep subtle to preserve randomness
+        texUv *= 1.5;
+
+        vec4 texSample = texture2D(u_procedural_texture, texUv);
+        baseColor = texSample.rgb;
+    } else {
+        // Original behavior: use gradient color computed in vertex shader
+        baseColor = v_color;
+    }
+
+    vec3 color = baseColor;
+
+    // Original post-processing
     color += pow(v_displacement_amount, 1.0) * u_highlights;
     color -= pow(1.0 - v_displacement_amount, 2.0) * u_shadows;
     color = saturation(color, 1.0 + u_saturation);
@@ -575,6 +1092,13 @@ void main() {
 
     // Add grain to color
     color += vec3(grain);
+
+    // Apply mouse darkening effect
+    if (u_mouse_darken > 0.0) {
+        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
+        float mouseDark = u_mouse_distortion * u_mouse_darken * mouseColor.r;
+        color *= (1.0 - mouseDark);
+    }
 
     gl_FragColor = vec4(color, 1.0);
 }
@@ -613,12 +1137,28 @@ uniform float u_brightness;
 uniform float u_color_blending;
 
 uniform int u_colors_count;
-uniform Color u_colors[5];
+uniform Color u_colors[6];
 uniform vec2 u_resolution;
 
 uniform float u_y_offset;
 
+// Flow field uniforms
+uniform float u_flow_distortion_a;
+uniform float u_flow_distortion_b;
+uniform float u_flow_scale;
+uniform float u_flow_ease;
+
+// Mouse interaction uniforms
+uniform float u_mouse_distortion;
+uniform float u_mouse_darken;
+uniform sampler2D u_mouse_texture;
+
+// Procedural texture uniforms
+uniform sampler2D u_procedural_texture;
+uniform float u_enable_procedural_texture;
+
 varying vec2 vUv;
+varying vec2 vFlowUv;
 varying vec4 v_new_position;
 varying vec3 v_color;
 varying float v_displacement_amount;
