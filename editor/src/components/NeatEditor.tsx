@@ -64,6 +64,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.grainSparsity !== undefined) setGrainSparsity(config.grainSparsity);
         if (config.grainSpeed !== undefined) setGrainSpeed(config.grainSpeed);
         if (config.grainScale !== undefined) setGrainScale(config.grainScale);
+        if (config.yOffsetWaveMultiplier !== undefined) setYOffsetWaveMultiplier(config.yOffsetWaveMultiplier);
+        if (config.yOffsetColorMultiplier !== undefined) setYOffsetColorMultiplier(config.yOffsetColorMultiplier);
+        if (config.yOffsetFlowMultiplier !== undefined) setYOffsetFlowMultiplier(config.yOffsetFlowMultiplier);
 
         // Flow field
         if (config.flowDistortionA !== undefined) setFlowDistortionA(config.flowDistortionA);
@@ -86,6 +89,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.textureBandDensity !== undefined) setTextureBandDensity(config.textureBandDensity);
         if (config.textureColorBlending !== undefined) setTextureColorBlending(config.textureColorBlending);
         if (config.textureSeed !== undefined) setTextureSeed(config.textureSeed);
+        if (config.textureEase !== undefined) setTextureEase(config.textureEase);
         if (config.proceduralBackgroundColor !== undefined) setProceduralBackgroundColor(config.proceduralBackgroundColor);
         setTextureShapeTriangles(config.textureShapeTriangles ?? 20);
         setTextureShapeCircles(config.textureShapeCircles ?? 15);
@@ -117,6 +121,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     // yOffset state - NO LONGER TWEENED
     const [yOffset, setYOffset] = React.useState<number>(0);
+    const [yOffsetWaveMultiplier, setYOffsetWaveMultiplier] = React.useState<number>(defaultConfig.yOffsetWaveMultiplier ?? 4);
+    const [yOffsetColorMultiplier, setYOffsetColorMultiplier] = React.useState<number>(defaultConfig.yOffsetColorMultiplier ?? 4);
+    const [yOffsetFlowMultiplier, setYOffsetFlowMultiplier] = React.useState<number>(defaultConfig.yOffsetFlowMultiplier ?? 4);
 
     // Flow field parameters
     const [flowDistortionA, setFlowDistortionA] = React.useState<number>(defaultConfig.flowDistortionA ?? 0);
@@ -139,6 +146,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [textureBandDensity, setTextureBandDensity] = React.useState<number>(defaultConfig.textureBandDensity ?? 2.15);
     const [textureColorBlending, setTextureColorBlending] = React.useState<number>(defaultConfig.textureColorBlending ?? 0.01);
     const [textureSeed, setTextureSeed] = React.useState<number>(defaultConfig.textureSeed ?? 333);
+    const [textureEase, setTextureEase] = React.useState<number>(defaultConfig.textureEase ?? 0.5);
     const [proceduralBackgroundColor, setProceduralBackgroundColor] = React.useState<string>(defaultConfig.proceduralBackgroundColor ?? "#000000");
     const [textureShapeTriangles, setTextureShapeTriangles] = React.useState<number>(defaultConfig.textureShapeTriangles ?? 20);
     const [textureShapeCircles, setTextureShapeCircles] = React.useState<number>(defaultConfig.textureShapeCircles ?? 15);
@@ -290,6 +298,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
     }, [yOffset]);
 
+    useEffect(() => {
+        if (gradientRef.current) {
+            gradientRef.current.yOffsetWaveMultiplier = yOffsetWaveMultiplier;
+        }
+    }, [yOffsetWaveMultiplier]);
+
+    useEffect(() => {
+        if (gradientRef.current) {
+            gradientRef.current.yOffsetColorMultiplier = yOffsetColorMultiplier;
+        }
+    }, [yOffsetColorMultiplier]);
+
+    useEffect(() => {
+        if (gradientRef.current) {
+            gradientRef.current.yOffsetFlowMultiplier = yOffsetFlowMultiplier;
+        }
+    }, [yOffsetFlowMultiplier]);
+
     // Init Gradient
     useEffect(() => {
         if (!canvasRef.current) return;
@@ -315,6 +341,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainScale: tweened.grainScale,
             resolution: tweened.resolution,
             yOffset: yOffset, // Pass raw yOffset
+            yOffsetWaveMultiplier,
+            yOffsetColorMultiplier,
+            yOffsetFlowMultiplier,
             flowDistortionA: tweened.flowDistortionA,
             flowDistortionB: tweened.flowDistortionB,
             flowScale: tweened.flowScale,
@@ -331,6 +360,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             textureBandDensity,
             textureColorBlending,
             textureSeed,
+            textureEase,
             proceduralBackgroundColor,
             textureShapeTriangles,
             textureShapeCircles,
@@ -380,6 +410,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.textureBandDensity = textureBandDensity;
         gradientRef.current.textureColorBlending = textureColorBlending;
         gradientRef.current.textureSeed = textureSeed;
+        gradientRef.current.textureEase = textureEase;
         gradientRef.current.proceduralBackgroundColor = proceduralBackgroundColor;
         // @ts-ignore
         gradientRef.current.textureShapeTriangles = textureShapeTriangles;
@@ -403,6 +434,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureBandDensity,
         textureColorBlending,
         textureSeed,
+        textureEase,
         textureShapeTriangles,
         textureShapeCircles,
         textureShapeBars,
@@ -529,6 +561,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainSpeed,
         resolution,
         yOffset,
+        yOffsetWaveMultiplier,
+        yOffsetColorMultiplier,
+        yOffsetFlowMultiplier,
         // Flow field
         flowDistortionA,
         flowDistortionB,
@@ -548,6 +583,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureBandDensity,
         textureColorBlending,
         textureSeed,
+        textureEase,
         proceduralBackgroundColor,
         textureShapeTriangles,
         textureShapeCircles,
@@ -819,6 +855,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                         onValueChange={(v) => setTextureSeed(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Ease (Flow↔Image)</span>
+                                                <Slider value={[textureEase]}
+                                                        step={0.01} min={0} max={1}
+                                                        onValueChange={(v) => setTextureEase(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
                                                 <span className="w-28 text-right pr-2 text-xs">Void Color</span>
                                                 <div className="flex items-center gap-2 w-full">
                                                     <ColorSwatch
@@ -933,6 +975,33 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             min={0}
                                             max={100000}
                                             onValueChange={(v) => setYOffset(v[0] as number)}/>
+                                    </div>
+                                    <div className="flex flex-row gap-2 items-center">
+                                        <span className="w-28 text-right pr-2 text-xs">Wave Multiplier</span>
+                                        <Slider
+                                            value={[yOffsetWaveMultiplier]}
+                                            step={0.1}
+                                            min={0}
+                                            max={20}
+                                            onValueChange={(v) => setYOffsetWaveMultiplier(v[0] as number)}/>
+                                    </div>
+                                    <div className="flex flex-row gap-2 items-center">
+                                        <span className="w-28 text-right pr-2 text-xs">Color Multiplier</span>
+                                        <Slider
+                                            value={[yOffsetColorMultiplier]}
+                                            step={0.1}
+                                            min={0}
+                                            max={20}
+                                            onValueChange={(v) => setYOffsetColorMultiplier(v[0] as number)}/>
+                                    </div>
+                                    <div className="flex flex-row gap-2 items-center">
+                                        <span className="w-28 text-right pr-2 text-xs">Flow Multiplier</span>
+                                        <Slider
+                                            value={[yOffsetFlowMultiplier]}
+                                            step={0.1}
+                                            min={0}
+                                            max={20}
+                                            onValueChange={(v) => setYOffsetFlowMultiplier(v[0] as number)}/>
                                     </div>
                                     <Label
                                         className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">

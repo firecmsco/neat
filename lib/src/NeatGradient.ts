@@ -40,6 +40,9 @@ export type NeatConfig = {
     backgroundColor?: string;
     backgroundAlpha?: number;
     yOffset?: number;
+    yOffsetWaveMultiplier?: number;
+    yOffsetColorMultiplier?: number;
+    yOffsetFlowMultiplier?: number;
     // Flow field parameters
     flowDistortionA?: number;
     flowDistortionB?: number;
@@ -62,6 +65,7 @@ export type NeatConfig = {
     textureBandDensity?: number;
     textureColorBlending?: number;
     textureSeed?: number;
+    textureEase?: number;
     proceduralBackgroundColor?: string;
     textureShapeTriangles?: number;
     textureShapeCircles?: number;
@@ -141,6 +145,7 @@ export class NeatGradient implements NeatController {
     private _textureBandDensity: number = 2.15;
     private _textureColorBlending: number = 0.01;
     private _textureSeed: number = 333;
+    private _textureEase: number = 0.5;
     private _proceduralTexture: THREE.Texture | null = null;
     private _proceduralBackgroundColor: string = "#000000";
 
@@ -154,6 +159,9 @@ export class NeatGradient implements NeatController {
     private sceneState: SceneState;
 
     private _yOffset: number = 0;
+    private _yOffsetWaveMultiplier: number = 0.004;
+    private _yOffsetColorMultiplier: number = 0.004;
+    private _yOffsetFlowMultiplier: number = 0.004;
 
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
@@ -181,6 +189,9 @@ export class NeatGradient implements NeatController {
             resolution = 1,
             seed,
             yOffset = 0,
+            yOffsetWaveMultiplier = 4,
+            yOffsetColorMultiplier = 4,
+            yOffsetFlowMultiplier = 4,
             // Flow field parameters
             flowDistortionA = 0,
             flowDistortionB = 0,
@@ -200,6 +211,7 @@ export class NeatGradient implements NeatController {
             textureBandDensity = 2.15,
             textureColorBlending = 0.01,
             textureSeed = 333,
+            textureEase = 0.5,
             proceduralBackgroundColor = "#000000",
             textureShapeTriangles = 20,
             textureShapeCircles = 15,
@@ -234,6 +246,9 @@ export class NeatGradient implements NeatController {
         this.backgroundColor = backgroundColor;
         this.backgroundAlpha = backgroundAlpha;
         this.yOffset = yOffset;
+        this.yOffsetWaveMultiplier = yOffsetWaveMultiplier;
+        this.yOffsetColorMultiplier = yOffsetColorMultiplier;
+        this.yOffsetFlowMultiplier = yOffsetFlowMultiplier;
 
         // Flow field
         this.flowDistortionA = flowDistortionA;
@@ -256,6 +271,7 @@ export class NeatGradient implements NeatController {
         this.textureBandDensity = textureBandDensity;
         this.textureColorBlending = textureColorBlending;
         this.textureSeed = textureSeed;
+        this.textureEase = textureEase;
         this._proceduralBackgroundColor = proceduralBackgroundColor;
 
         this._textureShapeTriangles = textureShapeTriangles;
@@ -340,6 +356,12 @@ export class NeatGradient implements NeatController {
                 // @ts-ignore
                 mesh.material.uniforms.u_y_offset = { value: this._yOffset };
                 // @ts-ignore
+                mesh.material.uniforms.u_y_offset_wave_multiplier = { value: this._yOffsetWaveMultiplier };
+                // @ts-ignore
+                mesh.material.uniforms.u_y_offset_color_multiplier = { value: this._yOffsetColorMultiplier };
+                // @ts-ignore
+                mesh.material.uniforms.u_y_offset_flow_multiplier = { value: this._yOffsetFlowMultiplier };
+                // @ts-ignore
                 mesh.material.uniforms.u_flow_distortion_a = { value: this._flowDistortionA };
                 // @ts-ignore
                 mesh.material.uniforms.u_flow_distortion_b = { value: this._flowDistortionB };
@@ -359,6 +381,8 @@ export class NeatGradient implements NeatController {
                 mesh.material.uniforms.u_enable_procedural_texture = { value: this._enableProceduralTexture ? 1.0 : 0.0 };
                 // @ts-ignore
                 mesh.material.uniforms.u_procedural_texture = { value: this._proceduralTexture };
+                // @ts-ignore
+                mesh.material.uniforms.u_texture_ease = { value: this._textureEase };
                 // @ts-ignore
                 mesh.material.wireframe = this._wireframe;
             });
@@ -515,6 +539,30 @@ export class NeatGradient implements NeatController {
         this._yOffset = yOffset;
     }
 
+    get yOffsetWaveMultiplier(): number {
+        return this._yOffsetWaveMultiplier * 1000;
+    }
+
+    set yOffsetWaveMultiplier(value: number) {
+        this._yOffsetWaveMultiplier = value / 1000;
+    }
+
+    get yOffsetColorMultiplier(): number {
+        return this._yOffsetColorMultiplier * 1000;
+    }
+
+    set yOffsetColorMultiplier(value: number) {
+        this._yOffsetColorMultiplier = value / 1000;
+    }
+
+    get yOffsetFlowMultiplier(): number {
+        return this._yOffsetFlowMultiplier * 1000;
+    }
+
+    set yOffsetFlowMultiplier(value: number) {
+        this._yOffsetFlowMultiplier = value / 1000;
+    }
+
     set flowDistortionA(value: number) {
         this._flowDistortionA = value;
     }
@@ -614,6 +662,14 @@ export class NeatGradient implements NeatController {
         if (this._enableProceduralTexture) {
             this._proceduralTexture = this._createProceduralTexture();
         }
+    }
+
+    get textureEase(): number {
+        return this._textureEase;
+    }
+
+    set textureEase(value: number) {
+        this._textureEase = value;
     }
 
     set proceduralBackgroundColor(value: string) {
@@ -719,6 +775,10 @@ export class NeatGradient implements NeatController {
             u_flow_scale: { value: this._flowScale },
             u_flow_ease: { value: this._flowEase },
             u_flow_enabled: { value: this._flowEnabled ? 1.0 : 0.0 },
+            // Y offset multipliers
+            u_y_offset_wave_multiplier: { value: this._yOffsetWaveMultiplier },
+            u_y_offset_color_multiplier: { value: this._yOffsetColorMultiplier },
+            u_y_offset_flow_multiplier: { value: this._yOffsetFlowMultiplier },
             // Mouse interaction
             u_mouse_distortion_strength: { value: this._mouseDistortionStrength },
             u_mouse_distortion_radius: { value: this._mouseDistortionRadius },
@@ -727,6 +787,7 @@ export class NeatGradient implements NeatController {
             // Procedural texture
             u_procedural_texture: { value: this._proceduralTexture },
             u_enable_procedural_texture: { value: this._enableProceduralTexture ? 1.0 : 0.0 },
+            u_texture_ease: { value: this._textureEase },
         };
 
         const material = new THREE.ShaderMaterial({
@@ -1056,22 +1117,23 @@ void main() {
     vUv = uv;
 
     // SCROLLING LOGIC
-    // We scale the offset to match the world space roughly
-    float scrollSpeed = 0.002; 
-    float worldOffset = -u_y_offset * scrollSpeed;
+    // Separate multipliers for wave, color, and flow offsets
+    float waveOffset = -u_y_offset * u_y_offset_wave_multiplier;
+    float colorOffset = -u_y_offset * u_y_offset_color_multiplier;
+    float flowOffset = -u_y_offset * u_y_offset_flow_multiplier;
 
     // 1. DISPLACEMENT (WAVES)
-    // We add worldOffset to Y to scroll the wave pattern
+    // We add waveOffset to Y to scroll the wave pattern
     v_displacement_amount = cnoise( vec3(
         u_wave_frequency_x * position.x + u_time,
-        u_wave_frequency_y * (position.y + worldOffset) + u_time,
+        u_wave_frequency_y * (position.y + waveOffset) + u_time,
         u_time
     ));
 
     // 2. FLOW FIELD
-    // We use the original, un-scrolled UVs for the flow field calculation
-    // to preserve the original look and feel of the distortion.
+    // Apply flow offset to scroll the flow field mask
     vec2 baseUv = vUv;
+    baseUv.y += flowOffset / u_plane_height; // Scale to match wave speed
     vec2 flowUv = baseUv;
 
     if (u_flow_enabled > 0.5) {
@@ -1091,11 +1153,11 @@ void main() {
     vFlowUv = flowUv;
 
     // 3. COLOR MIXING
-    // We take the computed flow UVs and apply the scroll offset HERE 
-    // so the paint mixing pattern moves up/down.
+    // We take the computed flow UVs and apply the color offset
+    // Scale by plane height to match wave offset speed (world space vs UV space)
     vec3 color = u_colors[0].color;
     vec2 adjustedUv = flowUv;
-    adjustedUv.y += worldOffset; // Scroll the color mixing pattern
+    adjustedUv.y += colorOffset / u_plane_height; // Scroll the color mixing pattern
 
     vec2 noise_cord = adjustedUv * u_color_pressure;
     const float minNoise = .0;
@@ -1166,14 +1228,23 @@ void main() {
     vec3 baseColor;
 
     if (u_enable_procedural_texture > 0.5) {
-        vec2 texUv = finalUv;
+        // Calculate flow field distance for ease effect
+        vec2 ppp = -1.0 + 2.0 * finalUv;
+        ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
+        ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
+        ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
+        ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
+        float r = length(ppp); // Flow distance
+        
+        // Ease blending: 0 = topographic (flow), 1 = image (UV)
+        float vx = (finalUv.x * u_texture_ease) + (r * (1.0 - u_texture_ease));
+        float vy = (finalUv.y * u_texture_ease) + (0.0 * (1.0 - u_texture_ease));
+        vec2 texUv = vec2(vx, vy);
 
         // PARALLAX SCROLLING
         // We manually apply a smaller offset here to make the texture lag behind
-        float scrollSpeed = 0.002;
-        float parallaxFactor = 0.25; // 25% speed of the fluid
-        
-        texUv.y -= (u_y_offset * scrollSpeed) * parallaxFactor;
+        float parallaxFactor = 0.25; // 25% speed of the color mixing
+        texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
 
         texUv *= 1.5; // Tiling scale
 
@@ -1242,6 +1313,9 @@ uniform Color u_colors[6];
 uniform vec2 u_resolution;
 
 uniform float u_y_offset;
+uniform float u_y_offset_wave_multiplier;
+uniform float u_y_offset_color_multiplier;
+uniform float u_y_offset_flow_multiplier;
 
 // Flow field uniforms
 uniform float u_flow_distortion_a;
@@ -1259,6 +1333,7 @@ uniform sampler2D u_mouse_texture;
 // Procedural texture uniforms
 uniform sampler2D u_procedural_texture;
 uniform float u_enable_procedural_texture;
+uniform float u_texture_ease;
 
 varying vec2 vUv;
 varying vec2 vFlowUv;
