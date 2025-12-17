@@ -368,11 +368,12 @@ export class NeatGradient implements NeatController {
                 // Update mouse objects - decay rate controls how fast trails fade
                 this._mouseObjects.forEach(obj => {
                     if (obj.mesh.visible) {
-                        obj.mesh.rotation.z += 0.02;
+                        obj.mesh.rotation.z += 0.01;
                         if (obj.mesh.material instanceof THREE.MeshBasicMaterial) {
+                            // Decay only affects opacity - how quickly the trail fades
                             obj.mesh.material.opacity *= this._mouseDecayRate;
                         }
-                        obj.mesh.scale.multiplyScalar(1.02);
+                        // Don't scale up - keep the brush size constant
                         if (obj.mesh.material instanceof THREE.MeshBasicMaterial && obj.mesh.material.opacity < 0.01) {
                             obj.mesh.visible = false;
                         }
@@ -552,11 +553,9 @@ export class NeatGradient implements NeatController {
 
     _updateBrushScale() {
         if (!this._mouseObjects || this._mouseObjects.length === 0) return;
-        // Radius controls the size of the affected area
-        // Base size is 300px, scale it with radius parameter
-        // radius 0.25 = 1.0 scale (300px), radius 0.5 = 2.0 scale (600px), etc.
-        const targetScale = this._mouseDistortionRadius * 4.0;
-        this._mouseBrushBaseScale = targetScale;
+        // Radius directly controls the brush scale
+        // Base geometry is 200px, so radius 0.25 = 50px, radius 1.0 = 200px
+        this._mouseBrushBaseScale = this._mouseDistortionRadius;
     }
 
     set mouseDecayRate(value: number) {
@@ -782,8 +781,8 @@ export class NeatGradient implements NeatController {
             depthTest: false,
             blending: THREE.AdditiveBlending // Additive blending for better accumulation
         });
-        // Fixed brush size like original - 300x300
-        const brushGeo = new THREE.PlaneGeometry(300, 300);
+        // Brush geometry size - will be scaled by radius parameter
+        const brushGeo = new THREE.PlaneGeometry(200, 200);
 
         // Create brush pool
         const brushPoolSize = 50;
@@ -1163,15 +1162,15 @@ void main() {
         
         // Apply distortion where mouse texture has values
         if (mouseValue > 0.001) {
-            // Use sin for smoother displacement exactly like reference
-            float mfSin = sin(mouseValue * 3.14159);
+            // Use mouseValue directly for displacement - creates smooth gradient from center
+            // This avoids the dead zone that sin() creates
+            float distortionAmount = mouseValue * u_mouse_distortion_strength;
             
-            // meEase controls strength, multiply by mouseValue for proper falloff
-            float strength = u_mouse_distortion_strength;
-            vec2 mouseDisp = strength * vec2(mfSin, mfSin);
+            // Create displacement vector
+            vec2 mouseDisp = vec2(distortionAmount, distortionAmount);
             
-            // Apply displacement - reference uses 0.2 multiplier on the displacement
-            finalUv -= mouseDisp * 0.2;
+            // Apply displacement
+            finalUv -= mouseDisp;
         }
     }
     

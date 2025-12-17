@@ -9,10 +9,7 @@
 <canvas id="gradient"/>
 
 <script type="module">
-    import * as NEAT from 'https://cdn.jsdelivr.net/npm/@firecms/neat@0.3.0/+esm';
-    const {  NeatGradient } = NEAT;
-
-    // import { NeatConfig, NeatGradient } from 'https://cdn.jsdelivr.net/npm/@firecms/neat@0.3.0/+esm';
+    import { NeatGradient } from './lib/dist/index.es.js';
 
     const config = {
         colors: [
@@ -34,7 +31,11 @@
         wireframe: false,
         colorBlending: 6,
         backgroundColor: "#003FFF",
-        backgroundAlpha: 1
+        backgroundAlpha: 1,
+        // Mouse distortion settings for testing
+        mouseDistortionStrength: 0.3,
+        mouseDistortionRadius: 0.25,
+        mouseDecayRate: 0.96
     };
 
     document.addEventListener('DOMContentLoaded', () => {
