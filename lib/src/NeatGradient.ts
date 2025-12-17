@@ -18,6 +18,16 @@ type SceneState = {
     resolution: number
 }
 
+// Interface for the Uniforms to avoid @ts-ignore and improve access speed
+interface NeatUniforms {
+    [key: string]: THREE.IUniform;
+    u_time: { value: number };
+    u_resolution: { value: THREE.Vector2 };
+    u_color_pressure: { value: THREE.Vector2 };
+    u_colors: { value: { is_active: number; color: THREE.Color; influence: number }[] };
+    // We explicitly type the ones we update frequently
+}
+
 export type NeatConfig = {
     resolution?: number;
     speed?: number;
@@ -158,6 +168,10 @@ export class NeatGradient implements NeatController {
     private sizeObserver: ResizeObserver;
     private sceneState: SceneState;
 
+    // Optimization: Cache uniforms to avoid lookups and object creation in render loop
+    private _cachedUniforms: NeatUniforms | null = null;
+    private _linkElement: HTMLAnchorElement | null = null;
+
     private _yOffset: number = 0;
     private _yOffsetWaveMultiplier: number = 0.004;
     private _yOffsetColorMultiplier: number = 0.004;
@@ -285,135 +299,110 @@ export class NeatGradient implements NeatController {
         this._setupMouseInteraction();
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
+
         const render = () => {
 
-            const { renderer, camera, scene, meshes } = this.sceneState;
+            const { renderer, camera, scene } = this.sceneState;
+
+            // Optimization: check if cached link is still valid in DOM, otherwise search
             if (Math.floor(tick * 10) % 5 === 0) {
-                addNeatLink(ref);
+                if (!this._linkElement || !document.contains(this._linkElement)) {
+                    this._linkElement = addNeatLink(ref);
+                }
             }
 
             renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
-            meshes.forEach((mesh) => {
 
-                const width = this._ref.width,
-                    height = this._ref.height;
-
-                const colors = [
-                    ...this._colors.map(color => {
-                        let threeColor = new THREE.Color();
-                        threeColor.setStyle(color.color, "");
-                        return ({
-                            is_active: color.enabled,
-                            color: threeColor,
-                            influence: color.influence
-                        });
-                    }),
-                    ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
-                        is_active: false,
-                        color: new THREE.Color(0x000000)
-                    }))
-                ];
+            // Update Uniforms efficiently without creating new objects
+            if (this._cachedUniforms) {
+                const u = this._cachedUniforms;
 
                 tick += clock.getDelta() * this._speed;
-                // @ts-ignore
-                mesh.material.uniforms.u_time.value = tick;
-                // @ts-ignore
-                mesh.material.uniforms.u_resolution = { value: new THREE.Vector2(width, height) };
-                // @ts-ignore
-                mesh.material.uniforms.u_color_pressure = { value: new THREE.Vector2(this._horizontalPressure, this._verticalPressure) };
-                // @ts-ignore
-                mesh.material.uniforms.u_wave_frequency_x = { value: this._waveFrequencyX };
-                // @ts-ignore
-                mesh.material.uniforms.u_wave_frequency_y = { value: this._waveFrequencyY };
-                // @ts-ignore
-                mesh.material.uniforms.u_wave_amplitude = { value: this._waveAmplitude };
-                // @ts-ignore
-                mesh.material.uniforms.u_plane_width = { value: PLANE_WIDTH };
-                // @ts-ignore
-                mesh.material.uniforms.u_plane_height = { value: PLANE_HEIGHT };
-                // @ts-ignore
-                mesh.material.uniforms.u_color_blending = { value: this._colorBlending };
-                // @ts-ignore
-                mesh.material.uniforms.u_colors = { value: colors };
-                // @ts-ignore
-                mesh.material.uniforms.u_colors_count = { value: COLORS_COUNT };
-                // @ts-ignore
-                mesh.material.uniforms.u_shadows = { value: this._shadows };
-                // @ts-ignore
-                mesh.material.uniforms.u_highlights = { value: this._highlights };
-                // @ts-ignore
-                mesh.material.uniforms.u_saturation = { value: this._saturation };
-                // @ts-ignore
-                mesh.material.uniforms.u_brightness = { value: this._brightness };
-                // @ts-ignore
-                mesh.material.uniforms.u_grain_intensity = { value: this._grainIntensity };
-                // @ts-ignore
-                mesh.material.uniforms.u_grain_sparsity = { value: this._grainSparsity };
-                // @ts-ignore
-                mesh.material.uniforms.u_grain_speed = { value: this._grainSpeed };
-                // @ts-ignore
-                mesh.material.uniforms.u_grain_scale = { value: this._grainScale };
-                // @ts-ignore
-                mesh.material.uniforms.u_y_offset = { value: this._yOffset };
-                // @ts-ignore
-                mesh.material.uniforms.u_y_offset_wave_multiplier = { value: this._yOffsetWaveMultiplier };
-                // @ts-ignore
-                mesh.material.uniforms.u_y_offset_color_multiplier = { value: this._yOffsetColorMultiplier };
-                // @ts-ignore
-                mesh.material.uniforms.u_y_offset_flow_multiplier = { value: this._yOffsetFlowMultiplier };
-                // @ts-ignore
-                mesh.material.uniforms.u_flow_distortion_a = { value: this._flowDistortionA };
-                // @ts-ignore
-                mesh.material.uniforms.u_flow_distortion_b = { value: this._flowDistortionB };
-                // @ts-ignore
-                mesh.material.uniforms.u_flow_scale = { value: this._flowScale };
-                // @ts-ignore
-                mesh.material.uniforms.u_flow_ease = { value: this._flowEase };
-                // @ts-ignore
-                mesh.material.uniforms.u_flow_enabled = { value: this._flowEnabled ? 1.0 : 0.0 };
-                // @ts-ignore
-                mesh.material.uniforms.u_mouse_distortion_strength = { value: this._mouseDistortionStrength };
-                // @ts-ignore
-                mesh.material.uniforms.u_mouse_distortion_radius = { value: this._mouseDistortionRadius };
-                // @ts-ignore
-                mesh.material.uniforms.u_mouse_darken = { value: this._mouseDarken };
-                // @ts-ignore
-                mesh.material.uniforms.u_enable_procedural_texture = { value: this._enableProceduralTexture ? 1.0 : 0.0 };
-                // @ts-ignore
-                mesh.material.uniforms.u_procedural_texture = { value: this._proceduralTexture };
-                // @ts-ignore
-                mesh.material.uniforms.u_texture_ease = { value: this._textureEase };
-                // @ts-ignore
-                mesh.material.wireframe = this._wireframe;
-            });
+
+                u.u_time.value = tick;
+                u.u_resolution.value.set(this._ref.width, this._ref.height);
+                u.u_color_pressure.value.set(this._horizontalPressure, this._verticalPressure);
+
+                // Directly assign simple values
+                u.u_wave_frequency_x.value = this._waveFrequencyX;
+                u.u_wave_frequency_y.value = this._waveFrequencyY;
+                u.u_wave_amplitude.value = this._waveAmplitude;
+                u.u_color_blending.value = this._colorBlending;
+                u.u_shadows.value = this._shadows;
+                u.u_highlights.value = this._highlights;
+                u.u_saturation.value = this._saturation;
+                u.u_brightness.value = this._brightness;
+                u.u_grain_intensity.value = this._grainIntensity;
+                u.u_grain_sparsity.value = this._grainSparsity;
+                u.u_grain_speed.value = this._grainSpeed;
+                u.u_grain_scale.value = this._grainScale;
+                u.u_y_offset.value = this._yOffset;
+                u.u_y_offset_wave_multiplier.value = this._yOffsetWaveMultiplier;
+                u.u_y_offset_color_multiplier.value = this._yOffsetColorMultiplier;
+                u.u_y_offset_flow_multiplier.value = this._yOffsetFlowMultiplier;
+                u.u_flow_distortion_a.value = this._flowDistortionA;
+                u.u_flow_distortion_b.value = this._flowDistortionB;
+                u.u_flow_scale.value = this._flowScale;
+                u.u_flow_ease.value = this._flowEase;
+                u.u_flow_enabled.value = this._flowEnabled ? 1.0 : 0.0;
+                u.u_mouse_distortion_strength.value = this._mouseDistortionStrength;
+                u.u_mouse_distortion_radius.value = this._mouseDistortionRadius;
+                u.u_mouse_darken.value = this._mouseDarken;
+                u.u_enable_procedural_texture.value = this._enableProceduralTexture ? 1.0 : 0.0;
+                u.u_procedural_texture.value = this._proceduralTexture;
+                u.u_texture_ease.value = this._textureEase;
+
+                // Optimized Color Update: Update the existing array objects instead of recreating array
+                const shaderColors = u.u_colors.value;
+                for(let i = 0; i < COLORS_COUNT; i++) {
+                    if (i < this._colors.length) {
+                        const c = this._colors[i];
+                        shaderColors[i].is_active = c.enabled ? 1.0 : 0.0;
+                        shaderColors[i].color.setStyle(c.color, "");
+                        shaderColors[i].influence = c.influence || 0;
+                    } else {
+                        shaderColors[i].is_active = 0.0;
+                    }
+                }
+
+                u.u_colors_count.value = COLORS_COUNT;
+                // Wireframe is a material property, not a uniform
+                // @ts-ignore - access material safely
+                this.sceneState.meshes[0].material.wireframe = this._wireframe;
+            }
 
             // Render mouse interaction to FBO
             if (this._mouseFBO && this._sceneMouse && this._cameraMouse) {
+                let hasActiveBrushes = false;
+
                 // Update mouse objects - decay rate controls how fast trails fade
-                this._mouseObjects.forEach(obj => {
+                for(let i = 0; i < this._mouseObjects.length; i++) {
+                    const obj = this._mouseObjects[i];
                     if (obj.mesh.visible) {
+                        hasActiveBrushes = true;
                         obj.mesh.rotation.z += 0.01;
                         if (obj.mesh.material instanceof THREE.MeshBasicMaterial) {
-                            // Decay only affects opacity - how quickly the trail fades
+                            // Decay only affects opacity
                             obj.mesh.material.opacity *= this._mouseDecayRate;
-                        }
-                        // Don't scale up - keep the brush size constant
-                        if (obj.mesh.material instanceof THREE.MeshBasicMaterial && obj.mesh.material.opacity < 0.01) {
-                            obj.mesh.visible = false;
+
+                            if (obj.mesh.material.opacity < 0.01) {
+                                obj.mesh.visible = false;
+                            }
                         }
                     }
-                });
+                }
 
-                renderer.setRenderTarget(this._mouseFBO);
-                renderer.clear();
-                renderer.render(this._sceneMouse, this._cameraMouse);
-                renderer.setRenderTarget(null);
+                if (hasActiveBrushes) {
+                    renderer.setRenderTarget(this._mouseFBO);
+                    renderer.clear();
+                    renderer.render(this._sceneMouse, this._cameraMouse);
+                    renderer.setRenderTarget(null);
 
-                // Update mouse texture uniform
-                meshes.forEach((mesh) => {
-                    // @ts-ignore
-                    mesh.material.uniforms.u_mouse_texture = { value: this._mouseFBO.texture };
-                });
+                    // Update mouse texture uniform
+                    if (this._cachedUniforms) {
+                        this._cachedUniforms.u_mouse_texture.value = this._mouseFBO.texture;
+                    }
+                }
             }
 
             renderer.render(scene, camera);
@@ -445,6 +434,18 @@ export class NeatGradient implements NeatController {
         if (this) {
             cancelAnimationFrame(this.requestRef);
             this.sizeObserver.disconnect();
+
+            // Cleanup WebGL resources
+            if (this.sceneState) {
+                this.sceneState.renderer.dispose();
+                this.sceneState.meshes.forEach(m => {
+                    m.geometry.dispose();
+                    if(Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
+                    else m.material.dispose();
+                });
+            }
+            if (this._mouseFBO) this._mouseFBO.dispose();
+            if (this._proceduralTexture) this._proceduralTexture.dispose();
         }
     }
 
@@ -701,6 +702,16 @@ export class NeatGradient implements NeatController {
         const width = this._ref.width,
             height = this._ref.height;
 
+        // Cleanup existing renderer if needed
+        if (this.sceneState && this.sceneState.renderer) {
+            this.sceneState.renderer.dispose();
+            this.sceneState.meshes.forEach(m => {
+                m.geometry.dispose();
+                if(Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
+                else m.material.dispose();
+            });
+        }
+
         const renderer = new THREE.WebGLRenderer({
             // antialias: true,
             alpha: true,
@@ -740,17 +751,13 @@ export class NeatGradient implements NeatController {
 
     _buildMaterial(width: number, height: number) {
 
-        const colors = [
-            ...this._colors.map(color => ({
-                is_active: color.enabled,
-                color: new THREE.Color(color.color),
-                influence: color.influence
-            })),
-            ...Array.from({ length: COLORS_COUNT - this._colors.length }).map(() => ({
-                is_active: false,
-                color: new THREE.Color(0x000000)
-            }))
-        ];
+        // Initialize stable array structure for colors
+        // We create 6 objects and just update them in the render loop to avoid GC
+        const colors = Array.from({ length: COLORS_COUNT }).map((_, i) => ({
+            is_active: i < this._colors.length ? (this._colors[i].enabled ? 1.0 : 0.0) : 0.0,
+            color: new THREE.Color(i < this._colors.length ? this._colors[i].color : 0x000000),
+            influence: i < this._colors.length ? (this._colors[i].influence || 0) : 0
+        }));
 
         const uniforms = {
             u_time: { value: 0 },
@@ -776,6 +783,7 @@ export class NeatGradient implements NeatController {
             u_flow_ease: { value: this._flowEase },
             u_flow_enabled: { value: this._flowEnabled ? 1.0 : 0.0 },
             // Y offset multipliers
+            u_y_offset: { value: this._yOffset },
             u_y_offset_wave_multiplier: { value: this._yOffsetWaveMultiplier },
             u_y_offset_color_multiplier: { value: this._yOffsetColorMultiplier },
             u_y_offset_flow_multiplier: { value: this._yOffsetFlowMultiplier },
@@ -788,6 +796,9 @@ export class NeatGradient implements NeatController {
             u_procedural_texture: { value: this._proceduralTexture },
             u_enable_procedural_texture: { value: this._enableProceduralTexture ? 1.0 : 0.0 },
             u_texture_ease: { value: this._textureEase },
+            u_saturation: { value: this._saturation },
+            u_brightness: { value: this._brightness },
+            u_color_blending: { value: this._colorBlending }
         };
 
         const material = new THREE.ShaderMaterial({
@@ -795,6 +806,9 @@ export class NeatGradient implements NeatController {
             vertexShader: buildUniforms() + buildNoise() + buildColorFunctions() + buildVertexShader(),
             fragmentShader: buildUniforms() + buildColorFunctions() + buildNoise() + buildFragmentShader()
         });
+
+        // Cache the uniforms object for direct access in render loop
+        this._cachedUniforms = uniforms as unknown as NeatUniforms;
 
         material.wireframe = WIREFRAME;
         return material;
@@ -1164,7 +1178,7 @@ void main() {
     const float maxNoise = .9;
 
     for (int i = 1; i < u_colors_count; i++) {
-        if(u_colors[i].is_active == 1.0){
+        if(u_colors[i].is_active > 0.5){
             float noiseFlow = (1. + float(i)) / 30.;
             float noiseSpeed = (1. + float(i)) * 0.11;
             float noiseSeed = 13. + float(i) * 7.;
@@ -1562,19 +1576,20 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
     link.innerHTML = "NEAT";
 }
 
-const addNeatLink = (ref: HTMLCanvasElement) => {
+const addNeatLink = (ref: HTMLCanvasElement): HTMLAnchorElement => {
     const existingLinks = ref.parentElement?.getElementsByTagName("a");
     if (existingLinks) {
         for (let i = 0; i < existingLinks.length; i++) {
             if (existingLinks[i].id === LINK_ID) {
                 setLinkStyles(existingLinks[i]);
-                return;
+                return existingLinks[i];
             }
         }
     }
     const link = document.createElement("a");
     setLinkStyles(link);
     ref.parentElement?.appendChild(link);
+    return link;
 }
 
 function getElapsedSecondsInLastHour() {
