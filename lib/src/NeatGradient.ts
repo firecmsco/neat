@@ -25,7 +25,7 @@ interface NeatUniforms {
     u_resolution: { value: THREE.Vector2 };
     u_color_pressure: { value: THREE.Vector2 };
     u_colors: { value: { is_active: number; color: THREE.Color; influence: number }[] };
-    // We explicitly type the ones we update frequently
+    u_mouse_texture: { value: THREE.Texture | null };
 }
 
 export type NeatConfig = {
@@ -177,6 +177,9 @@ export class NeatGradient implements NeatController {
     private _yOffsetColorMultiplier: number = 0.004;
     private _yOffsetFlowMultiplier: number = 0.004;
 
+    // For saving/restoring clear color
+    private _tempClearColor = new THREE.Color();
+
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
         const {
@@ -293,10 +296,10 @@ export class NeatGradient implements NeatController {
         this._textureShapeBars = textureShapeBars;
         this._textureShapeSquiggles = textureShapeSquiggles;
 
-        this.sceneState = this._initScene(resolution);
-
-        // Always setup mouse interaction so distortion/darken work reliably
+        // FIX 1: Setup mouse resources BEFORE building the material/scene
+        // This ensures u_mouse_texture isn't null during material compilation
         this._setupMouseInteraction();
+        this.sceneState = this._initScene(resolution);
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
 
@@ -310,8 +313,6 @@ export class NeatGradient implements NeatController {
                     this._linkElement = addNeatLink(ref);
                 }
             }
-
-            renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
 
             // Update Uniforms efficiently without creating new objects
             if (this._cachedUniforms) {
@@ -392,19 +393,35 @@ export class NeatGradient implements NeatController {
                     }
                 }
 
-                if (hasActiveBrushes) {
-                    renderer.setRenderTarget(this._mouseFBO);
-                    renderer.clear();
-                    renderer.render(this._sceneMouse, this._cameraMouse);
-                    renderer.setRenderTarget(null);
+                // FIX 2: Handle FBO Clearing correctly
+                // Store current clear color (likely the main background color)
+                renderer.getClearColor(this._tempClearColor);
+                const oldClearAlpha = renderer.getClearAlpha();
 
-                    // Update mouse texture uniform
-                    if (this._cachedUniforms) {
-                        this._cachedUniforms.u_mouse_texture.value = this._mouseFBO.texture;
-                    }
+                // Set clear color to Black/Transparent for the FBO.
+                // Important: If we use the main background color (e.g. White), the FBO
+                // will be white, causing 100% distortion everywhere.
+                renderer.setClearColor(0x000000, 0.0);
+
+                renderer.setRenderTarget(this._mouseFBO);
+                renderer.clear();
+
+                if (hasActiveBrushes) {
+                    renderer.render(this._sceneMouse, this._cameraMouse);
+                }
+                renderer.setRenderTarget(null);
+
+                // Restore main background color for the actual scene render
+                renderer.setClearColor(this._tempClearColor, oldClearAlpha);
+
+                // Update mouse texture uniform
+                if (this._cachedUniforms) {
+                    this._cachedUniforms.u_mouse_texture.value = this._mouseFBO.texture;
                 }
             }
 
+            // Ensure we set the clear color for the main scene explicitly before rendering
+            renderer.setClearColor(this._backgroundColor, this._backgroundAlpha);
             renderer.render(scene, camera);
             this.requestRef = requestAnimationFrame(render);
         };
@@ -418,6 +435,19 @@ export class NeatGradient implements NeatController {
 
             this.sceneState.renderer.setSize(width, height, false);
             updateCamera(this.sceneState.camera, width, height);
+
+            // FIX 3: Update Mouse FBO and Camera on resize
+            // If we don't do this, mouse coordinates map incorrectly after a resize
+            if (this._mouseFBO && this._cameraMouse) {
+                const fSize = height / 2;
+                const aspect = width / height;
+                this._mouseFBO.setSize(width / 2, height / 2);
+                this._cameraMouse.left = -fSize * aspect;
+                this._cameraMouse.right = fSize * aspect;
+                this._cameraMouse.top = fSize;
+                this._cameraMouse.bottom = -fSize;
+                this._cameraMouse.updateProjectionMatrix();
+            }
         };
 
         this.sizeObserver = new ResizeObserver(entries => {
@@ -827,6 +857,9 @@ export class NeatGradient implements NeatController {
         this._sceneMouse = new THREE.Scene();
         const fSize = height / 2;
         const aspect = width / height;
+
+        // FIX 4: Ensure near plane allows viewing objects at Z=0
+        // Near -100 is safer for objects at 0
         this._cameraMouse = new THREE.OrthographicCamera(
             -fSize * aspect, fSize * aspect,
             fSize, -fSize,
