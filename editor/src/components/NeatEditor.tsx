@@ -863,7 +863,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 </div>
 
                                 {/* Color pressure section - disabled when texture is enabled */}
-                                <div className={`space-y-2 transition-opacity ${enableProceduralTexture ? 'opacity-40 pointer-events-none' : ''}`}>
+                                <div className={`space-y-2 bg-white/5 border border-white/10 rounded-xl p-3 transition-opacity ${enableProceduralTexture ? 'opacity-40 pointer-events-none' : ''}`}>
                                     <div className="font-semibold text-sm mb-2 flex items-center justify-between">
                                         <span>Color Pressure</span>
                                         {enableProceduralTexture && (
@@ -913,8 +913,44 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     )}
                                 </div>
 
+                                {/* Shape section */}
+                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                                    <div className="font-semibold text-sm mb-2">Shape</div>
+                                    <Tooltip
+                                        title={"The density of triangles in the 3D mesh. Reduce to increase performance"}>
+                                        <div className="flex flex-row gap-2 items-end">
+                                            <span className="w-28 text-right pr-2 text-xs">Resolution</span>
+                                            <Slider value={[resolution]} step={0.05}
+                                                    min={0.05} max={2}
+                                                    onValueChange={(v) => setResolution(v[0] as number)}/>
+                                        </div>
+                                    </Tooltip>
+                                    <div className="flex flex-row gap-2 items-center">
+                                        <span className="w-28 text-right pr-2 text-xs">Vertical Offset</span>
+                                        <Slider
+                                            value={[yOffset]}
+                                            step={1}
+                                            min={0}
+                                            max={100000}
+                                            onValueChange={(v) => setYOffset(v[0] as number)}/>
+                                    </div>
+                                    <Label
+                                        className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                        <span className="text-xs w-28 text-right">Wireframe</span>
+                                        <div className={"w-full flex"}>
+                                            <Checkbox checked={wireframe}
+                                                      onChange={(checked: boolean) => setWireframe(checked)}/>
+                                        </div>
+                                    </Label>
+                                    {wireframe && (
+                                        <div className="text-xs opacity-70 italic mt-2 pl-2">
+                                            ℹ️ Wireframe mode: colors, grain, and texture effects are less visible
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Waves section - disabled when speed is 0 */}
-                                <div className={`space-y-2 transition-opacity ${speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                <div className={`space-y-2 bg-white/5 border border-white/10 rounded-xl p-3 transition-opacity ${speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
                                     <div className="font-semibold text-sm mb-2 flex items-center justify-between">
                                         <span>Waves</span>
                                         {speed === 0 && (
@@ -1016,29 +1052,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     </div>
                                 </div>
 
-                                {/* Shape & Background section */}
-                                <div className="space-y-2">
-                                    <div className="font-semibold text-sm mb-2">Shape & Background</div>
-                                    <Tooltip
-                                        title={"The density of triangles in the 3D mesh. Reduce to increase performance"}>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Resolution</span>
-                                            <Slider value={[resolution]} step={0.05}
-                                                    min={0.05} max={2}
-                                                    onValueChange={(v) => setResolution(v[0] as number)}/>
-                                        </div>
-                                    </Tooltip>
+                                {/* Background section */}
+                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                                    <div className="font-semibold text-sm mb-2">Background</div>
                                     <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Vertical Offset</span>
-                                        <Slider
-                                            value={[yOffset]}
-                                            step={1}
-                                            min={0}
-                                            max={100000}
-                                            onValueChange={(v) => setYOffset(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Background</span>
+                                        <span className="w-28 text-right pr-2 text-xs">Color</span>
                                         <div className={"w-full flex my-4"}>
                                             <div className="text-center pl-2">
                                                 <ColorSwatch
@@ -1051,26 +1069,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 />
                                             </div>
                                             <div className="flex-grow pl-2 flex flex-col gap-2">
-                                                <span className="text-xs">Background Alpha</span>
+                                                <span className="text-xs">Alpha</span>
                                                 <Slider value={[backgroundAlpha]}
                                                         step={0.05} min={0} max={1}
                                                         onValueChange={(v) => setBackgroundAlpha(v[0] as number)}/>
                                             </div>
                                         </div>
                                     </div>
-                                    <Label
-                                        className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                        <span className="text-xs w-28 text-right">Wireframe</span>
-                                        <div className={"w-full flex"}>
-                                            <Checkbox checked={wireframe}
-                                                      onChange={(checked: boolean) => setWireframe(checked)}/>
-                                        </div>
-                                    </Label>
-                                    {wireframe && (
-                                        <div className="text-xs opacity-70 italic mt-2 pl-2">
-                                            ℹ️ Wireframe mode: colors, grain, and texture effects are less visible
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* Distortion Effects section - grouping related features */}
