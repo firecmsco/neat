@@ -131,6 +131,7 @@ export class NeatGradient implements NeatController {
     private _cameraMouse: THREE.OrthographicCamera | null = null;
     private _mouseObjects: Array<{ mesh: THREE.Mesh, active: boolean }> = [];
     private _currentBrush: number = 0;
+    private _mouseBrushBaseScale: number = 1;
 
     // Texture generation properties
     private _enableProceduralTexture: boolean = false;
@@ -545,6 +546,17 @@ export class NeatGradient implements NeatController {
     set mouseDistortionRadius(value: number) {
         // Clamp to a sane range in UV space
         this._mouseDistortionRadius = Math.max(0.01, Math.min(value, 1.0));
+        // Update brush scale when radius changes
+        this._updateBrushScale();
+    }
+
+    _updateBrushScale() {
+        if (!this._mouseObjects || this._mouseObjects.length === 0) return;
+        // Radius controls the size of the affected area
+        // Base size is 300px, scale it with radius parameter
+        // radius 0.25 = 1.0 scale (300px), radius 0.5 = 2.0 scale (600px), etc.
+        const targetScale = this._mouseDistortionRadius * 4.0;
+        this._mouseBrushBaseScale = targetScale;
     }
 
     set mouseDecayRate(value: number) {
@@ -755,9 +767,9 @@ export class NeatGradient implements NeatController {
         const bCtx = brushCanvas.getContext('2d');
         if (bCtx) {
             const grd = bCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            // Stronger opacity for better visibility
-            grd.addColorStop(0, 'rgba(255,255,255,0.5)');
-            grd.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            // Match reference implementation's stronger gradient
+            grd.addColorStop(0, 'rgba(255,255,255,0.8)');
+            grd.addColorStop(0.5, 'rgba(255,255,255,0.4)');
             grd.addColorStop(1, 'rgba(255,255,255,0)');
             bCtx.fillStyle = grd;
             bCtx.fillRect(0, 0, 128, 128);
@@ -766,9 +778,9 @@ export class NeatGradient implements NeatController {
         const brushMat = new THREE.MeshBasicMaterial({
             map: brushTex,
             transparent: true,
-            opacity: 0.8,
+            opacity: 1.0,
             depthTest: false,
-            blending: THREE.NormalBlending // Use normal blending like original
+            blending: THREE.AdditiveBlending // Additive blending for better accumulation
         });
         // Fixed brush size like original - 300x300
         const brushGeo = new THREE.PlaneGeometry(300, 300);
@@ -781,6 +793,9 @@ export class NeatGradient implements NeatController {
             this._sceneMouse!.add(m);
             this._mouseObjects.push({ mesh: m, active: false });
         }
+
+        // Initialize brush scale based on current radius
+        this._updateBrushScale();
 
         // Add mouse move listener
         this._ref.addEventListener('mousemove', this._onMouseMove.bind(this));
@@ -796,7 +811,7 @@ export class NeatGradient implements NeatController {
         this._mouse.y = -(e.clientY - rect.top - height / 2);
 
         const brush = this._mouseObjects[this._currentBrush];
-        brush.mesh.scale.set(1.0, 1.0, 1.0);
+        brush.mesh.scale.set(this._mouseBrushBaseScale, this._mouseBrushBaseScale, 1.0);
         brush.active = true;
         brush.mesh.visible = true;
         brush.mesh.position.set(this._mouse.x, this._mouse.y, 0);
@@ -1146,15 +1161,16 @@ void main() {
         vec4 mouseColor = texture2D(u_mouse_texture, vUv);
         float mouseValue = mouseColor.r;
         
-        // Only apply distortion where mouse texture has values (local effect!)
+        // Apply distortion where mouse texture has values
         if (mouseValue > 0.001) {
-            // Use sin for smoother displacement like original
+            // Use sin for smoother displacement exactly like reference
             float mfSin = sin(mouseValue * 3.14159);
             
-            // Create displacement vector - strength controls intensity, radius scales the effect
-            vec2 mouseDisp = u_mouse_distortion_strength * u_mouse_distortion_radius * vec2(mfSin, mfSin);
+            // meEase controls strength, multiply by mouseValue for proper falloff
+            float strength = u_mouse_distortion_strength;
+            vec2 mouseDisp = strength * vec2(mfSin, mfSin);
             
-            // Apply displacement to UV (like original: disturbedUv = vUv - mouseDisp * 0.2)
+            // Apply displacement - reference uses 0.2 multiplier on the displacement
             finalUv -= mouseDisp * 0.2;
         }
     }

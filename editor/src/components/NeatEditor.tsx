@@ -892,7 +892,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         <span className="text-[10px] opacity-60">Less visible in wireframe</span>
                                     )}
                                 </div>
-                                
+
                                 {/* Post-processing */}
                                 <div className="space-y-2 pl-2 border-l-2 border-white/20">
                                     <div className="text-xs font-semibold mb-1">Color Adjustment</div>
@@ -1071,7 +1071,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 value={[mouseDistortionStrength]}
                                                 step={0.01}
                                                 min={0}
-                                                max={0.5}
+                                                max={2.0}
                                                 onValueChange={(v) => setMouseDistortionStrength(v[0] as number)}
                                             />
                                         </div>
@@ -1082,7 +1082,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     value={[mouseDistortionRadius]}
                                                     step={0.01}
                                                     min={0.05}
-                                                    max={0.6}
+                                                    max={2.0}
                                                     disabled={mouseDistortionStrength === 0}
                                                     onValueChange={(v) => setMouseDistortionRadius(v[0] as number)}
                                                 />
