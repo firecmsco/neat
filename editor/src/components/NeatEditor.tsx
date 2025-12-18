@@ -737,6 +737,34 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     </div>
                 )}
 
+                {/* Footer with links (always visible) */}
+                {uiVisible && (
+                    <div className="fixed bottom-4 left-4 z-10 text-left space-y-1">
+                        <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
+                            <a
+                                href="https://firecms.co"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'footer' })}
+                            >
+                                Made by FireCMS
+                            </a>
+                        </div>
+                        <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
+                            <a
+                                href="mailto:hello@firecms.co"
+                                className="hover:underline"
+                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                onClick={() => logEvent(analytics, 'click_email', { location: 'footer' })}
+                            >
+                                hello@firecms.co
+                            </a>
+                        </div>
+                    </div>
+                )}
+
                 {/* Right controls panel (shown only when UI is visible) */}
                 {uiVisible && (
                     <Sheet
@@ -1237,6 +1265,33 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pb-2 px-4 space-y-2">
+                                <div className="text-center space-y-1">
+                                    <div className="text-xs opacity-60">
+                                        Made with ❤️ by
+                                    </div>
+                                    <a
+                                        href="https://firecms.co"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-semibold hover:underline opacity-80 hover:opacity-100 transition-opacity"
+                                        onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'sidebar' })}
+                                    >
+                                        FireCMS
+                                    </a>
+                                    <div className="text-xs opacity-60">
+                                        Contact us at{' '}
+                                        <a
+                                            href="mailto:hello@firecms.co"
+                                            className="hover:underline opacity-80 hover:opacity-100 transition-opacity"
+                                            onClick={() => logEvent(analytics, 'click_email', { location: 'sidebar' })}
+                                        >
+                                            hello@firecms.co
+                                        </a>
                                     </div>
                                 </div>
                             </div>
