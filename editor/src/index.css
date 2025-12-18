@@ -138,5 +138,12 @@ a {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Hide scrollbar for neat-scroll-content */
+.neat-scroll-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Hide host link in embed contexts (optional) */
 /* a[href="https://neat.firecms.co"] { display: none !important; } */

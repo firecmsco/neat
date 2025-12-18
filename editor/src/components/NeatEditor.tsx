@@ -254,22 +254,52 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const tweenToRef = React.useRef<TweenState | null>(null);
     const tweenRafRef = React.useRef<number | null>(null);
 
-    // Scroll Handler
-    useEffect(() => {
-        const container = editorContainerRef.current;
-        if (!container) return;
+    // Scroll Handler - Infinite scroll with position reset
+    const lastScrollTop = useRef(0);
 
-        const handleWheel = (e: WheelEvent) => {
-            const target = e.target as HTMLElement;
-            if (target && target.closest(".panel-scroll")) {
-                return;
+    useEffect(() => {
+        const scrollContainer = scrollContentRef.current;
+        if (!scrollContainer) return;
+
+        // Initialize scroll position to middle
+        const scrollHeight = scrollContainer.scrollHeight;
+        const clientHeight = scrollContainer.clientHeight;
+        const middleScroll = (scrollHeight - clientHeight) / 2;
+        scrollContainer.scrollTop = middleScroll;
+        lastScrollTop.current = middleScroll;
+
+        const handleScroll = () => {
+            const scrollTop = scrollContainer.scrollTop;
+            const scrollHeight = scrollContainer.scrollHeight;
+            const clientHeight = scrollContainer.clientHeight;
+            const maxScroll = scrollHeight - clientHeight;
+
+            // Calculate scroll delta
+            const delta = scrollTop - lastScrollTop.current;
+
+            // Accumulate yOffset infinitely
+            setYOffset(prev => prev + delta);
+
+            // Reset scroll position when near edges (infinite scroll effect)
+            const threshold = maxScroll * 0.1; // 10% from edges
+            if (scrollTop < threshold) {
+                // Near top, jump to middle
+                scrollContainer.scrollTop = middleScroll;
+                lastScrollTop.current = middleScroll;
+            } else if (scrollTop > maxScroll - threshold) {
+                // Near bottom, jump to middle
+                scrollContainer.scrollTop = middleScroll;
+                lastScrollTop.current = middleScroll;
+            } else {
+                lastScrollTop.current = scrollTop;
             }
-            e.preventDefault();
-            setYOffset(prev => prev + e.deltaY * 0.5);
         };
 
-        container.addEventListener("wheel", handleWheel, { passive: false });
-        return () => container.removeEventListener("wheel", handleWheel as EventListener);
+        scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+
+        return () => {
+            scrollContainer.removeEventListener("scroll", handleScroll);
+        };
     }, []);
 
     // 1. TWEEN LOOP (Performance Heavy) - Removed yOffset
@@ -669,7 +699,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 className="neat-scroll-content absolute inset-0 w-full h-full overflow-y-auto z-10"
                 style={{
                     WebkitOverflowScrolling: 'touch',
-                    overscrollBehavior: 'none'
+                    overscrollBehavior: 'none',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
                 }}
             >
                 {/* Spacer to enable scrolling - creates 300vh of scrollable space */}
