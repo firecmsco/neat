@@ -180,6 +180,15 @@ export class NeatGradient implements NeatController {
     // For saving/restoring clear color
     private _tempClearColor = new THREE.Color();
 
+    // Performance optimizations
+    private _resizeTimeoutId: number | null = null;
+    private _textureNeedsUpdate: boolean = false;
+    private _lastColorUpdate: number = 0;
+    private _linkCheckCounter: number = 0;
+    private _mouseUpdateScheduled: boolean = false;
+    private _pendingMousePosition: { x: number; y: number } | null = null;
+    private _colorsChanged: boolean = true; // Track if colors need update
+
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
         const {
@@ -307,8 +316,10 @@ export class NeatGradient implements NeatController {
 
             const { renderer, camera, scene } = this.sceneState;
 
-            // Optimization: check if cached link is still valid in DOM, otherwise search
-            if (Math.floor(tick * 10) % 5 === 0) {
+            // Optimization: check if cached link is still valid in DOM less frequently
+            this._linkCheckCounter++;
+            if (this._linkCheckCounter >= 300) { // Check every ~5 seconds at 60fps
+                this._linkCheckCounter = 0;
                 if (!this._linkElement || !document.contains(this._linkElement)) {
                     this._linkElement = addNeatLink(ref);
                 }
@@ -350,30 +361,49 @@ export class NeatGradient implements NeatController {
                 u.u_mouse_distortion_radius.value = this._mouseDistortionRadius;
                 u.u_mouse_darken.value = this._mouseDarken;
                 u.u_enable_procedural_texture.value = this._enableProceduralTexture ? 1.0 : 0.0;
+
+                // Only regenerate procedural texture when needed
+                if (this._textureNeedsUpdate && this._enableProceduralTexture) {
+                    if (this._proceduralTexture) {
+                        this._proceduralTexture.dispose();
+                    }
+                    this._proceduralTexture = this._createProceduralTexture();
+                    this._textureNeedsUpdate = false;
+                }
+
                 u.u_procedural_texture.value = this._proceduralTexture;
                 u.u_texture_ease.value = this._textureEase;
 
-                // Optimized Color Update: Update the existing array objects instead of recreating array
-                const shaderColors = u.u_colors.value;
-                for(let i = 0; i < COLORS_COUNT; i++) {
-                    if (i < this._colors.length) {
-                        const c = this._colors[i];
-                        shaderColors[i].is_active = c.enabled ? 1.0 : 0.0;
-                        shaderColors[i].color.setStyle(c.color, "");
-                        shaderColors[i].influence = c.influence || 0;
-                    } else {
-                        shaderColors[i].is_active = 0.0;
-                    }
-                }
-
-                u.u_colors_count.value = COLORS_COUNT;
-                // Wireframe is a material property, not a uniform
+                // Wireframe is a material property and must update every frame to avoid artifacts
                 // @ts-ignore - access material safely
                 this.sceneState.meshes[0].material.wireframe = this._wireframe;
+
+                // Optimized Color Update: Update immediately on change, or throttle to 10 times per second
+                const now = Date.now();
+                const shouldUpdate = this._colorsChanged || (now - this._lastColorUpdate > 100);
+
+                if (shouldUpdate) {
+                    this._lastColorUpdate = now;
+                    this._colorsChanged = false;
+
+                    const shaderColors = u.u_colors.value;
+                    for(let i = 0; i < COLORS_COUNT; i++) {
+                        if (i < this._colors.length) {
+                            const c = this._colors[i];
+                            shaderColors[i].is_active = c.enabled ? 1.0 : 0.0;
+                            shaderColors[i].color.setStyle(c.color, "");
+                            shaderColors[i].influence = c.influence || 0;
+                        } else {
+                            shaderColors[i].is_active = 0.0;
+                        }
+                    }
+
+                    u.u_colors_count.value = COLORS_COUNT;
+                }
             }
 
-            // Render mouse interaction to FBO
-            if (this._mouseFBO && this._sceneMouse && this._cameraMouse) {
+            // Render mouse interaction to FBO - optimize by only rendering when needed
+            if (this._mouseFBO && this._sceneMouse && this._cameraMouse && this._mouseDistortionStrength > 0) {
                 let hasActiveBrushes = false;
 
                 // Update mouse objects - decay rate controls how fast trails fade
@@ -393,30 +423,27 @@ export class NeatGradient implements NeatController {
                     }
                 }
 
-                // FIX 2: Handle FBO Clearing correctly
-                // Store current clear color (likely the main background color)
-                renderer.getClearColor(this._tempClearColor);
-                const oldClearAlpha = renderer.getClearAlpha();
-
-                // Set clear color to Black/Transparent for the FBO.
-                // Important: If we use the main background color (e.g. White), the FBO
-                // will be white, causing 100% distortion everywhere.
-                renderer.setClearColor(0x000000, 0.0);
-
-                renderer.setRenderTarget(this._mouseFBO);
-                renderer.clear();
-
+                // Only render FBO if there are active brushes
                 if (hasActiveBrushes) {
+                    // Store current clear color (likely the main background color)
+                    renderer.getClearColor(this._tempClearColor);
+                    const oldClearAlpha = renderer.getClearAlpha();
+
+                    // Set clear color to Black/Transparent for the FBO.
+                    renderer.setClearColor(0x000000, 0.0);
+
+                    renderer.setRenderTarget(this._mouseFBO);
+                    renderer.clear();
                     renderer.render(this._sceneMouse, this._cameraMouse);
-                }
-                renderer.setRenderTarget(null);
+                    renderer.setRenderTarget(null);
 
-                // Restore main background color for the actual scene render
-                renderer.setClearColor(this._tempClearColor, oldClearAlpha);
+                    // Restore main background color for the actual scene render
+                    renderer.setClearColor(this._tempClearColor, oldClearAlpha);
 
-                // Update mouse texture uniform
-                if (this._cachedUniforms) {
-                    this._cachedUniforms.u_mouse_texture.value = this._mouseFBO.texture;
+                    // Update mouse texture uniform
+                    if (this._cachedUniforms) {
+                        this._cachedUniforms.u_mouse_texture.value = this._mouseFBO.texture;
+                    }
                 }
             }
 
@@ -450,8 +477,15 @@ export class NeatGradient implements NeatController {
             }
         };
 
-        this.sizeObserver = new ResizeObserver(entries => {
-            setSize();
+        // Debounce resize to prevent excessive operations
+        this.sizeObserver = new ResizeObserver(() => {
+            if (this._resizeTimeoutId !== null) {
+                clearTimeout(this._resizeTimeoutId);
+            }
+            this._resizeTimeoutId = window.setTimeout(() => {
+                setSize();
+                this._resizeTimeoutId = null;
+            }, 100); // Wait 100ms after last resize event
         });
 
         this.sizeObserver.observe(ref);
@@ -464,6 +498,12 @@ export class NeatGradient implements NeatController {
         if (this) {
             cancelAnimationFrame(this.requestRef);
             this.sizeObserver.disconnect();
+
+            // Clear resize timeout
+            if (this._resizeTimeoutId !== null) {
+                clearTimeout(this._resizeTimeoutId);
+                this._resizeTimeoutId = null;
+            }
 
             // Cleanup WebGL resources
             if (this.sceneState) {
@@ -512,6 +552,7 @@ export class NeatGradient implements NeatController {
 
     set colors(colors: NeatColor[]) {
         this._colors = colors;
+        this._colorsChanged = true; // Flag for immediate update
     }
 
     set highlights(highlights: number) {
@@ -649,49 +690,49 @@ export class NeatGradient implements NeatController {
     set enableProceduralTexture(value: boolean) {
         this._enableProceduralTexture = value;
         if (value && !this._proceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureVoidLikelihood(value: number) {
         this._textureVoidLikelihood = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureVoidWidthMin(value: number) {
         this._textureVoidWidthMin = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureVoidWidthMax(value: number) {
         this._textureVoidWidthMax = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureBandDensity(value: number) {
         this._textureBandDensity = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureColorBlending(value: number) {
         this._textureColorBlending = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureSeed(value: number) {
         this._textureSeed = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
@@ -706,25 +747,25 @@ export class NeatGradient implements NeatController {
     set proceduralBackgroundColor(value: string) {
         this._proceduralBackgroundColor = value;
         if (this._enableProceduralTexture) {
-            this._proceduralTexture = this._createProceduralTexture();
+            this._textureNeedsUpdate = true;
         }
     }
 
     set textureShapeTriangles(value: number) {
         this._textureShapeTriangles = value;
-        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
     set textureShapeCircles(value: number) {
         this._textureShapeCircles = value;
-        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
     set textureShapeBars(value: number) {
         this._textureShapeBars = value;
-        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
     set textureShapeSquiggles(value: number) {
         this._textureShapeSquiggles = value;
-        if (this._enableProceduralTexture) this._proceduralTexture = this._createProceduralTexture();
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
 
     _initScene(resolution: number): SceneState {
@@ -910,33 +951,52 @@ export class NeatGradient implements NeatController {
 
     _onMouseMove(e: MouseEvent) {
         if (!this._ref || !this._sceneMouse) return;
+
         const rect = this._ref.getBoundingClientRect();
         const width = this._ref.width;
         const height = this._ref.height;
 
-        this._mouse.x = e.clientX - rect.left - width / 2;
-        this._mouse.y = -(e.clientY - rect.top - height / 2);
+        // Store pending mouse position
+        this._pendingMousePosition = {
+            x: e.clientX - rect.left - width / 2,
+            y: -(e.clientY - rect.top - height / 2)
+        };
 
-        const brush = this._mouseObjects[this._currentBrush];
-        brush.mesh.scale.set(this._mouseBrushBaseScale, this._mouseBrushBaseScale, 1.0);
-        brush.active = true;
-        brush.mesh.visible = true;
-        brush.mesh.position.set(this._mouse.x, this._mouse.y, 0);
-        brush.mesh.rotation.z = Math.random() * Math.PI * 2;
-        if (brush.mesh.material instanceof THREE.MeshBasicMaterial) {
-            brush.mesh.material.opacity = 1.0;
+        // Batch mouse updates using requestAnimationFrame
+        if (!this._mouseUpdateScheduled) {
+            this._mouseUpdateScheduled = true;
+            requestAnimationFrame(() => {
+                this._mouseUpdateScheduled = false;
+
+                if (!this._pendingMousePosition) return;
+
+                this._mouse.x = this._pendingMousePosition.x;
+                this._mouse.y = this._pendingMousePosition.y;
+
+                const brush = this._mouseObjects[this._currentBrush];
+                brush.mesh.scale.set(this._mouseBrushBaseScale, this._mouseBrushBaseScale, 1.0);
+                brush.active = true;
+                brush.mesh.visible = true;
+                brush.mesh.position.set(this._mouse.x, this._mouse.y, 0);
+                brush.mesh.rotation.z = Math.random() * Math.PI * 2;
+                if (brush.mesh.material instanceof THREE.MeshBasicMaterial) {
+                    brush.mesh.material.opacity = 1.0;
+                }
+                this._currentBrush = (this._currentBrush + 1) % this._mouseObjects.length;
+
+                this._pendingMousePosition = null;
+            });
         }
-        this._currentBrush = (this._currentBrush + 1) % this._mouseObjects.length;
     }
 
     _createProceduralTexture(): THREE.Texture {
         // Texture size - 1024 provides good balance between quality and performance
-        // Can be increased to 2048 for even better quality if needed
+        // Reduced from 2048 for better performance
         const texSize = 1024;
         const sourceCanvas = document.createElement('canvas');
         sourceCanvas.width = texSize;
         sourceCanvas.height = texSize;
-        const sCtx = sourceCanvas.getContext('2d');
+        const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
         if (!sCtx) return new THREE.Texture();
 
         let seed = this._textureSeed;
@@ -1056,7 +1116,7 @@ export class NeatGradient implements NeatController {
         const canvas = document.createElement('canvas');
         canvas.width = texSize;
         canvas.height = texSize;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return new THREE.Texture();
 
         // Start filled with the chosen void color so gaps show that color
@@ -1158,8 +1218,13 @@ function updateCamera(camera: THREE.Camera, width: number, height: number) {
 }
 
 
+// Cache shader strings to avoid repeated concatenation
+let cachedVertexShader: string | null = null;
+let cachedFragmentShader: string | null = null;
+
 function buildVertexShader() {
-    return `
+    if (cachedVertexShader) return cachedVertexShader;
+    cachedVertexShader = `
 void main() {
     vUv = uv;
 
@@ -1237,10 +1302,12 @@ void main() {
     v_new_position = gl_Position;
 }
 `;
+    return cachedVertexShader;
 }
 
 function buildFragmentShader() {
-    return `
+    if (cachedFragmentShader) return cachedFragmentShader;
+    cachedFragmentShader = `
 float random(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453);
 }
@@ -1323,8 +1390,15 @@ void main() {
     gl_FragColor = vec4(color, 1.0);
 }
     `;
+    return cachedFragmentShader;
 }
-const buildUniforms = () => `
+
+// Cache uniforms string as well
+let cachedUniformsShader: string | null = null;
+
+const buildUniforms = () => {
+    if (cachedUniformsShader) return cachedUniformsShader;
+    cachedUniformsShader = `
 precision highp float;
 
 struct Color {
@@ -1389,8 +1463,15 @@ varying vec3 v_color;
 varying float v_displacement_amount;
 
     `;
+    return cachedUniformsShader;
+};
 
-const buildNoise = () => `
+// Cache noise functions as well
+let cachedNoiseShader: string | null = null;
+
+const buildNoise = () => {
+    if (cachedNoiseShader) return cachedNoiseShader;
+    cachedNoiseShader = `
 
 // 1. REPLACEMENT PERMUTE: 
 // Uses a hash function (fract/sin) instead of a modular lookup table.
@@ -1544,8 +1625,15 @@ float cnoise(vec3 P)
   return 2.2 * n_xyz;
 }
 `;
+    return cachedNoiseShader;
+};
 
-const buildColorFunctions = () => `
+// Cache color functions as well
+let cachedColorFunctionsShader: string | null = null;
+
+const buildColorFunctions = () => {
+    if (cachedColorFunctionsShader) return cachedColorFunctionsShader;
+    cachedColorFunctionsShader = `
 
 vec3 saturation(vec3 rgb, float adjustment) {
     const vec3 W = vec3(0.2125, 0.7154, 0.0721);
@@ -1589,6 +1677,8 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 `;
+    return cachedColorFunctionsShader;
+};
 
 const setLinkStyles = (link: HTMLAnchorElement) => {
     link.id = LINK_ID;
