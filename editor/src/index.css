@@ -10,8 +10,14 @@
   --fcms-secondary: #FF5B79;
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -24,9 +30,10 @@ code {
     monospace;
 }
 
-#root{
+#root {
   height: 100%;
   width: 100%;
+  position: relative;
 }
 
 a {
@@ -123,6 +130,12 @@ a {
 }
 .panel-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Mobile-optimized scroll container */
+.neat-scroll-content {
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Hide host link in embed contexts (optional) */

@@ -43,6 +43,41 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         updatePresetConfig(importedConfig);
     };
 
+    // Track if we're closing via back button to avoid double history manipulation
+    const closingViaBackButton = useRef(false);
+
+    // Mobile back button handling - close dialogs instead of leaving site
+    useEffect(() => {
+        const handlePopState = () => {
+            // Check if any dialog/drawer is open and close it
+            if (drawerOpen || dialogOpen || importDialogOpen) {
+                closingViaBackButton.current = true;
+                if (drawerOpen) setDrawerOpen(false);
+                if (dialogOpen) setDialogOpen(false);
+                if (importDialogOpen) setImportDialogOpen(false);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [drawerOpen, dialogOpen, importDialogOpen]);
+
+    // Push history state when opening dialogs/drawer
+    useEffect(() => {
+        if (drawerOpen || dialogOpen || importDialogOpen) {
+            // Push a new history state when opening
+            window.history.pushState({ modal: true }, '');
+        } else if (!closingViaBackButton.current) {
+            // If closing normally (not via back button), go back in history
+            // This prevents leaving an empty state in history
+            if (window.history.state?.modal) {
+                window.history.back();
+            }
+        }
+        // Reset flag
+        closingViaBackButton.current = false;
+    }, [drawerOpen, dialogOpen, importDialogOpen]);
+
     const updatePresetConfig = (config: NeatConfig) => {
         setColors(config.colors);
         if (config.wireframe !== undefined) setWireframe(config.wireframe);
@@ -622,20 +657,23 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     }, [selectedPresetIndex]);
 
     return (
-        <div ref={editorContainerRef} className="relative w-full h-full overflow-hidden">
+        <div ref={editorContainerRef} className="relative w-full h-screen">
             {/* Fullscreen gradient canvas */}
-            <div className="fixed w-full h-full top-0 right-0 z-0">
+            <div className="fixed w-full h-full top-0 left-0 z-0">
                 <canvas style={{ height: "100%", width: "100%" }} ref={canvasRef} />
             </div>
 
-            {/* Main scrollable content area; we give it min-h-screen and extra padding bottom
-                so there is meaningful scroll range. Its scrollTop is mapped to yOffset. */}
+            {/* Main scrollable content area with ref for scroll tracking */}
             <div
                 ref={scrollContentRef}
-                className="neat-scroll-content relative z-10 h-full overflow-y-auto"
+                className="neat-scroll-content absolute inset-0 w-full h-full overflow-y-auto z-10"
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'none'
+                }}
             >
-                {/* Invisible spacer to create actual scrollable height */}
-                <div style={{ height: "300vh", pointerEvents: "none" }} />
+                {/* Spacer to enable scrolling - creates 300vh of scrollable space */}
+                <div style={{ height: "300vh", width: "100%", pointerEvents: "none" }} />
 
                 {/* Centered NEAT title overlay (visible only when UI is visible) */}
                 {uiVisible && (
@@ -668,78 +706,107 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                 {/* Compact floating toolbar (shown only when UI is visible) */}
                 {uiVisible && (
-                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 sm:gap-3 bg-black/35 text-white backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg">
-                        <Tooltip title="Previous preset (←)">
-                            <IconButton className="text-inherit"
-                                        onClick={prevPreset}>
-                                <ChevronLeft className="w-5 h-5"/>
-                            </IconButton>
-                        </Tooltip>
-                        <Select
-                            value={selectedPreset}
-                            className={fontClass + " text-base sm:text-lg py-1 rounded-md bg-transparent text-white w-44 sm:w-56 border-transparent"}
-                            onValueChange={(preset) => {
-                                logEvent(analytics, 'select_preset', { preset });
-                                setPreset(preset);
-                            }}
-                        >
-                            {Object.keys(PRESETS).map((preset) => (
-                                <SelectItem className={fontMap[preset] + " "}
-                                            key={preset} value={preset}>
-                                    {preset}
-                                </SelectItem>
-                            ))}
-                        </Select>
-                        <Tooltip title="Next preset (→)">
-                            <IconButton className="text-inherit"
-                                        onClick={nextPreset}>
-                                <ChevronRight className="w-5 h-5"/>
-                            </IconButton>
-                        </Tooltip>
-                        <div className="w-px h-7 mx-1 bg-white/20"/>
-                        <Button size="sm" className="px-3 py-1"
-                                onClick={() => setDrawerOpen(true)}>
-                            Edit
-                        </Button>
-                        <div className="w-px h-7 mx-1 bg-white/20"/>
-                        <Tooltip title="Get the code">
-                            <Button variant="text" size="sm" className="px-2 py-1"
-                                    onClick={() => {
-                                        onGetTheCodeClick();
-                                        logEvent(analytics, 'get_the_code');
-                                    }}>
-                                Code
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title="Download PNG">
-                            <IconButton className="text-inherit"
-                                        onClick={() => gradientRef.current?.downloadAsPNG()}>
-                                <Download className="w-5 h-5"/>
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Import config">
-                            <IconButton className="text-inherit"
-                                        onClick={() => setImportDialogOpen(true)}>
-                                <Import className="w-5 h-5"/>
-                            </IconButton>
-                        </Tooltip>
+                    <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 bg-black/35 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw]">
+                        {/* Desktop: single row, Mobile: two rows */}
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+                            {/* Row 1: Preset navigation */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Tooltip title="Previous preset (←)">
+                                    <IconButton className="text-inherit"
+                                                onClick={prevPreset}>
+                                        <ChevronLeft className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Select
+                                    value={selectedPreset}
+                                    className={fontClass + " text-base sm:text-lg py-1 rounded-md bg-transparent text-white w-44 sm:w-56 border-transparent"}
+                                    onValueChange={(preset) => {
+                                        logEvent(analytics, 'select_preset', { preset });
+                                        setPreset(preset);
+                                    }}
+                                >
+                                    {Object.keys(PRESETS).map((preset) => (
+                                        <SelectItem className={fontMap[preset] + " "}
+                                                    key={preset} value={preset}>
+                                            {preset}
+                                        </SelectItem>
+                                    ))}
+                                </Select>
+                                <Tooltip title="Next preset (→)">
+                                    <IconButton className="text-inherit"
+                                                onClick={nextPreset}>
+                                        <ChevronRight className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
+
+                            {/* Divider - horizontal on mobile, vertical on desktop */}
+                            <div className="w-full h-px sm:w-px sm:h-7 bg-white/20"/>
+
+                            {/* Row 2: Action buttons */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Button size="sm" className="px-3 py-1"
+                                        onClick={() => setDrawerOpen(true)}>
+                                    Edit
+                                </Button>
+                                <div className="w-px h-7 bg-white/20"/>
+                                <Tooltip title="Get the code">
+                                    <Button variant="text" size="sm" className="px-2 py-1"
+                                            onClick={() => {
+                                                onGetTheCodeClick();
+                                                logEvent(analytics, 'get_the_code');
+                                            }}>
+                                        Code
+                                    </Button>
+                                </Tooltip>
+                                <Tooltip title="Download PNG">
+                                    <IconButton className="text-inherit"
+                                                onClick={() => gradientRef.current?.downloadAsPNG()}>
+                                        <Download className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Import config">
+                                    <IconButton className="text-inherit"
+                                                onClick={() => setImportDialogOpen(true)}>
+                                        <Import className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
+                                <div className="w-px h-7 bg-white/20"/>
+                                <Tooltip title="Hide UI (H)">
+                                    <IconButton className="text-inherit"
+                                                onClick={() => {
+                                                    setUiVisible(false);
+                                                    logEvent(analytics, 'hide_ui');
+                                                }}>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* Quick restore when UI is hidden */}
+                {/* Quick restore when UI is hidden - small icon in bottom left */}
                 {!uiVisible && (
-                    <div className="fixed bottom-4 right-4 z-20">
-                        <Button size="sm" variant="outline"
-                                className="px-3 py-1 bg-white/70"
+                    <div className="fixed bottom-6 left-6 z-20">
+                        <Tooltip title="Show UI (H)">
+                            <IconButton
+                                className="bg-black/30 text-white backdrop-blur-md hover:bg-black/50 transition-all p-2 rounded-full shadow-lg"
                                 onClick={() => setUiVisible(true)}>
-                            Show UI
-                        </Button>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </IconButton>
+                        </Tooltip>
                     </div>
                 )}
 
                 {/* Footer with links (always visible) */}
                 {uiVisible && (
-                    <div className="fixed bottom-4 left-4 z-10 text-left space-y-1">
+                    <div className="fixed bottom-6 left-6 z-10 text-left space-y-1">
                         <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
                             <a
                                 href="https://firecms.co"

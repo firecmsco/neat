@@ -19,7 +19,9 @@
     }
   ],
   "start_url": ".",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
   "theme_color": "#000000",
   "background_color": "#ffffff"
 }
