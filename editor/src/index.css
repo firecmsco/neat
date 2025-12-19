@@ -145,5 +145,14 @@ a {
   height: 0;
 }
 
+/* Fix canvas stretching on mobile */
+canvas {
+  display: block;
+  /* Prevent stretching by maintaining aspect ratio */
+  object-fit: cover;
+  /* Ensure canvas fills container properly */
+  touch-action: none;
+}
+
 /* Hide host link in embed contexts (optional) */
 /* a[href="https://neat.firecms.co"] { display: none !important; } */

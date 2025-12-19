@@ -690,7 +690,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         <div ref={editorContainerRef} className="relative w-full h-screen">
             {/* Fullscreen gradient canvas */}
             <div className="fixed w-full h-full top-0 left-0 z-0">
-                <canvas style={{ height: "100%", width: "100%" }} ref={canvasRef} />
+                <canvas className="w-full h-full block" ref={canvasRef} />
             </div>
 
             {/* Main scrollable content area with ref for scroll tracking */}

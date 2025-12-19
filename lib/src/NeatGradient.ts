@@ -1194,6 +1194,10 @@ function updateCamera(camera: THREE.Camera, width: number, height: number) {
     const targetWidth = Math.sqrt(targetPlaneArea * ratio);
     const targetHeight = targetPlaneArea / targetWidth;
 
+    // Fix for mobile portrait: adjust camera bounds based on aspect ratio
+    const isPortrait = ratio < 1;
+    const aspectFactor = isPortrait ? (1 / ratio) : 1;
+
     const left = -PLANE_WIDTH / 2;
     const right = Math.min((left + targetWidth) / 1.5, PLANE_WIDTH / 2);
 
@@ -1203,8 +1207,9 @@ function updateCamera(camera: THREE.Camera, width: number, height: number) {
     const near = -100;
     const far = 1000;
     if (camera instanceof THREE.OrthographicCamera) {
-        camera.left = left;
-        camera.right = right;
+        // Apply aspect correction for portrait mode to prevent stretching
+        camera.left = left * (isPortrait ? aspectFactor * 0.8 : 1);
+        camera.right = right * (isPortrait ? aspectFactor * 0.8 : 1);
         camera.top = top;
         camera.bottom = bottom;
         camera.near = near;
