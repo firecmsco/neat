@@ -1208,7 +1208,7 @@ function updateCamera(camera: THREE.Camera, width: number, height: number) {
         right = right * horizontalScale;
 
         // Zoom out slightly on mobile (1.1 = 10% zoom out)
-        const mobileZoomFactor = 1.1;
+        const mobileZoomFactor = 1.05;
         left = left * mobileZoomFactor;
         right = right * mobileZoomFactor;
         top = top * mobileZoomFactor;

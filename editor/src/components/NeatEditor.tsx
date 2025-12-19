@@ -686,6 +686,51 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [selectedPresetIndex]);
 
+    // Touch swipe support for changing presets on mobile
+    const touchStartX = useRef(0);
+    const touchStartY = useRef(0);
+
+    useEffect(() => {
+        const container = editorContainerRef.current;
+        if (!container) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartX.current = e.touches[0].clientX;
+            touchStartY.current = e.touches[0].clientY;
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (!e.changedTouches[0]) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const deltaX = touchEndX - touchStartX.current;
+            const deltaY = touchEndY - touchStartY.current;
+
+            // Only trigger if horizontal swipe is dominant (not vertical scroll)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                if (deltaX > 0) {
+                    // Swipe right - previous preset
+                    prevPreset();
+                    logEvent(analytics, 'swipe_preset', { direction: 'right' });
+                } else {
+                    // Swipe left - next preset
+                    nextPreset();
+                    logEvent(analytics, 'swipe_preset', { direction: 'left' });
+                }
+            }
+        };
+
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [selectedPresetIndex, analytics]);
+
     return (
         <div ref={editorContainerRef} className="relative w-full h-screen">
             {/* Fullscreen gradient canvas */}
