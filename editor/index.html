@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Primary Meta Tags -->
-    <title>NEAT - Beautiful 3D Gradient Generator for Websites</title>
-    <meta name="title" content="NEAT - Beautiful 3D Gradient Generator for Websites" />
-    <meta name="description" content="Create stunning animated 3D gradients for your website hero backgrounds. Free gradient generator with customizable colors, animations, and effects. No code required." />
-    <meta name="keywords" content="gradient generator, 3D gradients, animated gradients, background generator, hero background, CSS gradients, web design tool, gradient animation, three.js" />
+    <title>NEAT – Free Animated 3D Gradient Generator | Background Editor</title>
+    <meta name="title" content="NEAT – Free Animated 3D Gradient Generator | Background Editor" />
+    <meta name="description" content="NEAT is a free 3D gradient generator for websites. Design animated gradient backgrounds with 20+ presets, wave effects, and real-time preview. Export to React, Vue, or vanilla JS. Powered by WebGL." />
+    <meta name="keywords" content="neat, gradient generator, 3D gradients, animated gradients, background generator, hero background, CSS gradients, web design tool, gradient animation, three.js, WebGL, react gradient" />
     <meta name="author" content="FireCMS" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://neat.firecms.co" />
@@ -22,8 +22,8 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://neat.firecms.co" />
-    <meta property="og:title" content="NEAT - Beautiful 3D Gradient Generator for Websites" />
-    <meta property="og:description" content="Create stunning animated 3D gradients for your website hero backgrounds. Free gradient generator with customizable colors, animations, and effects." />
+    <meta property="og:title" content="NEAT – Free Animated 3D Gradient Generator | Background Editor" />
+    <meta property="og:description" content="NEAT is a free 3D gradient generator for websites. Design animated gradient backgrounds with 20+ presets, wave effects, and real-time preview. Export to React, Vue, or vanilla JS." />
     <meta property="og:image" content="https://neat.firecms.co/og_image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -32,8 +32,8 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://neat.firecms.co" />
-    <meta name="twitter:title" content="NEAT - Beautiful 3D Gradient Generator for Websites" />
-    <meta name="twitter:description" content="Create stunning animated 3D gradients for your website hero backgrounds. Free gradient generator with customizable colors, animations, and effects." />
+    <meta name="twitter:title" content="NEAT – Free Animated 3D Gradient Generator | Background Editor" />
+    <meta name="twitter:description" content="NEAT is a free 3D gradient generator for websites. Design animated gradient backgrounds with 20+ presets, wave effects, and real-time preview. Export to React, Vue, or vanilla JS." />
     <meta name="twitter:image" content="https://neat.firecms.co/og_image.png" />
     <meta name="twitter:site" content="@gatti675" />
     <meta name="twitter:creator" content="@gatti675" />
@@ -43,19 +43,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Fonts: Combined into single request for better performance -->
-    <link href="https://fonts.googleapis.com/css2?family=Londrina+Shadow&family=Roboto:wght@400;700&family=PT+Sans:wght@400;700&family=Lemonada:wght@400;700&family=VT323&family=Fredoka+One&family=Rubik&family=Merriweather:wght@400;700&family=Lobster&family=Quicksand:wght@400;700&family=Inconsolata:wght@400;700&family=Oswald:wght@400;700&family=Alegreya:wght@400;700&family=Nunito+Sans:wght@400;700&family=Concert+One&family=Pacifico&family=Poppins:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Source+Serif+Pro:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- Primary font: preloaded for fast LCP -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;700&display=swap" as="style" />
+    <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;700&display=swap" rel="stylesheet" />
+
+    <!-- Preset fonts: lazy-loaded (non-render-blocking) -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Londrina+Shadow&family=Roboto:wght@400;700&family=PT+Sans:wght@400;700&family=Lemonada:wght@400;700&family=VT323&family=Fredoka+One&family=Rubik&family=Merriweather:wght@400;700&family=Lobster&family=Quicksand:wght@400;700&family=Inconsolata:wght@400;700&family=Oswald:wght@400;700&family=Alegreya:wght@400;700&family=Nunito+Sans:wght@400;700&family=Concert+One&family=Pacifico&family=Poppins:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Source+Serif+Pro:wght@400;700&display=swap"
+          media="print"
+          onload="this.media='all'" />
 
     <!-- JSON-LD Structured Data for SEO -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
+      "@type": "SoftwareApplication",
       "name": "NEAT",
-      "description": "Create stunning animated 3D gradients for your website hero backgrounds",
+      "alternateName": "Neat Gradient Generator",
+      "description": "Free 3D gradient generator for websites. Create stunning animated gradient backgrounds with WebGL, customizable colors, wave effects, and real-time preview. No code required.",
       "url": "https://neat.firecms.co",
       "applicationCategory": "DesignApplication",
       "operatingSystem": "Any",
+      "browserRequirements": "Requires WebGL support",
+      "softwareVersion": "1.0",
+      "screenshot": "https://neat.firecms.co/og_image.png",
+      "keywords": "neat, gradient generator, 3D gradients, animated backgrounds, WebGL, three.js, hero background, web design tool",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -70,7 +82,43 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-rendered content for SEO crawlers -->
+      <noscript>
+        <main style="max-width:800px;margin:0 auto;padding:2rem;font-family:sans-serif;color:#333">
+          <h1>NEAT – Free 3D Gradient Generator for Websites</h1>
+          <p>Create stunning animated 3D gradient backgrounds for your website.
+             NEAT is a free, open-source gradient generator powered by WebGL and three.js
+             with hardware-accelerated 60fps performance.</p>
+          <h2>Features</h2>
+          <ul>
+            <li>20+ beautiful gradient presets</li>
+            <li>Real-time visual editor — no code required</li>
+            <li>Animated 3D wave effects with customizable colors</li>
+            <li>Mouse-reactive gradient distortions</li>
+            <li>Film grain, flow fields, and procedural texture overlays</li>
+            <li>Parallax scroll integration</li>
+            <li>Export clean config for React, Vue, or vanilla JS</li>
+            <li>npm package: <code>npm install @firecms/neat three</code></li>
+          </ul>
+          <h2>Perfect For</h2>
+          <ul>
+            <li>Hero section backgrounds</li>
+            <li>Landing page animations</li>
+            <li>SaaS and startup websites</li>
+            <li>Portfolio and creative sites</li>
+          </ul>
+          <h2>How It Works</h2>
+          <p>NEAT uses WebGL shaders and three.js to render dynamic 3D gradients entirely on the GPU.
+             A subdivided plane geometry is displaced with Perlin noise to create waves, while
+             a fragment shader blends colors, applies flow fields, lighting, and effects —
+             all at smooth 60fps on any modern device.</p>
+          <p>Made with ❤ by <a href="https://firecms.co">FireCMS</a> |
+             <a href="https://github.com/FireCMSco/neat">GitHub</a> |
+             <a href="https://www.npmjs.com/package/@firecms/neat">npm</a></p>
+        </main>
+      </noscript>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

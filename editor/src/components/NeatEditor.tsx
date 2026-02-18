@@ -790,6 +790,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <Tooltip title="Previous preset (←)">
                                     <IconButton className="text-inherit"
+                                                aria-label="Previous preset"
                                                 onClick={prevPreset}>
                                         <ChevronLeft className="w-5 h-5"/>
                                     </IconButton>
@@ -811,6 +812,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 </Select>
                                 <Tooltip title="Next preset (→)">
                                     <IconButton className="text-inherit"
+                                                aria-label="Next preset"
                                                 onClick={nextPreset}>
                                         <ChevronRight className="w-5 h-5"/>
                                     </IconButton>
@@ -838,12 +840,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 </Tooltip>
                                 <Tooltip title="Download PNG">
                                     <IconButton className="text-inherit"
+                                                aria-label="Download PNG"
                                                 onClick={() => gradientRef.current?.downloadAsPNG()}>
                                         <Download className="w-5 h-5"/>
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Import config">
                                     <IconButton className="text-inherit"
+                                                aria-label="Import config"
                                                 onClick={() => setImportDialogOpen(true)}>
                                         <Import className="w-5 h-5"/>
                                     </IconButton>
@@ -851,6 +855,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 <div className="w-px h-7 bg-white/20"/>
                                 <Tooltip title="Hide UI (H)">
                                     <IconButton className="text-inherit"
+                                                aria-label="Hide UI"
                                                 onClick={() => {
                                                     setUiVisible(false);
                                                     logEvent(analytics, 'hide_ui');
@@ -870,6 +875,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     <div className="fixed bottom-6 left-6 z-20">
                         <Tooltip title="Show UI (H)">
                             <IconButton
+                                aria-label="Show UI"
                                 className="bg-black/30 text-white backdrop-blur-md hover:bg-black/50 transition-all p-2 rounded-full shadow-lg"
                                 onClick={() => setUiVisible(true)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -918,6 +924,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         side={"right"}
                     >
                         <IconButton
+                            aria-label="Close editor panel"
                             onClick={handleDrawerClose}
                             className="fixed left-4 top-4 bg-black/20 text-white p-2 rounded-full"
                         >
