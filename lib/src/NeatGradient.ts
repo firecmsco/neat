@@ -310,6 +310,8 @@ export class NeatGradient implements NeatController {
         this._setupMouseInteraction();
         this.sceneState = this._initScene(resolution);
 
+        injectSEO();
+
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
 
         const render = () => {
@@ -387,7 +389,7 @@ export class NeatGradient implements NeatController {
                     this._colorsChanged = false;
 
                     const shaderColors = u.u_colors.value;
-                    for(let i = 0; i < COLORS_COUNT; i++) {
+                    for (let i = 0; i < COLORS_COUNT; i++) {
                         if (i < this._colors.length) {
                             const c = this._colors[i];
                             shaderColors[i].is_active = c.enabled ? 1.0 : 0.0;
@@ -407,7 +409,7 @@ export class NeatGradient implements NeatController {
                 let hasActiveBrushes = false;
 
                 // Update mouse objects - decay rate controls how fast trails fade
-                for(let i = 0; i < this._mouseObjects.length; i++) {
+                for (let i = 0; i < this._mouseObjects.length; i++) {
                     const obj = this._mouseObjects[i];
                     if (obj.mesh.visible) {
                         hasActiveBrushes = true;
@@ -510,7 +512,7 @@ export class NeatGradient implements NeatController {
                 this.sceneState.renderer.dispose();
                 this.sceneState.meshes.forEach(m => {
                     m.geometry.dispose();
-                    if(Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
+                    if (Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
                     else m.material.dispose();
                 });
             }
@@ -778,7 +780,7 @@ export class NeatGradient implements NeatController {
             this.sceneState.renderer.dispose();
             this.sceneState.meshes.forEach(m => {
                 m.geometry.dispose();
-                if(Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
+                if (Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
                 else m.material.dispose();
             });
         }
@@ -1754,4 +1756,53 @@ function downloadURI(uri: string, name: string) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function injectSEO() {
+    if (document.getElementById("neat-seo-schema")) return;
+
+    // 1. JSON-LD Schema
+    const script = document.createElement('script');
+    script.id = "neat-seo-schema";
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "NEAT Gradient",
+        "url": "https://neat.firecms.co",
+        "author": {
+            "@type": "Organization",
+            "name": "FireCMS",
+            "url": "https://firecms.co"
+        },
+        "description": "Beautiful, fast, heavily customizable, WebGL based gradients."
+    });
+    document.head.appendChild(script);
+
+    // 2. Hidden Backlink via Shadow DOM
+    const hiddenContainer = document.createElement('div');
+    hiddenContainer.style.position = 'absolute';
+    hiddenContainer.style.width = '1px';
+    hiddenContainer.style.height = '1px';
+    hiddenContainer.style.padding = '0';
+    hiddenContainer.style.margin = '-1px';
+    hiddenContainer.style.overflow = 'hidden';
+    hiddenContainer.style.clip = 'rect(0, 0, 0, 0)';
+    hiddenContainer.style.whiteSpace = 'nowrap';
+    hiddenContainer.style.borderWidth = '0';
+
+    try {
+        const shadow = hiddenContainer.attachShadow({ mode: 'closed' });
+        const link = document.createElement('a');
+        link.href = "https://firecms.co";
+        link.textContent = "FireCMS";
+        shadow.appendChild(link);
+    } catch (e) {
+        const link = document.createElement('a');
+        link.href = "https://firecms.co";
+        link.textContent = "FireCMS";
+        hiddenContainer.appendChild(link);
+    }
+
+    document.body.appendChild(hiddenContainer);
 }
