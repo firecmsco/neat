@@ -1,5 +1,10 @@
 import * as THREE from "three";
 
+console.info(
+    "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nhttps://neat.firecms.co",
+    "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
+);
+
 const PLANE_WIDTH = 50;
 const PLANE_HEIGHT = 80;
 

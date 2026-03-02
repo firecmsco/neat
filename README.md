@@ -3,7 +3,7 @@
 Create stunning, animated 3D gradients with hardware-accelerated performance using WebGL and three.js.
 
 [![npm version](https://badge.fury.io/js/@firecms%2Fneat.svg)](https://www.npmjs.com/package/@firecms/neat)
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-lightgrey.svg)](https://github.com/FireCMSco/neat/blob/main/LICENSE)
 
 **✨ [Try the Interactive Editor](https://neat.firecms.co/) ✨**
 
@@ -380,14 +380,18 @@ The result is a performant, beautiful gradient that can run on any modern device
 
 ## 📄 License
 
-Neat is released under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**.
+Neat is released under the **MIT License + The Commons Clause**.
 
 **You can:**
 - ✅ Use freely in personal projects
+- ✅ Use freely in commercial projects (e.g. SaaS landing pages, company websites)
 - ✅ Modify and redistribute (with attribution)
 - ✅ Use in open-source projects
 
-**Commercial use requires a license.** 
+**You CANNOT:**
+- ❌ Sell the software
+- ❌ Include it in a paid template or theme builder that you sell
+- ❌ Offer the software as a paid service
 
 ### Remove the NEAT Attribution Link
 
