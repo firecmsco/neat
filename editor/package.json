@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@firecms/neat": "0.4.0",
+    "@firecms/neat": "file:../lib",
     "@fontsource/roboto": "^4.5.8",
     "@fontsource/sofia-sans": "^4.5.0",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -33,14 +33,12 @@
     "react-compiler-runtime": "^19.0.0-beta-714736e-20250131",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.5.2",
-    "three": "^0.182.0",
     "typescript": "^4.8.4",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.16",
     "@types/react-color": "^3.0.6",
-    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^2.1.0",
     "tailwindcss": "^4.1.16",
     "vite": "^3.1.4"

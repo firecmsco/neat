@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="c" width="400" height="400"></canvas>
+<script type="module">
+  const gl = document.getElementById("c").getContext("webgl2") || document.getElementById("c").getContext("webgl");
+  if (!gl) { console.error("WebGL not supported"); }
+
+  // We are going to fetch the raw shader strings from the compiled file
+  // but to keep it simple, let's just use fetch if we had it.
+  // We'll write a better way to dump the exact shader text to test it.
+
+</script>
+</body>
+</html>

@@ -7,6 +7,14 @@ import reportWebVitals from './reportWebVitals';
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
+window.addEventListener('error', (e) => {
+  console.log("RAW BROWSER ERROR CAUGHT:", e.message, e.filename, e.lineno);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.log("RAW BROWSER REJECTION CAUGHT:", e.reason);
+});
+
 root.render(
   <React.StrictMode>
     <App />
