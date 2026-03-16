@@ -2,7 +2,7 @@
 
 Create awesome 3D gradients with this WebGL-based library.
 
-> **⚠️ Breaking change (v2.0):** Neat no longer depends on three.js. The rendering engine has been rewritten to use raw WebGL. You can safely `npm uninstall three @types/three`. The mouse interaction properties (`mouseDistortionStrength`, `mouseDistortionRadius`, `mouseDecayRate`, `mouseDarken`) have also been removed. All other config properties remain unchanged.
+> **⚠️ Breaking change (v0.7):** Neat no longer depends on three.js. The rendering engine has been rewritten to use raw WebGL. You can safely `npm uninstall three @types/three`. The mouse interaction properties (`mouseDistortionStrength`, `mouseDistortionRadius`, `mouseDecayRate`, `mouseDarken`) have also been removed. All other config properties remain unchanged.
 
 Check the demo and gradients editor to find your perfect config here:
 [https://neat.firecms.co/](https://neat.firecms.co/)
