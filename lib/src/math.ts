@@ -1,53 +1,3 @@
-export function makeOrthographic(left: number, right: number, top: number, bottom: number, near: number, far: number) {
-    const w = 1.0 / (right - left);
-    const h = 1.0 / (top - bottom);
-    const p = 1.0 / (far - near);
-    const x = (right + left) * w;
-    const y = (top + bottom) * h;
-    const z = (far + near) * p;
-    return new Float32Array([
-        2 * w, 0, 0, 0,
-        0, 2 * h, 0, 0,
-        0, 0, -2 * p, 0,
-        -x, -y, -z, 1
-    ]);
-}
-
-export function makeTranslation(tx: number, ty: number, tz: number) {
-    return new Float32Array([
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        tx, ty, tz, 1
-    ]);
-}
-
-export function makeRotationX(angleInRadians: number) {
-    const c = Math.cos(angleInRadians);
-    const s = Math.sin(angleInRadians);
-    return new Float32Array([
-        1, 0, 0, 0,
-        0, c, s, 0,
-        0, -s, c, 0,
-        0, 0, 0, 1
-    ]);
-}
-
-export function multiplyMatrices(a: Float32Array, b: Float32Array) {
-    const out = new Float32Array(16);
-    // standard 4x4 multiplication where elements are stored in column-major order
-    for (let col = 0; col < 4; col++) {
-        for (let row = 0; row < 4; row++) {
-            out[col * 4 + row] =
-                a[0 * 4 + row] * b[col * 4 + 0] +
-                a[1 * 4 + row] * b[col * 4 + 1] +
-                a[2 * 4 + row] * b[col * 4 + 2] +
-                a[3 * 4 + row] * b[col * 4 + 3];
-        }
-    }
-    return out;
-}
-
 export class Matrix4 {
     elements: Float32Array;
     constructor() {
@@ -192,10 +142,21 @@ export function generatePlaneGeometry(width: number, height: number, widthSegmen
     }
 
     const isLarge = vertices.length / 3 > 65535;
+
+    // Generate wireframe indices: for each triangle (a,b,c), emit lines a→b, b→c, c→a
+    const wireframeIndices = [];
+    for (let i = 0; i < indices.length; i += 3) {
+        const a = indices[i];
+        const b = indices[i + 1];
+        const c = indices[i + 2];
+        wireframeIndices.push(a, b, b, c, c, a);
+    }
+
     return {
         position: new Float32Array(vertices),
         normal: new Float32Array(normals),
         uv: new Float32Array(uvs),
-        index: isLarge ? new Uint32Array(indices) : new Uint16Array(indices)
+        index: isLarge ? new Uint32Array(indices) : new Uint16Array(indices),
+        wireframeIndex: isLarge ? new Uint32Array(wireframeIndices) : new Uint16Array(wireframeIndices)
     };
 }

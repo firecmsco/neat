@@ -1,6 +1,8 @@
 # Neat gradients
 
-Create awesome 3D gradients with this library based on three.js.
+Create awesome 3D gradients with this WebGL-based library.
+
+> **⚠️ Breaking change (v2.0):** Neat no longer depends on three.js. The rendering engine has been rewritten to use raw WebGL. You can safely `npm uninstall three @types/three`. The mouse interaction properties (`mouseDistortionStrength`, `mouseDistortionRadius`, `mouseDecayRate`, `mouseDarken`) have also been removed. All other config properties remain unchanged.
 
 Check the demo and gradients editor to find your perfect config here:
 [https://neat.firecms.co/](https://neat.firecms.co/)
@@ -13,13 +15,13 @@ the license and the credits.
 ## Installation
 
 ```bash
-yarn add @firecms/neat three
+yarn add @firecms/neat
 ```
 
 or
 
 ```bash
-npm install @firecms/neat three
+npm install @firecms/neat
 ```
 
 ## Usage
@@ -345,31 +347,6 @@ export const MyComponent: React.FC = () => {
 - **Default:** 0.0
 - **Description:** Blend between original and flow-distorted state
 
-### Mouse Interaction Parameters
-
-#### `mouseDistortionStrength`
-- **Type:** `number`
-- **Range:** 0 to 2.0
-- **Default:** 0.0
-- **Description:** Strength of mouse-driven distortion. Set to 0 to disable.
-
-#### `mouseDistortionRadius`
-- **Type:** `number`
-- **Range:** 0.05 to 2.0
-- **Default:** 0.25
-- **Description:** Radius/area of mouse distortion effect
-
-#### `mouseDecayRate`
-- **Type:** `number`
-- **Range:** 0.90 to 0.99
-- **Default:** 0.96
-- **Description:** How quickly mouse trails fade (0.9 = slow/wobbly, 0.99 = fast/sharp)
-
-#### `mouseDarken`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.0
-- **Description:** Darkening effect at mouse interaction points
 
 ### Procedural Texture Parameters
 *Note: When enabled, replaces color pressure controls*
@@ -458,7 +435,6 @@ export const MyComponent: React.FC = () => {
 - Combine `yOffset` with scroll position for scroll-based gradient effects
 - Enable `wireframe: true` during development to understand the 3D mesh structure
 - Procedural textures work best with `textureEase` values between 0.3 and 0.7
-- For subtle effects, keep `mouseDistortionStrength` below 0.5
 
 ## NEAT Link
 

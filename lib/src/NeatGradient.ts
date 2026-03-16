@@ -9,7 +9,7 @@ console.info(
 const PLANE_WIDTH = 50;
 const PLANE_HEIGHT = 80;
 
-const WIREFRAME = true;
+
 const COLORS_COUNT = 6;
 
 const LINK_ID = generateRandomString();
@@ -22,6 +22,7 @@ export interface WebGLState {
         normal: WebGLBuffer;
         uv: WebGLBuffer;
         index: WebGLBuffer;
+        wireframeIndex: WebGLBuffer;
     };
     locations: {
         attributes: Record<string, number>;
@@ -29,17 +30,11 @@ export interface WebGLState {
     };
     camera: OrthographicCamera;
     indexCount: number;
+    wireframeIndexCount: number;
     indexType: number;
 }
 
-interface NeatUniforms {
-    [key: string]: number | number[] | WebGLTexture | null;
-    u_time: number;
-    u_resolution: number[];
-    u_color_pressure: number[];
-    u_colors: { is_active: number; color: number[]; influence: number }[];
-    u_mouse_texture: WebGLTexture | null;
-}
+
 
 export type NeatConfig = {
     resolution?: number;
@@ -72,14 +67,7 @@ export type NeatConfig = {
     flowScale?: number;
     flowEase?: number;
     flowEnabled?: boolean;
-    // Mouse interaction
-    /** Strength of mouse-driven distortion */
-    mouseDistortionStrength?: number;
-    /** Radius / area of mouse-driven distortion in UV space (0–1-ish) */
-    mouseDistortionRadius?: number;
-    /** How quickly mouse trails decay/fade (0.9=slow/wobbly, 0.99=fast/sharp) */
-    mouseDecayRate?: number;
-    mouseDarken?: number;
+
     // Texture generation
     enableProceduralTexture?: boolean;
     textureVoidLikelihood?: number;
@@ -138,6 +126,7 @@ export class NeatGradient implements NeatController {
     private _wireframe: boolean = false;
 
     private _backgroundColor: string = "#FFFFFF";
+    private _backgroundColorRgb: [number, number, number] = [1, 1, 1];
     private _backgroundAlpha: number = 1.0;
 
     // Flow field properties
@@ -147,21 +136,7 @@ export class NeatGradient implements NeatController {
     private _flowEase: number = 0.0;
     private _flowEnabled: boolean = true;
 
-    // Mouse interaction properties
-    private _mouseDistortionStrength: number = 0.0;
-    private _mouseDistortionRadius: number = 0.25;
-    private _mouseDecayRate: number = 0.96;
-    private _mouseDarken: number = 0.0;
-    private _mouse: { x: number, y: number } = { x: -1000, y: -1000 };
-    private _mouseFBOCanvas: HTMLCanvasElement | null = null;
-    private _mouseFBOCtx: CanvasRenderingContext2D | null = null;
-    private _mouseFBOTexture: WebGLTexture | null = null;
-    private _mouseObjects: Array<{ x: number, y: number, opacity: number, active: boolean }> = [];
-    private _currentBrush: number = 0;
-    private _mouseBrushBaseScale: number = 1;
     private glState!: WebGLState;
-    private _onPointerMove?: (e: PointerEvent) => void;
-    private _onTouchMove?: (e: TouchEvent) => void;
 
     // Texture generation properties
     private _enableProceduralTexture: boolean = false;
@@ -183,27 +158,22 @@ export class NeatGradient implements NeatController {
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
 
-    // Optimization: Cache uniforms to avoid lookups and object creation in render loop
-    private _cachedUniforms: NeatUniforms | null = null;
+    private _initialized: boolean = false;
     private _linkElement: HTMLAnchorElement | null = null;
+    private _cachedColorRgb: [number, number, number][] = [];
 
     private _yOffset: number = 0;
     private _yOffsetWaveMultiplier: number = 0.004;
     private _yOffsetColorMultiplier: number = 0.004;
     private _yOffsetFlowMultiplier: number = 0.004;
 
-    // For saving/restoring clear color
-    private _tempClearColor = [0, 0, 0, 0];
-
     // Performance optimizations
     private _resizeTimeoutId: number | null = null;
     private _textureNeedsUpdate: boolean = false;
-    private _lastColorUpdate: number = 0;
     private _linkCheckCounter: number = 0;
-    private _mouseUpdateScheduled: boolean = false;
-    private _pendingMousePosition: { x: number; y: number } | null = null;
-    private _colorsChanged: boolean = true; // Track if colors need update
+    private _colorsChanged: boolean = true;
     private _uniformsDirty: boolean = true;
+    private _textureDirty: boolean = true;
 
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
@@ -240,11 +210,7 @@ export class NeatGradient implements NeatController {
             flowScale = 1.0,
             flowEase = 0.0,
             flowEnabled = true,
-            // Mouse interaction
-            mouseDistortionStrength = 0.0,
-            mouseDistortionRadius = 0.25,
-            mouseDecayRate = 0.96,
-            mouseDarken = 0.0,
+
             // Texture generation
             enableProceduralTexture = false,
             textureVoidLikelihood = 0.45,
@@ -298,11 +264,7 @@ export class NeatGradient implements NeatController {
         this.flowEase = flowEase;
         this.flowEnabled = flowEnabled;
 
-        // Mouse interaction
-        this.mouseDistortionStrength = mouseDistortionStrength;
-        this.mouseDistortionRadius = mouseDistortionRadius;
-        this.mouseDecayRate = mouseDecayRate;
-        this.mouseDarken = mouseDarken;
+
 
         // Texture generation
         this.enableProceduralTexture = enableProceduralTexture;
@@ -320,7 +282,7 @@ export class NeatGradient implements NeatController {
         this._textureShapeBars = textureShapeBars;
         this._textureShapeSquiggles = textureShapeSquiggles;
 
-        this._setupMouseInteraction();
+
         this.glState = this._initScene(resolution);
 
         injectSEO();
@@ -341,10 +303,7 @@ export class NeatGradient implements NeatController {
                 }
             }
 
-            // Update Uniforms efficiently without creating new objects
-            if (this._cachedUniforms) {
-                const u = this._cachedUniforms;
-
+            if (this._initialized) {
                 const timeNow = performance.now();
                 tick += ((timeNow - lastTime) / 1000) * this._speed;
                 lastTime = timeNow;
@@ -353,8 +312,7 @@ export class NeatGradient implements NeatController {
 
                 gl.uniform1f(locations.uniforms['u_time'], tick);
 
-                // PERFORMANCE OPTIMIZATION: Only upload non-animated static uniforms to the GPU if they have been modified via JS controls. 
-                // This eliminates ~30 expensive WebGL chatter calls per render frame.
+                // Only upload static uniforms when they've been modified
                 if (this._uniformsDirty) {
                     gl.uniform2f(locations.uniforms['u_resolution'], this._ref.clientWidth, this._ref.clientHeight);
                     gl.uniform2f(locations.uniforms['u_color_pressure'], this._horizontalPressure, this._verticalPressure);
@@ -380,9 +338,7 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_flow_scale'], this._flowScale);
                     gl.uniform1f(locations.uniforms['u_flow_ease'], this._flowEase);
                     gl.uniform1f(locations.uniforms['u_flow_enabled'], this._flowEnabled ? 1.0 : 0.0);
-                    gl.uniform1f(locations.uniforms['u_mouse_distortion_strength'], this._mouseDistortionStrength);
-                    gl.uniform1f(locations.uniforms['u_mouse_distortion_radius'], this._mouseDistortionRadius);
-                    gl.uniform1f(locations.uniforms['u_mouse_darken'], this._mouseDarken);
+
                     gl.uniform1f(locations.uniforms['u_enable_procedural_texture'], this._enableProceduralTexture ? 1.0 : 0.0);
                     gl.uniform1f(locations.uniforms['u_texture_ease'], this._textureEase);
 
@@ -396,44 +352,30 @@ export class NeatGradient implements NeatController {
                     }
                     this._proceduralTexture = this._createProceduralTexture(gl);
                     this._textureNeedsUpdate = false;
+                    this._textureDirty = true;
                 }
 
-                // Procedural texture binding
-                if (this._proceduralTexture) {
+                // Procedural texture binding — only when texture changes
+                if (this._textureDirty && this._proceduralTexture) {
                     gl.activeTexture(gl.TEXTURE1);
                     gl.bindTexture(gl.TEXTURE_2D, this._proceduralTexture);
                     gl.uniform1i(locations.uniforms['u_procedural_texture'], 1);
+                    this._textureDirty = false;
                 }
 
-                // Optimized Color Update: Update immediately on change, or throttle to 10 times per second
-                const now = Date.now();
-                const shouldUpdate = this._colorsChanged || (now - this._lastColorUpdate > 100);
-
-                if (shouldUpdate) {
-                    this._lastColorUpdate = now;
+                // Color update — only when colors have changed
+                if (this._colorsChanged) {
                     this._colorsChanged = false;
 
-                    const shaderColors = u.u_colors;
                     for (let i = 0; i < COLORS_COUNT; i++) {
-                        const locActive = gl.getUniformLocation(program, `u_colors[${i}].is_active`);
-                        const locColor = gl.getUniformLocation(program, `u_colors[${i}].color`);
-                        const locInfluence = gl.getUniformLocation(program, `u_colors[${i}].influence`);
-
                         if (i < this._colors.length) {
                             const c = this._colors[i];
-                            const rgb = this._hexToRgb(c.color);
-                            const sRGBToLinear = (c: number) => c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
-
-                            const linearRGB = [
-                                sRGBToLinear(rgb[0]),
-                                sRGBToLinear(rgb[1]),
-                                sRGBToLinear(rgb[2]),
-                            ];
-                            gl.uniform1f(locActive, c.enabled ? 1.0 : 0.0);
-                            gl.uniform3fv(locColor, linearRGB);
-                            gl.uniform1f(locInfluence, c.influence || 0);
+                            const rgb = this._cachedColorRgb[i] || [0, 0, 0];
+                            gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], c.enabled ? 1.0 : 0.0);
+                            gl.uniform3fv(locations.uniforms[`u_colors[${i}].color`], rgb);
+                            gl.uniform1f(locations.uniforms[`u_colors[${i}].influence`], c.influence || 0);
                         } else {
-                            gl.uniform1f(locActive, 0.0);
+                            gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], 0.0);
                         }
                     }
 
@@ -441,75 +383,20 @@ export class NeatGradient implements NeatController {
                 }
             }
 
-            // --- MOUSE TRAIL LOGIC ---
-            if (this._mouseFBOCanvas && this._mouseFBOCtx && this._mouseDistortionStrength > 0) {
-                let hasActiveBrushes = false;
-                const ctx = this._mouseFBOCtx;
-                const canvas = this._mouseFBOCanvas;
-
-                // Fade existing content directly on the canvas (simulates Three.js decay)
-                ctx.fillStyle = `rgba(0, 0, 0, ${1.0 - this._mouseDecayRate})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                for (let i = 0; i < this._mouseObjects.length; i++) {
-                    const obj = this._mouseObjects[i];
-                    if (obj.active) {
-                        hasActiveBrushes = true;
-                        obj.opacity *= this._mouseDecayRate;
-                        if (obj.opacity < 0.01) {
-                            obj.active = false;
-                        } else {
-                            // Draw brush
-                            const gradient = ctx.createRadialGradient(
-                                obj.x, obj.y, 0,
-                                obj.x, obj.y, 100 * this._mouseBrushBaseScale
-                            );
-                            gradient.addColorStop(0, `rgba(255, 255, 255, ${obj.opacity})`);
-                            gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
-
-                            ctx.beginPath();
-                            ctx.fillStyle = gradient;
-                            ctx.arc(obj.x, obj.y, 100 * this._mouseBrushBaseScale, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                    }
-                }
-
-                if (hasActiveBrushes) {
-                    if (!this._mouseFBOTexture) {
-                        this._mouseFBOTexture = gl.createTexture();
-                    }
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, this._mouseFBOTexture);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-
-                    // Re-bind null immediately or update directly
-                    if (this._cachedUniforms && locations.uniforms['u_mouse_texture']) {
-                        gl.uniform1i(locations.uniforms['u_mouse_texture'], 0);
-                    }
-                }
-            }
 
             // Draw scene
-            const bgRgb = this._hexToRgb(this._backgroundColor);
-            // Must convert clear color to linear
-            const sRGBToLinear = (c: number) => c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
             gl.clearColor(
-                sRGBToLinear(bgRgb[0]),
-                sRGBToLinear(bgRgb[1]),
-                sRGBToLinear(bgRgb[2]),
+                this._backgroundColorRgb[0],
+                this._backgroundColorRgb[1],
+                this._backgroundColorRgb[2],
                 this._backgroundAlpha
             );
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             if (this._wireframe) {
-                // To do true wireframe, would need gl.LINES logic or gl.drawElements with different index buffer.
-                // Reverting to gl.TRIANGLES for parity with regular preset functionality.
-                gl.drawElements(gl.LINES, indexCount, indexType, 0);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.wireframeIndex);
+                gl.drawElements(gl.LINES, this.glState.wireframeIndexCount, indexType, 0);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
             } else {
                 gl.drawElements(gl.TRIANGLES, indexCount, indexType, 0);
             }
@@ -531,10 +418,7 @@ export class NeatGradient implements NeatController {
 
             updateCamera(camera, width, height);
 
-            if (this._mouseFBOCanvas) {
-                this._mouseFBOCanvas.width = width / 2;
-                this._mouseFBOCanvas.height = height / 2;
-            }
+
 
             // Recompute projection matrix on resize
             const projLoc = gl.getUniformLocation(this.glState.program, "projectionMatrix");
@@ -560,46 +444,38 @@ export class NeatGradient implements NeatController {
     }
 
     destroy() {
-        if (this) {
-            cancelAnimationFrame(this.requestRef);
-            this.sizeObserver.disconnect();
+        cancelAnimationFrame(this.requestRef);
+        this.sizeObserver.disconnect();
 
-            // Clear resize timeout
-            if (this._resizeTimeoutId !== null) {
-                clearTimeout(this._resizeTimeoutId);
-                this._resizeTimeoutId = null;
-            }
+        // Clear resize timeout
+        if (this._resizeTimeoutId !== null) {
+            clearTimeout(this._resizeTimeoutId);
+            this._resizeTimeoutId = null;
+        }
 
-            // Cleanup WebGL resources
-            if (this.glState) {
-                const gl = this.glState.gl;
-                gl.deleteProgram(this.glState.program);
-                gl.deleteBuffer(this.glState.buffers.position);
-                gl.deleteBuffer(this.glState.buffers.normal);
-                gl.deleteBuffer(this.glState.buffers.uv);
-                gl.deleteBuffer(this.glState.buffers.index);
-            }
-            if (this._mouseFBOCanvas) {
-                this._mouseFBOCanvas.width = 0;
-                this._mouseFBOCanvas.height = 0;
-            }
-            if (this._mouseFBOTexture && this.glState) {
-                this.glState.gl.deleteTexture(this._mouseFBOTexture);
-            }
-            if (this._proceduralTexture && this.glState) {
-                this.glState.gl.deleteTexture(this._proceduralTexture);
-            }
+        // Remove NEAT link
+        if (this._linkElement && this._linkElement.parentElement) {
+            this._linkElement.parentElement.removeChild(this._linkElement);
+            this._linkElement = null;
+        }
 
-            // Cleanup generic listeners
-            window.removeEventListener('pointermove', this._onPointerMove as EventListenerOrEventListenerObject);
-            window.removeEventListener('touchmove', this._onTouchMove as EventListenerOrEventListenerObject);
+        // Cleanup WebGL resources
+        if (this.glState) {
+            const gl = this.glState.gl;
+            gl.deleteProgram(this.glState.program);
+            gl.deleteBuffer(this.glState.buffers.position);
+            gl.deleteBuffer(this.glState.buffers.normal);
+            gl.deleteBuffer(this.glState.buffers.uv);
+            gl.deleteBuffer(this.glState.buffers.index);
+            gl.deleteBuffer(this.glState.buffers.wireframeIndex);
+        }
+        if (this._proceduralTexture && this.glState) {
+            this.glState.gl.deleteTexture(this._proceduralTexture);
         }
     }
 
     downloadAsPNG(filename = "neat.png") {
-        console.log("Downloading as PNG", this._ref);
         const dataURL = this._ref.toDataURL("image/png");
-        console.log("data", dataURL);
         downloadURI(dataURL, filename);
     }
 
@@ -636,7 +512,8 @@ export class NeatGradient implements NeatController {
     set colors(colors: NeatColor[]) {
         this._uniformsDirty = true;
         this._colors = colors;
-        this._colorsChanged = true; // Flag for immediate update
+        this._cachedColorRgb = colors.map(c => this._hexToRgb(c.color));
+        this._colorsChanged = true;
     }
 
     set highlights(highlights: number) {
@@ -698,6 +575,7 @@ export class NeatGradient implements NeatController {
             gl.deleteBuffer(this.glState.buffers.normal);
             gl.deleteBuffer(this.glState.buffers.uv);
             gl.deleteBuffer(this.glState.buffers.index);
+            gl.deleteBuffer(this.glState.buffers.wireframeIndex);
         }
         this.glState = this._initScene(resolution);
     }
@@ -705,6 +583,7 @@ export class NeatGradient implements NeatController {
     set backgroundColor(backgroundColor: string) {
         this._uniformsDirty = true;
         this._backgroundColor = backgroundColor;
+        this._backgroundColorRgb = this._hexToRgb(backgroundColor);
     }
 
     set backgroundAlpha(backgroundAlpha: number) {
@@ -774,36 +653,6 @@ export class NeatGradient implements NeatController {
     }
 
 
-    set mouseDistortionStrength(value: number) {
-        this._uniformsDirty = true;
-        this._mouseDistortionStrength = Math.max(0, value);
-    }
-
-    set mouseDistortionRadius(value: number) {
-        this._uniformsDirty = true;
-        // Clamp to a sane range in UV space
-        this._mouseDistortionRadius = Math.max(0.01, Math.min(value, 1.0));
-        // Update brush scale when radius changes
-        this._updateBrushScale();
-    }
-
-    _updateBrushScale() {
-        if (!this._mouseObjects || this._mouseObjects.length === 0) return;
-        // Radius directly controls the brush scale
-        // Base geometry is 200px, so radius 0.25 = 50px, radius 1.0 = 200px
-        this._mouseBrushBaseScale = this._mouseDistortionRadius;
-    }
-
-    set mouseDecayRate(value: number) {
-        this._uniformsDirty = true;
-        // Clamp between 0.9 (slow decay, more wobble) and 0.99 (fast decay, less wobble)
-        this._mouseDecayRate = Math.max(0.9, Math.min(value, 0.99));
-    }
-
-    set mouseDarken(value: number) {
-        this._uniformsDirty = true;
-        this._mouseDarken = value;
-    }
 
     set enableProceduralTexture(value: boolean) {
         this._uniformsDirty = true;
@@ -925,8 +774,8 @@ export class NeatGradient implements NeatController {
 
         gl.viewport(0, 0, width, height);
 
-        // Match Three.js resolution, which relies on Uint32Array 
-        const { position, normal, uv, index } = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+        // Generate plane geometry with Uint32Array for large meshes
+        const { position, normal, uv, index, wireframeIndex } = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
 
         const positionBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -943,6 +792,13 @@ export class NeatGradient implements NeatController {
         const indexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW);
+
+        const wireframeIndexBuffer = gl.createBuffer()!;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireframeIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, wireframeIndex, gl.STATIC_DRAW);
+
+        // Rebind the triangle index buffer as default
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
         const vertShaderSourceCombined = buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
         const vertShader = gl.createShader(gl.VERTEX_SHADER)!;
@@ -1036,7 +892,7 @@ export class NeatGradient implements NeatController {
             "u_highlights", "u_grain_intensity", "u_grain_sparsity", "u_grain_scale", "u_grain_speed",
             "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
             "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
-            "u_mouse_distortion_strength", "u_mouse_distortion_radius", "u_mouse_darken", "u_mouse_texture",
+
             "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_saturation", "u_brightness", "u_color_blending"
         ];
 
@@ -1056,28 +912,16 @@ export class NeatGradient implements NeatController {
             locations.uniforms[`u_colors[${i}].influence`] = gl.getUniformLocation(program, `u_colors[${i}].influence`);
         }
 
-        // Cache initialized uniforms values
-        this._cachedUniforms = {
-            u_time: 0,
-            u_resolution: [width, height],
-            u_color_pressure: [this._horizontalPressure, this._verticalPressure],
-            u_colors: Array.from({ length: COLORS_COUNT }).map((_, i) => ({
-                is_active: i < this._colors.length ? (this._colors[i].enabled ? 1.0 : 0.0) : 0.0,
-                color: [0, 0, 0],
-                influence: i < this._colors.length ? (this._colors[i].influence || 0) : 0
-            })),
-            u_mouse_texture: null,
-            u_procedural_texture: null
-        } as unknown as NeatUniforms;
+        this._initialized = true;
+        // New program needs all uniforms re-uploaded on first frame
+        this._uniformsDirty = true;
+        this._colorsChanged = true;
+        this._textureDirty = true;
 
         // Enable alpha blending
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.enable(gl.DEPTH_TEST);
-
-        if (this._wireframe) {
-            // we handle wireframe manually inside render
-        }
 
         return {
             gl,
@@ -1086,89 +930,18 @@ export class NeatGradient implements NeatController {
                 position: positionBuffer,
                 normal: normalBuffer,
                 uv: uvBuffer,
-                index: indexBuffer
+                index: indexBuffer,
+                wireframeIndex: wireframeIndexBuffer
             },
             locations,
             camera,
             indexCount: index.length,
+            wireframeIndexCount: wireframeIndex.length,
             indexType: (index instanceof Uint32Array) ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT
         };
     }
 
-    _setupMouseInteraction() {
-        if (!this._ref) return;
 
-        const width = this._ref.clientWidth;
-        const height = this._ref.clientHeight;
-
-        // Create mouse offscreen canvas (replaces Three.js WebGLRenderTarget)
-        this._mouseFBOCanvas = document.createElement('canvas');
-        this._mouseFBOCanvas.width = width / 2;
-        this._mouseFBOCanvas.height = height / 2;
-        this._mouseFBOCtx = this._mouseFBOCanvas.getContext('2d', { willReadFrequently: true });
-
-        // Initialize brush objects
-        const brushPoolSize = 50;
-        for (let i = 0; i < brushPoolSize; i++) {
-            this._mouseObjects.push({ x: 0, y: 0, opacity: 0, active: false });
-        }
-
-        // Initialize brush scale based on current radius
-        this._updateBrushScale();
-
-        // Add mouse move listener
-        this._ref.addEventListener('mousemove', this._onMouseMove.bind(this));
-
-        // Add touch listeners
-        this._onPointerMove = (e: PointerEvent) => this._onMouseMove(e as unknown as MouseEvent);
-        this._onTouchMove = (e: TouchEvent) => {
-            if (e.touches.length > 0) {
-                // Synthesize mouse event from touch
-                const touch = e.touches[0];
-                this._onMouseMove({
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                } as MouseEvent);
-            }
-        };
-        window.addEventListener('pointermove', this._onPointerMove as EventListenerOrEventListenerObject);
-        window.addEventListener('touchmove', this._onTouchMove as EventListenerOrEventListenerObject, { passive: true });
-    }
-
-    _onMouseMove(e: MouseEvent) {
-        if (!this._ref || !this._mouseFBOCanvas) return;
-
-        const rect = this._ref.getBoundingClientRect();
-
-        // Map DOM coordinates to Canvas FBO coordinates
-        this._pendingMousePosition = {
-            x: ((e.clientX - rect.left) / rect.width) * this._mouseFBOCanvas.width,
-            y: ((e.clientY - rect.top) / rect.height) * this._mouseFBOCanvas.height
-        };
-
-        // Batch mouse updates using requestAnimationFrame
-        if (!this._mouseUpdateScheduled) {
-            this._mouseUpdateScheduled = true;
-            requestAnimationFrame(() => {
-                this._mouseUpdateScheduled = false;
-
-                if (!this._pendingMousePosition) return;
-
-                this._mouse.x = this._pendingMousePosition.x;
-                this._mouse.y = this._pendingMousePosition.y;
-
-                const brush = this._mouseObjects[this._currentBrush];
-                brush.active = true;
-                brush.opacity = 1.0;
-                brush.x = this._mouse.x;
-                brush.y = this._mouse.y;
-
-                this._currentBrush = (this._currentBrush + 1) % this._mouseObjects.length;
-
-                this._pendingMousePosition = null;
-            });
-        }
-    }
 
     _createProceduralTexture(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLTexture | null {
         // Texture size - 1024 provides good balance between quality and performance
@@ -1365,8 +1138,6 @@ export class NeatGradient implements NeatController {
 
 }
 
-// Camera logic inside _initScene and math.ts
-
 
 const setLinkStyles = (link: HTMLAnchorElement) => {
     link.id = LINK_ID;
@@ -1384,22 +1155,28 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
     link.style.fontWeight = "bold";
     link.style.textDecoration = "none";
     link.style.zIndex = "10000";
+    link.style.pointerEvents = "auto";
+    link.setAttribute("data-n", "1");
     link.innerHTML = "NEAT";
 }
 
 const addNeatLink = (ref: HTMLCanvasElement): HTMLAnchorElement => {
-    const existingLinks = ref.parentElement?.getElementsByTagName("a");
-    if (existingLinks) {
-        for (let i = 0; i < existingLinks.length; i++) {
-            if (existingLinks[i].id === LINK_ID) {
-                setLinkStyles(existingLinks[i]);
-                return existingLinks[i];
-            }
+    const parent = ref.parentElement;
+    // Ensure parent has position so absolute link is positioned relative to it
+    if (parent && getComputedStyle(parent).position === "static") {
+        parent.style.position = "relative";
+    }
+    // Search parent for existing neat link (survives HMR where LINK_ID changes)
+    if (parent) {
+        const existing = parent.querySelector('a[data-n]') as HTMLAnchorElement;
+        if (existing) {
+            setLinkStyles(existing);
+            return existing;
         }
     }
     const link = document.createElement("a");
     setLinkStyles(link);
-    ref.parentElement?.appendChild(link);
+    parent?.appendChild(link);
     return link;
 }
 

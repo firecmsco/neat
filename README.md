@@ -1,6 +1,9 @@
 # 🌈 Neat Gradients
 
-Create stunning, animated 3D gradients with hardware-accelerated performance using WebGL and three.js.
+Create stunning, animated 3D gradients with hardware-accelerated WebGL performance.
+
+> [!IMPORTANT]
+> **As of v0.7, Neat no longer depends on three.js.** The rendering engine has been rewritten to use raw WebGL, reducing the total install footprint from **~653 KB (133 KB gzip) to just 42 KB (12 KB gzip)** — an **~93% reduction**. Zero external dependencies. If you are upgrading from a previous version, see the [Migration Guide](#-migrating-from-v06x) below.
 
 [![npm version](https://badge.fury.io/js/@firecms%2Fneat.svg)](https://www.npmjs.com/package/@firecms/neat)
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-lightgrey.svg)](https://github.com/FireCMSco/neat/blob/main/LICENSE)
@@ -13,19 +16,47 @@ Design your perfect gradient with our visual editor, featuring 20+ presets and r
 
 ---
 
+## 🔄 Migrating from v0.6.x
+
+If you're upgrading from a previous version that used three.js, here's what changed:
+
+### Bundle size
+
+| | **v0.6.x (Three.js)** | **v0.7 (Pure WebGL)** |
+|---|---|---|
+| Library bundle | ~42 KB | 42 KB (standalone) |
+| Three.js peer dep | 616 KB (122 KB gzip) | **0** |
+| **Total** | **~653 KB (~133 KB gzip)** | **42 KB (~12 KB gzip)** |
+
+### 1. Remove the `three` dependency
+
+```bash
+npm uninstall three @types/three
+```
+
+Neat now ships with its own lightweight WebGL renderer — no external 3D library needed.
+
+### 2. Remove mouse interaction config
+
+The `mouseDistortionStrength`, `mouseDistortionRadius`, `mouseDecayRate`, and `mouseDarken` properties have been removed. You can safely delete them from your config objects — they will be ignored.
+
+### 3. No API changes
+
+All other configuration properties, methods (`destroy`, `downloadAsPNG`), and dynamic property setters work exactly the same. Your existing configs from the [editor](https://neat.firecms.co/) remain fully compatible.
+
+---
+
 ## 📦 Installation
 
 ```bash
-npm install @firecms/neat three
+npm install @firecms/neat
 ```
 
 or
 
 ```bash
-yarn add @firecms/neat three
+yarn add @firecms/neat
 ```
-
-> **Important:** Install `three` (not `three.js` - that's a different, incompatible package)
 
 ---
 
@@ -181,14 +212,7 @@ window.addEventListener("scroll", () => {
 | `flowScale` | `number` | `1` | Overall flow field scale |
 | `flowEase` | `number` | `0` | Flow field smoothing (0-1) |
 
-### Mouse Interaction
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `mouseDistortionStrength` | `number` | `0` | Mouse ripple intensity (0-1) |
-| `mouseDistortionRadius` | `number` | `0.25` | Mouse effect radius |
-| `mouseDecayRate` | `number` | `0.96` | How fast mouse trails fade (0.9-0.99) |
-| `mouseDarken` | `number` | `0` | Darken area under mouse (0-1) |
 
 ### Procedural Texture Overlay
 
@@ -227,7 +251,6 @@ gradient.colors = [
 
 // Effects
 gradient.grainIntensity = 0.5;
-gradient.mouseDistortionStrength = 0.3;
 
 // Texture
 gradient.enableProceduralTexture = true;
@@ -288,17 +311,6 @@ gradient.textureEase = 0.7;
 }
 ```
 
-**Interactive Section:**
-```typescript
-{
-    colors: [/* vibrant colors */],
-    speed: 4,
-    mouseDistortionStrength: 0.2,
-    mouseDistortionRadius: 0.3,
-    mouseDarken: 0.1
-}
-```
-
 ---
 
 ## 🎯 Advanced Features
@@ -336,17 +348,6 @@ Add complex patterns over your gradient:
 }
 ```
 
-### Mouse-Reactive Gradients
-
-```typescript
-{
-    mouseDistortionStrength: 0.3,   // Strong effect
-    mouseDistortionRadius: 0.4,     // Large area
-    mouseDecayRate: 0.94,           // Long trails
-    mouseDarken: 0.2                // Subtle darkening
-}
-```
-
 ---
 
 ## 📖 TypeScript Support
@@ -367,7 +368,7 @@ const gradient: NeatController = new NeatGradient(config);
 
 ## 🛠️ How It Works
 
-Neat uses WebGL shaders and three.js to render dynamic 3D gradients entirely on the GPU:
+Neat uses custom WebGL shaders to render dynamic 3D gradients entirely on the GPU:
 
 1. **Mesh Generation:** Creates a subdivided plane geometry
 2. **Vertex Shader:** Displaces vertices to create waves using Perlin noise
@@ -403,7 +404,7 @@ For commercial projects without attribution, [become a sponsor](https://github.c
 
 Created by [FireCMS](https://firecms.co) with ❤️
 
-Built with [three.js](https://threejs.org/)
+
 
 ---
 

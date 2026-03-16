@@ -106,9 +106,6 @@ export const STRIPE_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.4,
     flowEnabled: false,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 } satisfies NeatConfig;
 
 export const FIRECMS_PRESET = {
@@ -163,9 +160,6 @@ export const FIRECMS_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.6,
     flowEnabled: false,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 export const FUNKY_PRESET = {
     colors: [
@@ -222,10 +216,6 @@ export const FUNKY_PRESET = {
     flowScale: 1.9,
     flowEase: 0.94,
     flowEnabled: true,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
-    mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.59,
     textureVoidWidthMin: 120,
@@ -293,10 +283,6 @@ export const FLUID_PRESET = {
     flowScale: 2.9,
     flowEase: 0.32,
     flowEnabled: true,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.37,
-    mouseDecayRate: 0.921,
-    mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.27,
     textureVoidWidthMin: 60,
@@ -367,10 +353,6 @@ export const YEX_PRESET = {
     flowScale: 1.5,
     flowEase: 0.41,
     flowEnabled: true,
-    mouseDistortionStrength: 0.38,
-    mouseDistortionRadius: 0.05,
-    mouseDecayRate: 0.97,
-    mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.06,
     textureVoidWidthMin: 10,
@@ -444,10 +426,6 @@ export const VIRUS_PRESET = {
     flowScale: 2.6,
     flowEase: 0.15,
     flowEnabled: true,
-    mouseDistortionStrength: 0.89,
-    mouseDistortionRadius: 0.4,
-    mouseDecayRate: 0.96,
-    mouseDarken: 0.24,
     enableProceduralTexture: true,
     textureVoidLikelihood: 0.44,
     textureVoidWidthMin: 140,
@@ -610,9 +588,6 @@ export const SANDS_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.55,
     flowEnabled: false,
-    mouseDistortionStrength: 0.08,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 export const MONTEREY_PRESET = {
@@ -666,8 +641,6 @@ export const MONTEREY_PRESET = {
     flowDistortionB: 10,
     flowScale: 3.3,
     flowEase: 0.37,
-    mouseDistortionStrength: 0.15,
-    mouseDarken: 0.24,
     enableProceduralTexture: false,
     textureVoidLikelihood: 0.06,
     textureVoidWidthMin: 10,
@@ -735,10 +708,6 @@ export const ALEJANDRA_PRESET = {
     flowScale: 1.6,
     flowEase: 0.32,
     flowEnabled: true,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
-    mouseDarken: 0.24,
     enableProceduralTexture: false,
     textureVoidLikelihood: 0.27,
     textureVoidWidthMin: 60,
@@ -954,10 +923,6 @@ export const CLOUDS_PRESET = {
     flowScale: 3.3,
     flowEase: 0.53,
     flowEnabled: true,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
-    mouseDarken: 0.24,
     enableProceduralTexture: false,
     textureVoidLikelihood: 0.06,
     textureVoidWidthMin: 10,
@@ -1021,9 +986,6 @@ export const DARK_MODE = {
     enableProceduralTexture: false,
     textureEase: 0.68,
     flowEnabled: false,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 export const NIGHT_DUNES = {
@@ -1078,9 +1040,6 @@ export const NIGHT_DUNES = {
     enableProceduralTexture: false,
     textureEase: 0.8,
     flowEnabled: false,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 
@@ -1136,9 +1095,6 @@ export const PRUSSIAN_BLUE_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.75,
     flowEnabled: false,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 export const NIGHTTIME = {
     colors: [
@@ -1191,10 +1147,6 @@ export const NIGHTTIME = {
     flowScale: 2.6,
     flowEase: 0.36,
     flowEnabled: true,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
-    mouseDarken: 0.24,
     enableProceduralTexture: false,
     textureVoidLikelihood: 0.22,
     textureVoidWidthMin: 120,
@@ -1231,9 +1183,6 @@ export const PSYCHEDELIC_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.12,
     flowEnabled: false,
-    mouseDistortionStrength: 0.15,
-    mouseDistortionRadius: 0.3,
-    mouseDecayRate: 0.95,
 };
 
 
@@ -1284,9 +1233,6 @@ export const SPLASH_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.32,
     flowEnabled: false,
-    mouseDistortionStrength: 0.12,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 
@@ -1333,9 +1279,6 @@ export const OCEANIC_PRESET = {
     "resolution": 1,
     enableProceduralTexture: false,
     flowEnabled: false,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 export const FOREST_PRESET = {
@@ -1370,9 +1313,6 @@ export const FOREST_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.52,
     flowEnabled: false,
-    mouseDistortionStrength: 0.08,
-    mouseDistortionRadius: 0.2,
-    mouseDecayRate: 0.97,
 };
 
 const OCEANS_ELEVEN_PRESET = {
@@ -1423,9 +1363,6 @@ const OCEANS_ELEVEN_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.28,
     flowEnabled: false,
-    mouseDistortionStrength: 0.1,
-    mouseDistortionRadius: 0.25,
-    mouseDecayRate: 0.96,
 };
 
 export const PRESETS = {

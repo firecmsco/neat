@@ -28,10 +28,6 @@ export type NeatConfig = {
     flowScale?: number;
     flowEase?: number;
     flowEnabled?: boolean;
-    mouseDistortionStrength?: number;
-    mouseDistortionRadius?: number;
-    mouseDecayRate?: number;
-    mouseDarken?: number;
     enableProceduralTexture?: boolean;
     textureVoidLikelihood?: number;
     textureVoidWidthMin?: number;

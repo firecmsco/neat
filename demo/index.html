@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neat Gradient Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #fff;
+            background: #0a0a0a;
+            overflow-x: hidden;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            padding: 0 1.5rem;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
+            padding: 0.35rem 1rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.3);
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            color: #fff;
+            text-shadow: 0 2px 40px rgba(0,0,0,0.5);
+        }
+
+        .hero p {
+            margin-top: 1.25rem;
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 300;
+            color: rgba(255,255,255,0.85);
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+            text-shadow: 0 1px 20px rgba(0,0,0,0.5);
+        }
+
+        .cta-row {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cta-btn:hover { transform: translateY(-2px); }
+
+        .cta-primary {
+            background: #fff;
+            color: #111;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+
+        .cta-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            animation: bob 2s ease-in-out infinite;
+        }
+
+        .scroll-hint svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        @keyframes bob {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(6px); }
+        }
+
+        /* ── CONTENT ── */
+        section { position: relative; z-index: 1; padding: 6rem 1.5rem; }
+
+        .content-section { max-width: 720px; margin: 0 auto; }
+
+        section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.02em; }
+
+        section p { font-size: 1.05rem; line-height: 1.7; color: rgba(255,255,255,0.65); margin-bottom: 1.5rem; }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .feature-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); }
+        .feature-card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .feature-card p { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin: 0; }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        pre {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.75);
+        }
+
+        code { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; }
+        .kw { color: #c792ea; }
+        .fn { color: #82aaff; }
+        .str { color: #c3e88d; }
+        .num { color: #f78c6c; }
+        .cm { color: rgba(255,255,255,0.3); }
+
+        footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+        }
+        footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
+        footer a:hover { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="hero" id="hero">
+        <canvas id="gradient-canvas"></canvas>
+        <div class="hero-content">
+            <span class="hero-tag">WebGL Powered</span>
+            <h1>Neat Gradient</h1>
+            <p>Beautiful, fast, heavily customizable 3D gradient animations for your website.</p>
+            <div class="cta-row">
+                <a class="cta-btn cta-primary" href="https://neat.firecms.co" target="_blank">Try the Editor</a>
+                <a class="cta-btn cta-secondary" href="https://github.com/FireCMSco/neat" target="_blank">GitHub →</a>
+            </div>
+        </div>
+        <div class="scroll-hint">
+            <span>Scroll</span>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+    </div>
+
+    <section>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>⚡ Zero Dependencies</h3>
+                <p>Pure WebGL — no Three.js, no bloat. Tiny bundle for maximum performance.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 Fully Customizable</h3>
+                <p>Control colors, waves, speed, grain, flow fields, and more via a simple API.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📜 Scroll Reactive</h3>
+                <p>Built-in yOffset support lets the gradient respond to page scroll position.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <section>
+        <div class="content-section">
+            <h2>Quick Start</h2>
+            <p>Install the package and initialize a gradient in just a few lines:</p>
+<pre><code><span class="kw">import</span> { <span class="fn">NeatGradient</span> } <span class="kw">from</span> <span class="str">"@firecms/neat"</span>;
+
+<span class="kw">const</span> canvas = document.getElementById(<span class="str">"gradient"</span>);
+<span class="kw">const</span> gradient = <span class="kw">new</span> <span class="fn">NeatGradient</span>({
+    ref: canvas,
+    colors: [
+        { color: <span class="str">"#FF5572"</span>, enabled: <span class="kw">true</span> },
+        { color: <span class="str">"#4CB4BB"</span>, enabled: <span class="kw">true</span> },
+        { color: <span class="str">"#FFC600"</span>, enabled: <span class="kw">true</span> },
+    ],
+    speed: <span class="num">4</span>,
+    horizontalPressure: <span class="num">3</span>,
+    verticalPressure: <span class="num">4</span>,
+});
+
+<span class="cm">// React to scroll</span>
+window.addEventListener(<span class="str">"scroll"</span>, () =&gt; {
+    gradient.yOffset = window.scrollY;
+});</code></pre>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <section>
+        <div class="content-section">
+            <h2>Designed for the Modern Web</h2>
+            <p>Neat renders on a standard <code>&lt;canvas&gt;</code> element using raw WebGL. It works everywhere — React, Vue, Svelte, plain HTML — with no framework lock-in.</p>
+            <p>The gradient adapts to any container size via a built-in ResizeObserver, and supports high-DPI displays out of the box.</p>
+        </div>
+    </section>
+
+    <footer>
+        Built with <a href="https://neat.firecms.co" target="_blank">Neat</a> by <a href="https://firecms.co" target="_blank">FireCMS</a>
+    </footer>
+
+    <script src="/lib/dist/index.umd.js"></script>
+    <script>
+        const canvas = document.getElementById("gradient-canvas");
+        const neat_gradient = new neat.NeatGradient({
+            ref: canvas,
+            colors: [
+                { color: "#FF5572", enabled: true },
+                { color: "#4CB4BB", enabled: true },
+                { color: "#FFC600", enabled: true },
+                { color: "#8B6AE6", enabled: true },
+                { color: "#2E0EC7", enabled: true },
+            ],
+            speed: 4,
+            horizontalPressure: 3,
+            verticalPressure: 4,
+            waveFrequencyX: 2,
+            waveFrequencyY: 3,
+            waveAmplitude: 5,
+            shadows: 1,
+            highlights: 5,
+            colorSaturation: 7,
+            colorBrightness: 1,
+            colorBlending: 8,
+            backgroundColor: "#003FFF",
+            backgroundAlpha: 1,
+        });
+
+        // Scroll-reactive gradient
+        window.addEventListener("scroll", () => {
+            neat_gradient.yOffset = window.scrollY;
+        });
+    </script>
+</body>
+</html>

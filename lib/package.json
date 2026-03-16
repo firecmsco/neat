@@ -2,7 +2,7 @@
   "name": "@firecms/neat",
   "description": "Beautiful 3D gradients for your website",
   "access": "public",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "dist/index.d.ts",
@@ -36,13 +36,13 @@
     "url": "git+https://github.com/FireCMSco/neat.git"
   },
   "keywords": [
-    "threejs",
+    "webgl",
     "3d",
     "gradient",
     "background"
   ],
   "author": "Francesco Gatti",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT AND Commons-Clause",
   "bugs": {
     "url": "https://github.com/FireCMSco/neat/issues"
   },

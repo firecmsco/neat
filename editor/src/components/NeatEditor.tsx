@@ -110,11 +110,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.flowEase !== undefined) setFlowEase(config.flowEase);
         if (config.flowEnabled !== undefined) setFlowEnabled(config.flowEnabled);
 
-        // Mouse interaction
-        if (config.mouseDistortionStrength !== undefined) setMouseDistortionStrength(config.mouseDistortionStrength);
-        if (config.mouseDistortionRadius !== undefined) setMouseDistortionRadius(config.mouseDistortionRadius);
-        if (config.mouseDecayRate !== undefined) setMouseDecayRate(config.mouseDecayRate);
-        if (config.mouseDarken !== undefined) setMouseDarken(config.mouseDarken);
+
 
         // Texture generation
         if (config.enableProceduralTexture !== undefined) setEnableProceduralTexture(config.enableProceduralTexture);
@@ -167,11 +163,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [flowEase, setFlowEase] = React.useState<number>(defaultConfig.flowEase ?? 0.0);
     const [flowEnabled, setFlowEnabled] = React.useState<boolean>(defaultConfig.flowEnabled ?? true);
 
-    // Mouse interaction parameters
-    const [mouseDistortionStrength, setMouseDistortionStrength] = React.useState<number>(defaultConfig.mouseDistortionStrength ?? 0.0);
-    const [mouseDistortionRadius, setMouseDistortionRadius] = React.useState<number>(defaultConfig.mouseDistortionRadius ?? 0.25);
-    const [mouseDecayRate, setMouseDecayRate] = React.useState<number>(defaultConfig.mouseDecayRate ?? 0.96);
-    const [mouseDarken, setMouseDarken] = React.useState<number>(defaultConfig.mouseDarken ?? 0.0);
+
 
     // Texture generation parameters
     const [enableProceduralTexture, setEnableProceduralTexture] = React.useState<boolean>(defaultConfig.enableProceduralTexture ?? false);
@@ -214,10 +206,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB: number;
         flowScale: number;
         flowEase: number;
-        mouseDistortionStrength: number;
-        mouseDistortionRadius: number;
-        mouseDecayRate: number;
-        mouseDarken: number;
     };
 
     const [tweened, setTweened] = React.useState<TweenState>(() => ({
@@ -243,10 +231,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowDistortionB: defaultConfig.flowDistortionB ?? 0,
         flowScale: defaultConfig.flowScale ?? 1.0,
         flowEase: defaultConfig.flowEase ?? 0.0,
-        mouseDistortionStrength: defaultConfig.mouseDistortionStrength ?? 0.0,
-        mouseDistortionRadius: defaultConfig.mouseDistortionRadius ?? 0.25,
-        mouseDecayRate: defaultConfig.mouseDecayRate ?? 0.96,
-        mouseDarken: defaultConfig.mouseDarken ?? 0.0,
     }));
 
     const tweenStartRef = React.useRef<number | null>(null);
@@ -310,7 +294,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             grainIntensity, grainSparsity, grainScale, grainSpeed,
             // yOffset REMOVED
             flowDistortionA, flowDistortionB, flowScale, flowEase,
-            mouseDistortionStrength, mouseDistortionRadius, mouseDecayRate, mouseDarken,
         };
 
         const start = performance.now();
@@ -352,7 +335,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainIntensity, grainSparsity, grainScale, grainSpeed,
         // yOffset REMOVED
         flowDistortionA, flowDistortionB, flowScale, flowEase,
-        mouseDistortionStrength, mouseDistortionRadius, mouseDecayRate, mouseDarken,
     ]);
 
     // 2. IMMEDIATE SCROLL UPDATE (New Effect)
@@ -414,10 +396,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             flowScale: tweened.flowScale,
             flowEase: tweened.flowEase,
             flowEnabled,
-            mouseDistortionStrength: tweened.mouseDistortionStrength,
-            mouseDistortionRadius: tweened.mouseDistortionRadius,
-            mouseDecayRate: tweened.mouseDecayRate,
-            mouseDarken: tweened.mouseDarken,
+
             enableProceduralTexture,
             textureVoidLikelihood,
             textureVoidWidthMin,
@@ -464,10 +443,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.flowScale = tweened.flowScale;
         gradientRef.current.flowEase = tweened.flowEase;
         gradientRef.current.flowEnabled = flowEnabled;
-        gradientRef.current.mouseDistortionStrength = tweened.mouseDistortionStrength;
-        gradientRef.current.mouseDistortionRadius = tweened.mouseDistortionRadius;
-        gradientRef.current.mouseDecayRate = tweened.mouseDecayRate;
-        gradientRef.current.mouseDarken = tweened.mouseDarken;
+
         gradientRef.current.enableProceduralTexture = enableProceduralTexture;
         gradientRef.current.textureVoidLikelihood = textureVoidLikelihood;
         gradientRef.current.textureVoidWidthMin = textureVoidWidthMin;
@@ -568,15 +544,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             setFlowEase(randomInRange(0, 1));
         }
 
-        // Mouse interaction with 30% chance of being enabled
-        if (Math.random() < 0.3) {
-            setMouseDistortionStrength(randomInRange(0.1, 2));
-            setMouseDistortionRadius(randomInRange(0.1, 2));
-            setMouseDecayRate(randomInRange(0.90, 0.99));
-            setMouseDarken(randomInRange(0, 0.5));
-        } else {
-            setMouseDistortionStrength(0);
-        }
+
 
         // Procedural texture with 20% chance of being enabled
         const enableTexture = Math.random() < 0.2;
@@ -635,11 +603,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         flowScale,
         flowEase,
         flowEnabled,
-        // Mouse interaction
-        mouseDistortionStrength,
-        mouseDistortionRadius,
-        mouseDecayRate,
-        mouseDarken,
+
         // Texture generation
         enableProceduralTexture,
         textureVoidLikelihood,
@@ -900,6 +864,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'footer' })}
                             >
                                 Made by FireCMS
+                            </a>
+                        </div>
+                        <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
+                            <a
+                                href="https://github.com/FireCMSco/neat"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
+                            >
+                                GitHub ⭐
                             </a>
                         </div>
                         <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
@@ -1377,46 +1353,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         </div>
                                     </div>
 
-                                    {/* Mouse Interaction subsection */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Mouse Interaction</div>
-                                        <div className={`space-y-2 transition-opacity ${mouseDistortionStrength === 0 ? 'opacity-60' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Strength</span>
-                                                <Slider
-                                                    value={[mouseDistortionStrength]}
-                                                    step={0.01}
-                                                    min={0}
-                                                    max={2.0}
-                                                    onValueChange={(v) => setMouseDistortionStrength(v[0] as number)}
-                                                />
-                                            </div>
-                                            <div className={`space-y-2 transition-opacity ${mouseDistortionStrength === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                                <div className="flex flex-row gap-2 items-center">
-                                                    <span className="w-28 text-right pr-2 text-xs">Radius</span>
-                                                    <Slider
-                                                        value={[mouseDistortionRadius]}
-                                                        step={0.01}
-                                                        min={0.05}
-                                                        max={2.0}
-                                                        disabled={mouseDistortionStrength === 0}
-                                                        onValueChange={(v) => setMouseDistortionRadius(v[0] as number)}
-                                                    />
-                                                </div>
-                                                <div className="flex flex-row gap-2 items-center">
-                                                    <span className="w-28 text-right pr-2 text-xs">Decay Rate</span>
-                                                    <Slider
-                                                        value={[mouseDecayRate]}
-                                                        step={0.001}
-                                                        min={0.90}
-                                                        max={0.99}
-                                                        disabled={mouseDistortionStrength === 0}
-                                                        onValueChange={(v) => setMouseDecayRate(v[0] as number)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
 
@@ -1434,6 +1371,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     >
                                         FireCMS
                                     </a>
+                                    <div className="text-xs opacity-60">
+                                        <a
+                                            href="https://github.com/FireCMSco/neat"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:underline opacity-80 hover:opacity-100 transition-opacity"
+                                            onClick={() => logEvent(analytics, 'click_github_link', { location: 'sidebar' })}
+                                        >
+                                            GitHub ⭐
+                                        </a>
+                                    </div>
                                     <div className="text-xs opacity-60">
                                         Contact us at{' '}
                                         <a

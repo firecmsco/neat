@@ -34,7 +34,7 @@ export const vertexShaderSource = `void main() {
         }
     }
 
-    // Pass the standard flow UV to fragment shader (for mouse/texture)
+    // Pass the standard flow UV to fragment shader (for texture)
     vFlowUv = flowUv;
 
     // 3. COLOR MIXING
@@ -58,8 +58,8 @@ export const vertexShaderSource = `void main() {
 
                 float noise = snoise(
                     vec3(
-                        noise_cord.x + u_time * noiseFlow * 2.,
-                        noise_cord.y,
+                        noise_cord.x * u_color_pressure.x + u_time * noiseFlow * 2.,
+                        noise_cord.y * u_color_pressure.y,
                         u_time * noiseSpeed
                     ) + noiseSeed
                 ) - (.1 * float(i)) + (.5 * u_color_blending);
@@ -87,8 +87,7 @@ float fbm(vec3 x) {
     float value = 0.0;
     float amplitude = 0.5;
     float frequency = 1.0;
-    // Reduced from 4 to 2 iterations to drastically cut GPU overhead for film grain
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 4; i++) {
         value += amplitude * snoise(x * frequency);
         frequency *= 2.0;
         amplitude *= 0.5;
@@ -97,19 +96,7 @@ float fbm(vec3 x) {
 }
 
 void main() {
-    // MOUSE DISTORTION
     vec2 finalUv = vFlowUv;
-    
-    if (u_mouse_distortion_strength > 0.0) {
-        vec4 mouseColor = texture2D(u_mouse_texture, vUv);
-        float mouseValue = mouseColor.r;
-        
-        if (mouseValue > 0.001) {
-            float distortionAmount = mouseValue * u_mouse_distortion_strength;
-            vec2 mouseDisp = vec2(distortionAmount, distortionAmount);
-            finalUv -= mouseDisp;
-        }
-    }
     
     vec3 baseColor;
 
@@ -249,12 +236,6 @@ uniform float u_y_offset_color_multiplier;
 uniform float u_flow_distortion_a;
 uniform float u_flow_distortion_b;
 uniform float u_flow_scale;
-
-// Mouse interaction uniforms
-uniform float u_mouse_distortion_strength;
-uniform float u_mouse_distortion_radius;
-uniform float u_mouse_darken;
-uniform sampler2D u_mouse_texture;
 
 // Procedural texture uniforms
 uniform sampler2D u_procedural_texture;
@@ -425,47 +406,6 @@ vec3 saturation(vec3 rgb, float adjustment) {
     const vec3 W = vec3(0.2125, 0.7154, 0.0721);
     vec3 intensity = vec3(dot(rgb, W));
     return mix(intensity, rgb, adjustment);
-}
-
-float get_saturation(vec3 rgb)
-{
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    vec4 p = mix(vec4(rgb.bg, K.wz), vec4(rgb.gb, K.xy), step(rgb.b, rgb.g));
-    vec4 q = mix(vec4(p.xyw, rgb.r), vec4(rgb.r, p.yzx), step(p.x, rgb.r));
-
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return abs(6.0 * d + e);
-}
-
-// get saturation of a color in values between 0 and 1
-float getSaturationMix(vec3 color) {
-    float cMax = max(color.r, max(color.g, color.b));
-    float cMin = min(color.r, min(color.g, color.b));
-    return (cMax - cMin) / (cMax + 1.0e-10);
-}
-    
-vec3 rgb2hsv(vec3 c)
-{
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-vec3 hsv2rgb(vec3 c)
-{
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-// Color related helper functions
-vec3 blendColors(vec3 colorA, vec3 colorB, float weight) {
-    return mix(colorA, colorB, weight);
 }
 `;
 }
