@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import "@fontsource/sofia-sans";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
@@ -126,6 +126,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setTextureShapeCircles(config.textureShapeCircles ?? 15);
         setTextureShapeBars(config.textureShapeBars ?? 15);
         setTextureShapeSquiggles(config.textureShapeSquiggles ?? 10);
+
+        // New effects — reset to defaults when not specified
+        setDomainWarpEnabled(config.domainWarpEnabled ?? false);
+        setDomainWarpIntensity(config.domainWarpIntensity ?? 0);
+        setDomainWarpScale(config.domainWarpScale ?? 3.0);
+        setVignetteIntensity(config.vignetteIntensity ?? 0);
+        setVignetteRadius(config.vignetteRadius ?? 0.8);
+        setFresnelEnabled(config.fresnelEnabled ?? false);
+        setFresnelPower(config.fresnelPower ?? 2.0);
+        setFresnelIntensity(config.fresnelIntensity ?? 0.5);
+        setFresnelColor(config.fresnelColor ?? '#FFFFFF');
+
+        setIridescenceEnabled(config.iridescenceEnabled ?? false);
+        setIridescenceIntensity(config.iridescenceIntensity ?? 0.5);
+        setIridescenceSpeed(config.iridescenceSpeed ?? 1);
+        setBloomIntensity(config.bloomIntensity ?? 0);
+        setBloomThreshold(config.bloomThreshold ?? 0.7);
+        setChromaticAberration(config.chromaticAberration ?? 0);
     }
 
     const [selectedPresetIndex, setSelectedPresetIndex] = React.useState<number>(0);
@@ -179,6 +197,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [textureShapeCircles, setTextureShapeCircles] = React.useState<number>(defaultConfig.textureShapeCircles ?? 15);
     const [textureShapeBars, setTextureShapeBars] = React.useState<number>(defaultConfig.textureShapeBars ?? 15);
     const [textureShapeSquiggles, setTextureShapeSquiggles] = React.useState<number>(defaultConfig.textureShapeSquiggles ?? 10);
+
+    // === New effect state ===
+    const [domainWarpEnabled, setDomainWarpEnabled] = React.useState<boolean>(defaultConfig.domainWarpEnabled ?? false);
+    const [domainWarpIntensity, setDomainWarpIntensity] = React.useState<number>(defaultConfig.domainWarpIntensity ?? 0);
+    const [domainWarpScale, setDomainWarpScale] = React.useState<number>(defaultConfig.domainWarpScale ?? 3.0);
+    const [vignetteIntensity, setVignetteIntensity] = React.useState<number>(defaultConfig.vignetteIntensity ?? 0);
+    const [vignetteRadius, setVignetteRadius] = React.useState<number>(defaultConfig.vignetteRadius ?? 0.8);
+    const [fresnelEnabled, setFresnelEnabled] = React.useState<boolean>(defaultConfig.fresnelEnabled ?? false);
+    const [fresnelPower, setFresnelPower] = React.useState<number>(defaultConfig.fresnelPower ?? 2.0);
+    const [fresnelIntensity, setFresnelIntensity] = React.useState<number>(defaultConfig.fresnelIntensity ?? 0.5);
+    const [fresnelColor, setFresnelColor] = React.useState<string>(defaultConfig.fresnelColor ?? '#FFFFFF');
+
+    const [iridescenceEnabled, setIridescenceEnabled] = React.useState<boolean>(defaultConfig.iridescenceEnabled ?? false);
+    const [iridescenceIntensity, setIridescenceIntensity] = React.useState<number>(defaultConfig.iridescenceIntensity ?? 0.5);
+    const [iridescenceSpeed, setIridescenceSpeed] = React.useState<number>(defaultConfig.iridescenceSpeed ?? 1);
+    const [bloomIntensity, setBloomIntensity] = React.useState<number>(defaultConfig.bloomIntensity ?? 0);
+    const [bloomThreshold, setBloomThreshold] = React.useState<number>(defaultConfig.bloomThreshold ?? 0.7);
+    const [chromaticAberration, setChromaticAberration] = React.useState<number>(defaultConfig.chromaticAberration ?? 0);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -410,6 +446,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             textureShapeCircles,
             textureShapeBars,
             textureShapeSquiggles,
+
+            // New effects
+            domainWarpEnabled,
+            domainWarpIntensity,
+            domainWarpScale,
+            vignetteIntensity,
+            vignetteRadius,
+            fresnelEnabled,
+            fresnelPower,
+            fresnelIntensity,
+            fresnelColor,
+
+            iridescenceEnabled,
+            iridescenceIntensity,
+            iridescenceSpeed,
+            bloomIntensity,
+            bloomThreshold,
+            chromaticAberration,
         });
         return gradientRef.current.destroy;
     }, []);
@@ -461,6 +515,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.textureShapeBars = textureShapeBars;
         // @ts-ignore
         gradientRef.current.textureShapeSquiggles = textureShapeSquiggles;
+
+        // New effects
+        gradientRef.current.domainWarpEnabled = domainWarpEnabled;
+        gradientRef.current.domainWarpIntensity = domainWarpIntensity;
+        gradientRef.current.domainWarpScale = domainWarpScale;
+        gradientRef.current.vignetteIntensity = vignetteIntensity;
+        gradientRef.current.vignetteRadius = vignetteRadius;
+        gradientRef.current.fresnelEnabled = fresnelEnabled;
+        gradientRef.current.fresnelPower = fresnelPower;
+        gradientRef.current.fresnelIntensity = fresnelIntensity;
+        gradientRef.current.fresnelColor = fresnelColor;
+
+        gradientRef.current.iridescenceEnabled = iridescenceEnabled;
+        gradientRef.current.iridescenceIntensity = iridescenceIntensity;
+        gradientRef.current.iridescenceSpeed = iridescenceSpeed;
+        gradientRef.current.bloomIntensity = bloomIntensity;
+        gradientRef.current.bloomThreshold = bloomThreshold;
+        gradientRef.current.chromaticAberration = chromaticAberration;
     }, [
         tweened,
         colors,
@@ -481,6 +553,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureShapeBars,
         textureShapeSquiggles,
         flowEnabled,
+        // New effects
+        domainWarpEnabled, domainWarpIntensity, domainWarpScale,
+        vignetteIntensity, vignetteRadius,
+        fresnelEnabled, fresnelPower, fresnelIntensity, fresnelColor,
+
+        iridescenceEnabled, iridescenceIntensity, iridescenceSpeed,
+        bloomIntensity, bloomThreshold,
+        chromaticAberration,
     ]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
@@ -572,6 +652,37 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setComplementaryColor(getComplementaryColor(colors[0].color));
     }, [colors]);
 
+    // ── FPS counter ───────────────────────────────────────────────
+    const [fps, setFps] = React.useState(0);
+    const [fpsMin, setFpsMin] = React.useState<number>(Infinity);
+    const [fpsMax, setFpsMax] = React.useState<number>(0);
+    const fpsFrames = useRef(0);
+    const fpsLastTime = useRef(performance.now());
+    const fpsRafRef = useRef<number | null>(null);
+
+
+    // FPS measurement loop
+    useEffect(() => {
+        const tick = () => {
+            fpsFrames.current++;
+            const now = performance.now();
+            const elapsed = now - fpsLastTime.current;
+            if (elapsed >= 500) { // update twice per second for smooth display
+                const currentFps = Math.round((fpsFrames.current / elapsed) * 1000);
+                setFps(currentFps);
+                setFpsMin(prev => Math.min(prev, currentFps));
+                setFpsMax(prev => Math.max(prev, currentFps));
+                fpsFrames.current = 0;
+                fpsLastTime.current = now;
+            }
+            fpsRafRef.current = requestAnimationFrame(tick);
+        };
+        fpsRafRef.current = requestAnimationFrame(tick);
+        return () => {
+            if (fpsRafRef.current != null) cancelAnimationFrame(fpsRafRef.current);
+        };
+    }, []);
+
     const config: NeatConfig = {
         colors,
         speed,
@@ -618,7 +729,36 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         textureShapeCircles,
         textureShapeBars,
         textureShapeSquiggles,
+
+        // New effects
+        domainWarpEnabled,
+        domainWarpIntensity,
+        domainWarpScale,
+        vignetteIntensity,
+        vignetteRadius,
+        fresnelEnabled,
+        fresnelPower,
+        fresnelIntensity,
+        fresnelColor,
+
+        iridescenceEnabled,
+        iridescenceIntensity,
+        iridescenceSpeed,
+        bloomIntensity,
+        bloomThreshold,
+        chromaticAberration,
     };
+
+    // Reset FPS min/max whenever config changes
+    const configKey = JSON.stringify(config);
+    const prevConfigKeyRef = useRef(configKey);
+    useEffect(() => {
+        if (prevConfigKeyRef.current !== configKey) {
+            prevConfigKeyRef.current = configKey;
+            setFpsMin(Infinity);
+            setFpsMax(0);
+        }
+    }, [configKey]);
 
     const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
 
@@ -851,6 +991,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     </div>
                 )}
 
+                {/* FPS counter overlay */}
+                {uiVisible && (
+                    <div className="fixed top-6 left-6 z-20 bg-black/20 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-lg font-mono text-[11px] leading-tight select-none"
+                         style={{ color: isDarkColor(backgroundColor) ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
+                        <div className="font-semibold text-sm" style={{ color: isDarkColor(backgroundColor) ? 'white' : 'black' }}>
+                            {fps} <span className="font-normal text-[10px]" style={{ opacity: 0.6 }}>FPS</span>
+                        </div>
+                        <div className="flex gap-3 mt-0.5" style={{ opacity: 0.7 }}>
+                            <span>▼ {fpsMin === Infinity ? '–' : fpsMin}</span>
+                            <span>▲ {fpsMax === 0 ? '–' : fpsMax}</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer with links (always visible) */}
                 {uiVisible && (
                     <div className="fixed bottom-6 left-6 z-10 text-left space-y-1">
@@ -866,16 +1020,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 Made by FireCMS
                             </a>
                         </div>
-                        <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
+                        <div className="hover:opacity-80 transition-opacity">
                             <a
                                 href="https://github.com/FireCMSco/neat"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:underline"
-                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
                                 onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
                             >
-                                GitHub ⭐
+                                <img
+                                    src="https://img.shields.io/github/stars/FireCMSco/neat?style=social"
+                                    alt="GitHub stars"
+                                    style={{ height: 20 }}
+                                />
                             </a>
                         </div>
                         <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
@@ -907,7 +1063,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <ChevronLeft className="w-6 h-6"/>
                         </IconButton>
 
-                        <div className="flex flex-col h-full gap-4">
+                        <div className="flex flex-col h-full">
                             <div
                                 className="p-4 pt-20 flex flex-col gap-6 overflow-auto flex-grow panel-scroll">
                                 <div className="flex items-center justify-between">
@@ -1353,49 +1509,165 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         </div>
                                     </div>
 
+                                    {/* Domain Warp subsection */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <Label
+                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                            <span className="text-xs w-24 text-right font-semibold">Domain Warp</span>
+                                            <div className={"w-full flex"}>
+                                                <Checkbox checked={domainWarpEnabled}
+                                                          onChange={(checked: boolean) => setDomainWarpEnabled(checked)}/>
+                                            </div>
+                                        </Label>
+                                        <div className={`space-y-2 transition-opacity ${!domainWarpEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[domainWarpIntensity]} step={0.05}
+                                                        min={0} max={1.5}
+                                                        disabled={!domainWarpEnabled}
+                                                        onValueChange={(v) => setDomainWarpIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Scale</span>
+                                                <Slider value={[domainWarpScale]} step={0.1}
+                                                        min={0.5} max={10}
+                                                        disabled={!domainWarpEnabled}
+                                                        onValueChange={(v) => setDomainWarpScale(v[0] as number)}/>
+                                            </div>
+                                        </div>
+                                    </div>
+
 
                                 </div>
-                            </div>
 
-                            <div className="pb-2 px-4 space-y-2">
-                                <div className="text-center space-y-1">
-                                    <div className="text-xs opacity-60">
-                                        Made with ❤️ by
+                                {/* Post-Processing Effects section */}
+                                <div className="space-y-3 bg-white/5 border border-white/10 rounded-xl p-3">
+                                    <div className="font-semibold text-sm">Post-Processing</div>
+
+                                    {/* Vignette */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <div className="text-xs font-semibold mb-1">Vignette</div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                            <Slider value={[vignetteIntensity]} step={0.05}
+                                                    min={0} max={1}
+                                                    onValueChange={(v) => setVignetteIntensity(v[0] as number)}/>
+                                        </div>
+                                        <div className={`space-y-2 transition-opacity ${vignetteIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                                <Slider value={[vignetteRadius]} step={0.05}
+                                                        min={0.1} max={1}
+                                                        disabled={vignetteIntensity === 0}
+                                                        onValueChange={(v) => setVignetteRadius(v[0] as number)}/>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <a
-                                        href="https://firecms.co"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm font-semibold hover:underline opacity-80 hover:opacity-100 transition-opacity"
-                                        onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'sidebar' })}
-                                    >
-                                        FireCMS
-                                    </a>
-                                    <div className="text-xs opacity-60">
-                                        <a
-                                            href="https://github.com/FireCMSco/neat"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hover:underline opacity-80 hover:opacity-100 transition-opacity"
-                                            onClick={() => logEvent(analytics, 'click_github_link', { location: 'sidebar' })}
-                                        >
-                                            GitHub ⭐
-                                        </a>
+
+                                    {/* Bloom */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <div className="text-xs font-semibold mb-1">Bloom</div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                            <Slider value={[bloomIntensity]} step={0.1}
+                                                    min={0} max={3}
+                                                    onValueChange={(v) => setBloomIntensity(v[0] as number)}/>
+                                        </div>
+                                        <div className={`space-y-2 transition-opacity ${bloomIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Threshold</span>
+                                                <Slider value={[bloomThreshold]} step={0.05}
+                                                        min={0} max={1}
+                                                        disabled={bloomIntensity === 0}
+                                                        onValueChange={(v) => setBloomThreshold(v[0] as number)}/>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-xs opacity-60">
-                                        Contact us at{' '}
-                                        <a
-                                            href="mailto:hello@firecms.co"
-                                            className="hover:underline opacity-80 hover:opacity-100 transition-opacity"
-                                            onClick={() => logEvent(analytics, 'click_email', { location: 'sidebar' })}
-                                        >
-                                            hello@firecms.co
-                                        </a>
+
+                                    {/* Chromatic Aberration */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <div className="text-xs font-semibold mb-1">Chromatic Aberration</div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Amount</span>
+                                            <Slider value={[chromaticAberration]} step={0.5}
+                                                    min={0} max={20}
+                                                    onValueChange={(v) => setChromaticAberration(v[0] as number)}/>
+                                        </div>
+                                    </div>
+
+                                    {/* Fresnel */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <Label
+                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                            <span className="text-xs w-24 text-right font-semibold">Rim Glow</span>
+                                            <div className={"w-full flex"}>
+                                                <Checkbox checked={fresnelEnabled}
+                                                          onChange={(checked: boolean) => setFresnelEnabled(checked)}/>
+                                            </div>
+                                        </Label>
+                                        <div className={`space-y-2 transition-opacity ${!fresnelEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Power</span>
+                                                <Slider value={[fresnelPower]} step={0.1}
+                                                        min={0.5} max={5}
+                                                        disabled={!fresnelEnabled}
+                                                        onValueChange={(v) => setFresnelPower(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[fresnelIntensity]} step={0.1}
+                                                        min={0} max={3}
+                                                        disabled={!fresnelEnabled}
+                                                        onValueChange={(v) => setFresnelIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Color</span>
+                                                <div className="w-full flex">
+                                                    <ColorSwatch
+                                                        color={{ color: fresnelColor, enabled: true }}
+                                                        showEnabled={false}
+                                                        onChange={(c) => setFresnelColor(c.color)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Iridescence */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <Label
+                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                            <span className="text-xs w-24 text-right font-semibold">Iridescence</span>
+                                            <div className={"w-full flex"}>
+                                                <Checkbox checked={iridescenceEnabled}
+                                                          onChange={(checked: boolean) => setIridescenceEnabled(checked)}/>
+                                            </div>
+                                        </Label>
+                                        <div className={`space-y-2 transition-opacity ${!iridescenceEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[iridescenceIntensity]} step={0.05}
+                                                        min={0} max={1}
+                                                        disabled={!iridescenceEnabled}
+                                                        onValueChange={(v) => setIridescenceIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Speed</span>
+                                                <Slider value={[iridescenceSpeed]} step={0.1}
+                                                        min={0} max={5}
+                                                        disabled={!iridescenceEnabled}
+                                                        onValueChange={(v) => setIridescenceSpeed(v[0] as number)}/>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Overlays section */}
+
                             </div>
 
-                            <div className={"pb-4 px-4"}>
+                            <div className="relative pb-4 px-4 pt-2 bg-neutral-700">
+                                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-neutral-700 to-transparent pointer-events-none" />
                                 <Button
                                     size={"lg"}
                                     className="w-full"

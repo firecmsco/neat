@@ -41,6 +41,33 @@ export type NeatConfig = {
     textureShapeCircles?: number;
     textureShapeBars?: number;
     textureShapeSquiggles?: number;
+
+    // Domain warping
+    domainWarpEnabled?: boolean;
+    domainWarpIntensity?: number;
+    domainWarpScale?: number;
+
+    // Vignette
+    vignetteIntensity?: number;
+    vignetteRadius?: number;
+
+    // Fresnel (rim glow)
+    fresnelEnabled?: boolean;
+    fresnelPower?: number;
+    fresnelIntensity?: number;
+    fresnelColor?: string;
+
+    // Iridescence
+    iridescenceEnabled?: boolean;
+    iridescenceIntensity?: number;
+    iridescenceSpeed?: number;
+
+    // Bloom (fake)
+    bloomIntensity?: number;
+    bloomThreshold?: number;
+
+    // Chromatic aberration
+    chromaticAberration?: number;
 };
 
 export type NeatColor = {

@@ -35,67 +35,7 @@ export interface WebGLState {
 }
 
 
-
-export type NeatConfig = {
-    resolution?: number;
-    speed?: number;
-    horizontalPressure?: number;
-    verticalPressure?: number;
-    waveFrequencyX?: number;
-    waveFrequencyY?: number;
-    waveAmplitude?: number;
-    highlights?: number;
-    shadows?: number;
-    colorSaturation?: number;
-    colorBrightness?: number;
-    colors: NeatColor[];
-    colorBlending?: number;
-    grainScale?: number;
-    grainIntensity?: number;
-    grainSparsity?: number;
-    grainSpeed?: number;
-    wireframe?: boolean;
-    backgroundColor?: string;
-    backgroundAlpha?: number;
-    yOffset?: number;
-    yOffsetWaveMultiplier?: number;
-    yOffsetColorMultiplier?: number;
-    yOffsetFlowMultiplier?: number;
-    // Flow field parameters
-    flowDistortionA?: number;
-    flowDistortionB?: number;
-    flowScale?: number;
-    flowEase?: number;
-    flowEnabled?: boolean;
-
-    // Texture generation
-    enableProceduralTexture?: boolean;
-    textureVoidLikelihood?: number;
-    textureVoidWidthMin?: number;
-    textureVoidWidthMax?: number;
-    textureBandDensity?: number;
-    textureColorBlending?: number;
-    textureSeed?: number;
-    textureEase?: number;
-    proceduralBackgroundColor?: string;
-    textureShapeTriangles?: number;
-    textureShapeCircles?: number;
-    textureShapeBars?: number;
-    textureShapeSquiggles?: number;
-};
-
-export type NeatColor = {
-    color: string;
-    enabled: boolean;
-    /**
-     * Value from 0 to 1
-     */
-    influence?: number;
-}
-
-export type NeatController = {
-    destroy: () => void;
-}
+import { NeatConfig, NeatColor, NeatController } from "./types";
 
 export class NeatGradient implements NeatController {
 
@@ -147,6 +87,29 @@ export class NeatGradient implements NeatController {
     private _textureColorBlending: number = 0.01;
     private _textureSeed: number = 333;
     private _textureEase: number = 0.5;
+
+    // New effects
+    private _domainWarpEnabled: boolean = false;
+    private _domainWarpIntensity: number = 0.5;
+    private _domainWarpScale: number = 1.0;
+
+    private _vignetteIntensity: number = 0.5;
+    private _vignetteRadius: number = 0.8;
+
+    private _fresnelEnabled: boolean = false;
+    private _fresnelPower: number = 2.0;
+    private _fresnelIntensity: number = 0.5;
+    private _fresnelColor: string = "#FFFFFF";
+    private _fresnelColorRgb: [number, number, number] = [1, 1, 1];
+
+    private _iridescenceEnabled: boolean = false;
+    private _iridescenceIntensity: number = 0.5;
+    private _iridescenceSpeed: number = 1.0;
+
+    private _bloomIntensity: number = 0;
+    private _bloomThreshold: number = 0.7;
+    private _chromaticAberration: number = 0;
+
     private _proceduralTexture: WebGLTexture | null = null;
     private _proceduralBackgroundColor: string = "#000000";
 
@@ -225,6 +188,22 @@ export class NeatGradient implements NeatController {
             textureShapeCircles = 15,
             textureShapeBars = 15,
             textureShapeSquiggles = 10,
+
+            domainWarpEnabled = false,
+            domainWarpIntensity = 0.5,
+            domainWarpScale = 1.0,
+            vignetteIntensity = 0.5,
+            vignetteRadius = 0.8,
+            fresnelEnabled = false,
+            fresnelPower = 2.0,
+            fresnelIntensity = 0.5,
+            fresnelColor = "#FFFFFF",
+            iridescenceEnabled = false,
+            iridescenceIntensity = 0.5,
+            iridescenceSpeed = 1.0,
+            bloomIntensity = 0.0,
+            bloomThreshold = 0.7,
+            chromaticAberration = 0.0,
         } = config;
 
 
@@ -282,6 +261,21 @@ export class NeatGradient implements NeatController {
         this._textureShapeBars = textureShapeBars;
         this._textureShapeSquiggles = textureShapeSquiggles;
 
+        this.domainWarpEnabled = domainWarpEnabled;
+        this.domainWarpIntensity = domainWarpIntensity;
+        this.domainWarpScale = domainWarpScale;
+        this.vignetteIntensity = vignetteIntensity;
+        this.vignetteRadius = vignetteRadius;
+        this.fresnelEnabled = fresnelEnabled;
+        this.fresnelPower = fresnelPower;
+        this.fresnelIntensity = fresnelIntensity;
+        this.fresnelColor = fresnelColor;
+        this.iridescenceEnabled = iridescenceEnabled;
+        this.iridescenceIntensity = iridescenceIntensity;
+        this.iridescenceSpeed = iridescenceSpeed;
+        this.bloomIntensity = bloomIntensity;
+        this.bloomThreshold = bloomThreshold;
+        this.chromaticAberration = chromaticAberration;
 
         this.glState = this._initScene(resolution);
 
@@ -341,6 +335,26 @@ export class NeatGradient implements NeatController {
 
                     gl.uniform1f(locations.uniforms['u_enable_procedural_texture'], this._enableProceduralTexture ? 1.0 : 0.0);
                     gl.uniform1f(locations.uniforms['u_texture_ease'], this._textureEase);
+
+                    gl.uniform1f(locations.uniforms['u_domain_warp_enabled'], this._domainWarpEnabled ? 1.0 : 0.0);
+                    gl.uniform1f(locations.uniforms['u_domain_warp_intensity'], this._domainWarpIntensity);
+                    gl.uniform1f(locations.uniforms['u_domain_warp_scale'], this._domainWarpScale);
+
+                    gl.uniform1f(locations.uniforms['u_vignette_intensity'], this._vignetteIntensity);
+                    gl.uniform1f(locations.uniforms['u_vignette_radius'], this._vignetteRadius);
+
+                    gl.uniform1f(locations.uniforms['u_fresnel_enabled'], this._fresnelEnabled ? 1.0 : 0.0);
+                    gl.uniform1f(locations.uniforms['u_fresnel_power'], this._fresnelPower);
+                    gl.uniform1f(locations.uniforms['u_fresnel_intensity'], this._fresnelIntensity);
+                    gl.uniform3fv(locations.uniforms['u_fresnel_color'], this._fresnelColorRgb);
+
+                    gl.uniform1f(locations.uniforms['u_iridescence_enabled'], this._iridescenceEnabled ? 1.0 : 0.0);
+                    gl.uniform1f(locations.uniforms['u_iridescence_intensity'], this._iridescenceIntensity);
+                    gl.uniform1f(locations.uniforms['u_iridescence_speed'], this._iridescenceSpeed);
+
+                    gl.uniform1f(locations.uniforms['u_bloom_intensity'], this._bloomIntensity);
+                    gl.uniform1f(locations.uniforms['u_bloom_threshold'], this._bloomThreshold);
+                    gl.uniform1f(locations.uniforms['u_chromatic_aberration'], this._chromaticAberration);
 
                     this._uniformsDirty = false;
                 }
@@ -893,7 +907,12 @@ export class NeatGradient implements NeatController {
             "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
             "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
 
-            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_saturation", "u_brightness", "u_color_blending"
+            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_saturation", "u_brightness", "u_color_blending",
+            "u_domain_warp_enabled", "u_domain_warp_intensity", "u_domain_warp_scale",
+            "u_vignette_intensity", "u_vignette_radius",
+            "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
+            "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
+            "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration"
         ];
 
         const locations: WebGLState["locations"] = {
@@ -1135,7 +1154,97 @@ export class NeatGradient implements NeatController {
         return tex;
     }
 
-
+    set domainWarpEnabled(enabled: boolean) {
+        if (this._domainWarpEnabled !== enabled) {
+            this._domainWarpEnabled = enabled;
+            this._uniformsDirty = true;
+        }
+    }
+    set domainWarpIntensity(intensity: number) {
+        if (this._domainWarpIntensity !== intensity) {
+            this._domainWarpIntensity = intensity;
+            this._uniformsDirty = true;
+        }
+    }
+    set domainWarpScale(scale: number) {
+        if (this._domainWarpScale !== scale) {
+            this._domainWarpScale = scale;
+            this._uniformsDirty = true;
+        }
+    }
+    set vignetteIntensity(intensity: number) {
+        if (this._vignetteIntensity !== intensity) {
+            this._vignetteIntensity = intensity;
+            this._uniformsDirty = true;
+        }
+    }
+    set vignetteRadius(radius: number) {
+        if (this._vignetteRadius !== radius) {
+            this._vignetteRadius = radius;
+            this._uniformsDirty = true;
+        }
+    }
+    set fresnelEnabled(enabled: boolean) {
+        if (this._fresnelEnabled !== enabled) {
+            this._fresnelEnabled = enabled;
+            this._uniformsDirty = true;
+        }
+    }
+    set fresnelPower(power: number) {
+        if (this._fresnelPower !== power) {
+            this._fresnelPower = power;
+            this._uniformsDirty = true;
+        }
+    }
+    set fresnelIntensity(intensity: number) {
+        if (this._fresnelIntensity !== intensity) {
+            this._fresnelIntensity = intensity;
+            this._uniformsDirty = true;
+        }
+    }
+    set fresnelColor(fresnelColor: string) {
+        if (this._fresnelColor !== fresnelColor) {
+            this._fresnelColor = fresnelColor;
+            this._fresnelColorRgb = this._hexToRgb(fresnelColor);
+            this._uniformsDirty = true;
+        }
+    }
+    set iridescenceEnabled(enabled: boolean) {
+        if (this._iridescenceEnabled !== enabled) {
+            this._iridescenceEnabled = enabled;
+            this._uniformsDirty = true;
+        }
+    }
+    set iridescenceIntensity(intensity: number) {
+        if (this._iridescenceIntensity !== intensity) {
+            this._iridescenceIntensity = intensity;
+            this._uniformsDirty = true;
+        }
+    }
+    set iridescenceSpeed(speed: number) {
+        if (this._iridescenceSpeed !== speed) {
+            this._iridescenceSpeed = speed;
+            this._uniformsDirty = true;
+        }
+    }
+    set bloomIntensity(intensity: number) {
+        if (this._bloomIntensity !== intensity) {
+            this._bloomIntensity = intensity;
+            this._uniformsDirty = true;
+        }
+    }
+    set bloomThreshold(threshold: number) {
+        if (this._bloomThreshold !== threshold) {
+            this._bloomThreshold = threshold;
+            this._uniformsDirty = true;
+        }
+    }
+    set chromaticAberration(aberration: number) {
+        if (this._chromaticAberration !== aberration) {
+            this._chromaticAberration = aberration;
+            this._uniformsDirty = true;
+        }
+    }
 }
 
 

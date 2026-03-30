@@ -756,7 +756,7 @@
     web-vitals "^2.1.4"
 
 "@firecms/neat@file:../lib", "@firecms/neat@file:/Users/francesco/neat/lib":
-  version "0.7.0"
+  version "0.7.1"
   resolved "file:lib"
 
 "@floating-ui/core@^1.7.3":

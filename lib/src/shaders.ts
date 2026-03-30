@@ -72,7 +72,10 @@ export const vertexShaderSource = `void main() {
 
     v_color = color;
 
-    // 4. VERTEX POSITION
+    // 4. FRESNEL (rim glow)
+    // (Calculated in fragment shader using displacement slope approximation)
+
+    // 5. VERTEX POSITION
     vec3 newPosition = position + normal * v_displacement_amount * u_wave_amplitude;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
     v_new_position = gl_Position;
@@ -95,31 +98,32 @@ float fbm(vec3 x) {
     return value;
 }
 
+// Branchless HSL to RGB for iridescence
+vec3 hsl2rgb(float h, float s, float l) {
+    vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    return l + s * (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
+}
+
 void main() {
     vec2 finalUv = vFlowUv;
     
     vec3 baseColor;
 
     if (u_enable_procedural_texture > 0.5) {
-        // Calculate flow field distance for ease effect
         vec2 ppp = -1.0 + 2.0 * finalUv;
         ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
         ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
         ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
         ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
-        float r = length(ppp); // Flow distance
+        float r = length(ppp);
         
-        // Ease blending: 0 = topographic (flow), 1 = image (UV)
         float vx = (finalUv.x * u_texture_ease) + (r * (1.0 - u_texture_ease));
         float vy = (finalUv.y * u_texture_ease) + (0.0 * (1.0 - u_texture_ease));
         vec2 texUv = vec2(vx, vy);
 
-        // PARALLAX SCROLLING
-        // We manually apply a smaller offset here to make the texture lag behind
-        float parallaxFactor = 0.25; // 25% speed of the color mixing
+        float parallaxFactor = 0.25;
         texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
-
-        texUv *= 1.5; // Tiling scale
+        texUv *= 1.5;
 
         vec4 texSample = texture2D(u_procedural_texture, texUv);
         baseColor = texSample.rgb;
@@ -129,24 +133,70 @@ void main() {
 
     vec3 color = baseColor;
 
+    // === DOMAIN WARPING (simplified: 3 fbm calls instead of 5) ===
+    if (u_domain_warp_enabled > 0.5) {
+        vec3 p = vec3(finalUv * u_domain_warp_scale, u_time * 0.15);
+        vec2 q = vec2(fbm(p), fbm(p + vec3(5.2, 1.3, 0.0)));
+        float f = fbm(p + vec3(4.0 * q, 0.0));
+        vec3 warpColor = color * (1.0 + f * 0.8 * u_domain_warp_intensity);
+        float pattern = clamp(f * f * f + 0.6 * f * f + 0.5 * f, 0.0, 1.0);
+        color = mix(color, warpColor * (0.6 + pattern * 0.8), u_domain_warp_intensity * 0.7);
+    }
+
     // Post-processing
     color += v_displacement_amount * u_highlights;
-    // Replace pow() with direct multiplication to avoid negative base undefined behavior in GLSL
     float shadowFactor = 1.0 - v_displacement_amount;
     color -= shadowFactor * shadowFactor * u_shadows;
     color = saturation(color, 1.0 + u_saturation);
     color = color * u_brightness;
 
-    // Grain
-    vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
+    // === IRIDESCENCE ===
+    if (u_iridescence_enabled > 0.5) {
+        float hue = fract(v_displacement_amount * 0.5 + 0.5 + u_time * u_iridescence_speed * 0.05);
+        vec3 iriColor = hsl2rgb(hue, 0.8, 0.6);
+        color = mix(color, iriColor, u_iridescence_intensity * abs(v_displacement_amount) * 0.6);
+    }
+
+    // === FRESNEL (Rim glow) ===
+    if (u_fresnel_enabled > 0.5) {
+        float slope = 1.0 - abs(v_displacement_amount);
+        float fresnel = pow(max(slope, 0.0), u_fresnel_power);
+        color += u_fresnel_color * fresnel * u_fresnel_intensity;
+    }
+
+    // === VIGNETTE ===
+    if (u_vignette_intensity > 0.0) {
+        float dist = length(vUv - vec2(0.5));
+        float vig = smoothstep(u_vignette_radius, u_vignette_radius * 0.3, dist);
+        color *= mix(1.0, vig, u_vignette_intensity);
+    }
+
+    // === FAKE BLOOM ===
+    if (u_bloom_intensity > 0.0) {
+        float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+        float bloomMask = smoothstep(u_bloom_threshold, 1.0, luma);
+        color += color * bloomMask * u_bloom_intensity;
+    }
+
+    // === CHROMATIC ABERRATION ===
+    if (u_chromatic_aberration > 0.0) {
+        float caAmount = u_chromatic_aberration * 0.008;
+        float dist = length(vUv - vec2(0.5));
+        float rShift = v_displacement_amount + caAmount * dist;
+        float bShift = v_displacement_amount - caAmount * dist;
+        color.r *= 1.0 + rShift * caAmount * 10.0;
+        color.b *= 1.0 - bShift * caAmount * 10.0;
+    }
+
+    // Grain (use cheap hash noise instead of expensive fbm when static)
     float grain = 0.0;
-    
-    // Completely bypass expensive noise generation if grain is disabled
     if (u_grain_intensity > 0.0) {
+        vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
         if (u_grain_speed != 0.0) {
             grain = fbm(vec3(noiseCoords, u_time * u_grain_speed));
         } else {
-            grain = fbm(vec3(noiseCoords, 0.0));
+            // Static grain: use cheap hash instead of fbm
+            grain = random(noiseCoords) - 0.5;
         }
 
         grain = grain * 0.5 + 0.5;
@@ -206,6 +256,12 @@ uniform float u_flow_distortion_b;
 uniform float u_flow_scale;
 uniform float u_flow_ease;
 uniform float u_flow_enabled;
+
+// Fresnel uniforms
+uniform float u_fresnel_enabled;
+uniform float u_fresnel_power;
+uniform float u_fresnel_intensity;
+uniform vec3 u_fresnel_color;
 `;
 }
 
@@ -218,6 +274,7 @@ varying vec3 v_color;
 varying float v_displacement_amount;
 
 uniform float u_time;
+uniform vec2 u_resolution;
 uniform float u_plane_height;
 
 uniform float u_shadows;
@@ -241,6 +298,35 @@ uniform float u_flow_scale;
 uniform sampler2D u_procedural_texture;
 uniform float u_enable_procedural_texture;
 uniform float u_texture_ease;
+
+// Domain warping uniforms
+uniform float u_domain_warp_enabled;
+uniform float u_domain_warp_intensity;
+uniform float u_domain_warp_scale;
+
+// Vignette uniforms
+uniform float u_vignette_intensity;
+uniform float u_vignette_radius;
+
+// Fresnel uniforms (fragment side)
+uniform float u_fresnel_enabled;
+uniform float u_fresnel_power;
+uniform float u_fresnel_intensity;
+uniform vec3 u_fresnel_color;
+
+
+
+// Iridescence uniforms
+uniform float u_iridescence_enabled;
+uniform float u_iridescence_intensity;
+uniform float u_iridescence_speed;
+
+// Bloom uniforms
+uniform float u_bloom_intensity;
+uniform float u_bloom_threshold;
+
+// Chromatic aberration
+uniform float u_chromatic_aberration;
 `;
 }
 
