@@ -9,15 +9,15 @@ export interface DialogProps {
   maxWidth?: string;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, maxWidth }: DialogProps) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out" />
         <RadixDialog.Content className={cn(
-          "fixed z-50 grid w-full max-w-[min(90vw,56rem)] max-h-[85vh] overflow-hidden gap-4 border border-white/10 bg-neutral-900 text-white p-6 shadow-2xl duration-200",
+          "fixed z-50 grid w-full max-h-[85vh] overflow-hidden gap-4 border border-white/10 bg-neutral-900 text-white p-6 shadow-2xl duration-200",
           "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
-        )}>
+        )} style={{ maxWidth: maxWidth || 'min(90vw, 56rem)' }}>
           {children}
         </RadixDialog.Content>
       </RadixDialog.Portal>

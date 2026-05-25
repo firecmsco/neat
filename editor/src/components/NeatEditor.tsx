@@ -8,11 +8,12 @@ import { Select, SelectItem } from "./ui/select";
 import { Sheet } from "./ui/sheet";
 import { Slider } from "./ui/slider";
 import { Tooltip } from "./ui/tooltip";
-import { ChevronLeft, ChevronRight, Download, Import } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Import, Video, Square } from "lucide-react";
 import { ColorSwatch } from "./ColorSwatch";
 import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor } from "../utils/colors";
 import { GetCodeDialog } from "./GetCodeDialog";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "./ui/dialog";
 import { Analytics } from "@firebase/analytics";
 import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
@@ -30,6 +31,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
     const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
     const [importDialogOpen, setImportDialogOpen] = React.useState(false);
+    const [recordDialogOpen, setRecordDialogOpen] = React.useState(false);
+    const [isRecording, setIsRecording] = React.useState<boolean>(false);
+    const [recordingProgress, setRecordingProgress] = React.useState<number>(0);
+    const [recordDuration, setRecordDuration] = React.useState<number>(5);
+    const [recordResolution, setRecordResolution] = React.useState<string>("current");
+    const stopRecordingRef = React.useRef<(() => void) | null>(null);
 
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
@@ -50,21 +57,22 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     useEffect(() => {
         const handlePopState = () => {
             // Check if any dialog/drawer is open and close it
-            if (drawerOpen || dialogOpen || importDialogOpen) {
+            if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen) {
                 closingViaBackButton.current = true;
                 if (drawerOpen) setDrawerOpen(false);
                 if (dialogOpen) setDialogOpen(false);
                 if (importDialogOpen) setImportDialogOpen(false);
+                if (recordDialogOpen && !isRecording) setRecordDialogOpen(false);
             }
         };
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [drawerOpen, dialogOpen, importDialogOpen]);
+    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen, isRecording]);
 
     // Push history state when opening dialogs/drawer
     useEffect(() => {
-        if (drawerOpen || dialogOpen || importDialogOpen) {
+        if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen) {
             // Push a new history state when opening
             window.history.pushState({ modal: true }, '');
         } else if (!closingViaBackButton.current) {
@@ -76,7 +84,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
         // Reset flag
         closingViaBackButton.current = false;
-    }, [drawerOpen, dialogOpen, importDialogOpen]);
+    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen]);
 
     const updatePresetConfig = (config: NeatConfig) => {
         setColors(config.colors);
@@ -574,6 +582,43 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         logEvent(analytics, 'open_get_code_dialog', { config });
     };
 
+    const handleStartRecording = useCallback(() => {
+        if (!gradientRef.current || isRecording) return;
+        setIsRecording(true);
+        setRecordingProgress(0);
+        logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution });
+
+        // Determine target dimensions
+        const canvas = gradientRef.current;
+        let width: number | undefined;
+        let height: number | undefined;
+        if (recordResolution === '720p') { width = 1280; height = 720; }
+        else if (recordResolution === '1080p') { width = 1920; height = 1080; }
+        else if (recordResolution === '4k') { width = 3840; height = 2160; }
+        // 'current' → undefined, uses canvas size
+
+        const stop = canvas.recordVideo({
+            durationMs: recordDuration * 1000,
+            filename: 'neat.firecms.co',
+            width,
+            height,
+            onProgress: (p) => setRecordingProgress(p),
+            onComplete: () => {
+                setIsRecording(false);
+                setRecordingProgress(0);
+                stopRecordingRef.current = null;
+            },
+        });
+        stopRecordingRef.current = stop;
+    }, [analytics, recordDuration, recordResolution, isRecording]);
+
+    const handleStopRecording = useCallback(() => {
+        if (stopRecordingRef.current) {
+            stopRecordingRef.current();
+            stopRecordingRef.current = null;
+        }
+    }, []);
+
     const generateRandomConfig = () => {
         // Helper function to generate random number in range
         const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -947,6 +992,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 aria-label="Download PNG"
                                                 onClick={() => gradientRef.current?.downloadAsPNG()}>
                                         <Download className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={isRecording ? `Recording ${Math.round(recordingProgress * 100)}%` : "Record MP4"}>
+                                    <IconButton className={`text-inherit ${isRecording ? 'animate-pulse' : ''}`}
+                                                aria-label={isRecording ? "Recording…" : "Record MP4"}
+                                                onClick={() => setRecordDialogOpen(true)}>
+                                        {isRecording
+                                            ? <Square className="w-4 h-4" fill="#ef4444" stroke="#ef4444"/>
+                                            : <Video className="w-5 h-5"/>
+                                        }
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Import config">
@@ -1689,6 +1744,83 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 <ImportConfigDialog open={importDialogOpen}
                                     onOpenChange={setImportDialogOpen}
                                     onConfigImport={handleConfigImport}/>
+
+                {/* Record Video Dialog */}
+                <Dialog open={recordDialogOpen} maxWidth="24rem" onOpenChange={(open) => {
+                    if (!open && !isRecording) setRecordDialogOpen(false);
+                    else if (open) setRecordDialogOpen(true);
+                }}>
+                    <DialogTitle>Record MP4</DialogTitle>
+                    <DialogContent>
+                        <div className="space-y-5">
+                            {/* Duration */}
+                            <div>
+                                <span className="text-[10px] tracking-widest font-bold uppercase opacity-70">Duration</span>
+                                <div className="flex items-center gap-2 mt-2">
+                                    {[3, 5, 10, 15, 30].map((d) => (
+                                        <button
+                                            key={d}
+                                            disabled={isRecording}
+                                            onClick={() => setRecordDuration(d)}
+                                            className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                                                recordDuration === d
+                                                    ? 'bg-white text-black border-white font-semibold'
+                                                    : 'bg-white/5 text-white/70 border-white/20 hover:bg-white/10'
+                                            } ${isRecording ? 'opacity-40 pointer-events-none' : ''}`}
+                                        >
+                                            {d}s
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Resolution */}
+                            <div className={isRecording ? 'opacity-40 pointer-events-none' : ''}>
+                                <span className="text-[10px] tracking-widest font-bold uppercase opacity-70">Resolution</span>
+                                <div className="mt-2">
+                                    <Select
+                                        value={recordResolution}
+                                        className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-1"
+                                        onValueChange={(v) => setRecordResolution(v)}
+                                    >
+                                        <SelectItem value="current">Current size</SelectItem>
+                                        <SelectItem value="720p">720p (1280×720)</SelectItem>
+                                        <SelectItem value="1080p">1080p (1920×1080)</SelectItem>
+                                        <SelectItem value="4k">4K (3840×2160)</SelectItem>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Progress bar (visible during recording) */}
+                            {isRecording && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] tracking-widest font-bold uppercase text-red-400">● Recording</span>
+                                        <span className="text-xs font-mono tabular-nums opacity-70">
+                                            {Math.round(recordingProgress * recordDuration)}s / {recordDuration}s
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-red-500 rounded-full transition-[width] duration-300 ease-linear"
+                                            style={{ width: `${recordingProgress * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                    <DialogActions>
+                        {!isRecording ? (
+                            <>
+                                <Button variant="text" className="text-xs px-3 py-1" onClick={() => setRecordDialogOpen(false)}>Cancel</Button>
+                                <Button className="text-xs px-3 py-1" onClick={handleStartRecording}>Record</Button>
+                            </>
+                        ) : (
+                            <Button className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700" onClick={handleStopRecording}>Stop</Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
             </div>
         </div>
     );
