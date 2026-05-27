@@ -499,6 +499,7 @@ export class NeatGradient implements NeatController {
      * @param options.filename    Output file name (default "neat.firecms.co").
      * @param options.width       Output video width in pixels (default: current canvas width).
      * @param options.height      Output video height in pixels (default: current canvas height).
+     * @param options.format      Preferred format: 'mp4' or 'webm' (default: best available).
      * @param options.onProgress  Callback with progress 0-1.
      * @param options.onComplete  Callback when recording finishes.
      * @returns A stop function to end recording early.
@@ -508,12 +509,14 @@ export class NeatGradient implements NeatController {
         filename?: string;
         width?: number;
         height?: number;
+        format?: 'mp4' | 'webm';
         onProgress?: (progress: number) => void;
         onComplete?: () => void;
     } = {}): () => void {
         const {
             durationMs = 5000,
             filename = "neat.firecms.co",
+            format,
             onProgress,
             onComplete,
         } = options;
@@ -534,18 +537,27 @@ export class NeatGradient implements NeatController {
         const stream = offscreen.captureStream(0);
         const videoTrack = stream.getVideoTracks()[0];
 
-        // Pick the best supported container+codec. Try MP4 with H.264 first
-        // (Chrome 120+, Safari 14.6+), then WebM VP9, then plain WebM.
-        let mimeType = "video/webm";
-        for (const candidate of [
+        // Codec candidates ordered by preference
+        const mp4Candidates = [
             "video/mp4;codecs=avc1",
             "video/mp4;codecs=avc1,opus",
             "video/mp4",
+        ];
+        const webmCandidates = [
             "video/webm;codecs=vp9,opus",
             "video/webm;codecs=vp9",
             "video/webm;codecs=vp8,opus",
             "video/webm",
-        ]) {
+        ];
+
+        // Build candidate list based on preferred format
+        let candidates: string[];
+        if (format === 'mp4') candidates = [...mp4Candidates, ...webmCandidates];
+        else if (format === 'webm') candidates = [...webmCandidates, ...mp4Candidates];
+        else candidates = [...mp4Candidates, ...webmCandidates];
+
+        let mimeType = "video/webm";
+        for (const candidate of candidates) {
             if (MediaRecorder.isTypeSupported(candidate)) {
                 mimeType = candidate;
                 break;

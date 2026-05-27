@@ -8,16 +8,403 @@ import { Select, SelectItem } from "./ui/select";
 import { Sheet } from "./ui/sheet";
 import { Slider } from "./ui/slider";
 import { Tooltip } from "./ui/tooltip";
-import { ChevronLeft, ChevronRight, Download, Import, Video, Square } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload } from "lucide-react";
 import { ColorSwatch } from "./ColorSwatch";
 import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
-import { getComplementaryColor, isDarkColor } from "../utils/colors";
+import { getComplementaryColor, isDarkColor, hslToHex, extractColorsFromImage } from "../utils/colors";
 import { GetCodeDialog } from "./GetCodeDialog";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "./ui/dialog";
 import { Analytics } from "@firebase/analytics";
 import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
 import { ImportConfigDialog } from "./ImportConfigDialog";
+
+// Algorithmic smart palette generator — infinite variety with color theory rules per archetype
+function generateSmartPalette(archetype: string): { colors: string[], background: string } {
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min;
+    const baseHue = Math.random() * 360;
+
+    if (archetype === "flow") {
+        // Analogous harmony: colors within ±50° of base, soft & luminous
+        const spread = rand(30, 50);
+        const colors = [
+            hslToHex(baseHue, rand(55, 80), rand(60, 78)),
+            hslToHex((baseHue + spread) % 360, rand(50, 75), rand(58, 75)),
+            hslToHex((baseHue - spread + 360) % 360, rand(45, 70), rand(62, 80)),
+            hslToHex((baseHue + spread * 1.5) % 360, rand(35, 60), rand(70, 85)),
+            "#FFFFFF",
+        ];
+        return { colors, background: hslToHex(baseHue, rand(30, 55), rand(6, 13)) };
+    }
+
+    if (archetype === "cyber") {
+        // Complementary/triadic: 2-3 vivid hues far apart, neon on black
+        const h2 = (baseHue + rand(110, 180)) % 360;
+        const h3 = (baseHue + rand(200, 280)) % 360;
+        const colors = [
+            hslToHex(baseHue, rand(85, 100), rand(50, 65)),
+            hslToHex(h2, rand(85, 100), rand(50, 65)),
+            hslToHex(h3, rand(80, 100), rand(45, 60)),
+            hslToHex((baseHue + 30) % 360, rand(70, 95), rand(30, 50)),
+            hslToHex(h2, rand(60, 80), rand(70, 85)),
+        ];
+        return { colors, background: hslToHex(baseHue, rand(40, 70), rand(2, 6)) };
+    }
+
+    if (archetype === "textured") {
+        // Warm analogous, muted & earthy — hue biased towards warm range
+        const warmHue = rand(10, 55); // orange-amber range
+        const spread = rand(15, 30);
+        const colors = [
+            hslToHex(warmHue, rand(35, 60), rand(40, 58)),
+            hslToHex((warmHue + spread) % 360, rand(30, 55), rand(45, 62)),
+            hslToHex((warmHue - spread + 360) % 360, rand(25, 50), rand(50, 68)),
+            hslToHex((warmHue + spread * 2) % 360, rand(20, 45), rand(35, 50)),
+            hslToHex(warmHue, rand(15, 35), rand(70, 85)),
+        ];
+        return { colors, background: hslToHex(warmHue, rand(25, 50), rand(4, 9)) };
+    }
+
+    if (archetype === "iridescent") {
+        // Pastel spectrum: light colors spread across the hue wheel
+        const offset = rand(60, 100);
+        const colors = [
+            hslToHex(baseHue, rand(35, 55), rand(80, 90)),
+            hslToHex((baseHue + offset) % 360, rand(40, 60), rand(78, 88)),
+            hslToHex((baseHue + offset * 2) % 360, rand(35, 55), rand(80, 90)),
+            hslToHex((baseHue + offset * 3) % 360, rand(30, 50), rand(75, 88)),
+            "#FFFFFF",
+        ];
+        return { colors, background: hslToHex((baseHue + 180) % 360, rand(20, 40), rand(5, 9)) };
+    }
+
+    // wireframe — monochrome + optional accent
+    const useDarkBg = Math.random() < 0.7;
+    if (useDarkBg) {
+        const accentHue = baseHue;
+        const colors = [
+            hslToHex(accentHue, rand(60, 90), rand(55, 70)),
+            hslToHex((accentHue + 30) % 360, rand(50, 80), rand(50, 65)),
+            hslToHex(accentHue, rand(10, 25), rand(30, 45)),
+            hslToHex(accentHue, rand(5, 15), rand(55, 70)),
+            hslToHex(accentHue, rand(15, 30), rand(75, 88)),
+        ];
+        return { colors, background: hslToHex(accentHue, rand(15, 35), rand(3, 7)) };
+    } else {
+        const accentHue = baseHue;
+        const colors = [
+            hslToHex(accentHue, rand(40, 70), rand(35, 50)),
+            hslToHex((accentHue + 20) % 360, rand(30, 55), rand(40, 55)),
+            hslToHex(0, 0, rand(25, 40)),
+            hslToHex(0, 0, rand(45, 60)),
+            hslToHex(0, 0, rand(65, 80)),
+        ];
+        return { colors, background: hslToHex(0, 0, rand(95, 100)) };
+    }
+}
+
+const ARCHETYPES = ["flow", "cyber", "textured", "iridescent", "wireframe"];
+
+function generateSmartConfig(archetype: string): NeatConfig {
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+    const randomInt = (min: number, max: number) => Math.floor(randomInRange(min, max + 1));
+    
+    // 1. Generate a smart palette using color theory rules for this archetype
+    const palette = generateSmartPalette(archetype);
+    
+    const colors: NeatColor[] = palette.colors.map((c, i) => ({
+        color: c,
+        enabled: i < 4 // enable exactly 4 colors, keep the 5th optional
+    }));
+    
+    // Fill remaining colors as disabled to keep exactly 6 colors in array
+    while (colors.length < 6) {
+        colors.push({ color: "#FFFFFF", enabled: false });
+    }
+
+    let backgroundColor = palette.background;
+    
+    // General smart bounds that apply unless overridden
+    let speed = randomInRange(1.5, 3.5);
+    let colorBlending = randomInRange(5, 8);
+    let horizontalPressure = randomInRange(3, 7);
+    let verticalPressure = randomInRange(3, 7);
+    let shadows = randomInRange(1, 6);
+    let highlights = randomInRange(3, 8);
+    let colorSaturation = randomInRange(0, 3);
+    let colorBrightness = randomInRange(0.9, 1.15);
+    let waveFrequencyX = randomInRange(2, 6);
+    let waveFrequencyY = randomInRange(2, 6);
+    let waveAmplitude = randomInRange(2, 6);
+    let backgroundAlpha = randomInRange(0.9, 1.0);
+    let grainIntensity = randomInRange(0.05, 0.25);
+    let grainScale = randomInRange(1, 4);
+    let grainSparsity = 0;
+    let grainSpeed = randomInRange(0.1, 0.4);
+    let resolution = randomInRange(0.7, 1.25);
+    let yOffset = randomInRange(0, 10000);
+    
+    let yOffsetWaveMultiplier = randomInRange(3, 6);
+    let yOffsetColorMultiplier = randomInRange(3, 6);
+    let yOffsetFlowMultiplier = randomInRange(3, 6);
+    
+    let flowEnabled = Math.random() < 0.5;
+    let flowDistortionA = randomInRange(0.5, 2.5);
+    let flowDistortionB = randomInRange(1, 5);
+    let flowScale = randomInRange(1, 3);
+    let flowEase = randomInRange(0.1, 0.5);
+    
+    let enableProceduralTexture = false;
+    let textureVoidLikelihood = randomInRange(0.2, 0.45);
+    let textureVoidWidthMin = randomInRange(50, 150);
+    let textureVoidWidthMax = randomInRange(200, 450);
+    let textureBandDensity = randomInRange(1.0, 2.5);
+    let textureColorBlending = randomInRange(0.01, 0.05);
+    let textureSeed = randomInt(1, 9999);
+    let textureEase = randomInRange(0.3, 0.7);
+    let proceduralBackgroundColor = backgroundColor;
+    let textureShapeTriangles = randomInt(10, 30);
+    let textureShapeCircles = randomInt(5, 20);
+    let textureShapeBars = randomInt(5, 20);
+    let textureShapeSquiggles = randomInt(5, 15);
+    
+    let domainWarpEnabled = Math.random() < 0.3;
+    let domainWarpIntensity = randomInRange(0.1, 0.5);
+    let domainWarpScale = randomInRange(2.0, 4.0);
+    let vignetteIntensity = randomInRange(0.1, 0.5);
+    let vignetteRadius = randomInRange(0.6, 0.95);
+    let fresnelEnabled = Math.random() < 0.4;
+    let fresnelPower = randomInRange(1.5, 3.5);
+    let fresnelIntensity = randomInRange(0.3, 1.2);
+    let fresnelColor = colors[0].color;
+    let iridescenceEnabled = false;
+    let iridescenceIntensity = randomInRange(0.2, 0.6);
+    let iridescenceSpeed = randomInRange(0.5, 2.0);
+    let bloomIntensity = 0;
+    let bloomThreshold = randomInRange(0.7, 0.9);
+    let chromaticAberration = 0;
+    
+    // Cross-theme wireframe: rare 5% chance for non-wireframe themes
+    let wireframe = archetype === "wireframe" || (Math.random() < 0.05);
+
+    // Apply specific archetype parameters (which overwrite defaults)
+    if (archetype === "flow") {
+        speed = randomInRange(0.6, 1.8);
+        colorBlending = randomInRange(7.0, 10.0);
+        horizontalPressure = randomInRange(3, 6);
+        verticalPressure = randomInRange(3, 6);
+        waveFrequencyX = randomInRange(1, 3.0);
+        waveFrequencyY = randomInRange(1, 3.0);
+        waveAmplitude = randomInRange(3, 7);
+        colorSaturation = randomInRange(0.5, 4.5);
+        colorBrightness = randomInRange(0.95, 1.15);
+        
+        yOffsetWaveMultiplier = randomInRange(2.0, 4.5);
+        yOffsetColorMultiplier = randomInRange(2.0, 4.5);
+        
+        vignetteIntensity = randomInRange(0.25, 0.55);
+        vignetteRadius = randomInRange(0.55, 0.85);
+        
+        grainIntensity = randomInRange(0.01, 0.06);
+        grainScale = 1;
+        grainSpeed = 0.05;
+        
+        flowEnabled = Math.random() < 0.6;
+        if (flowEnabled) {
+            flowDistortionA = randomInRange(0.2, 1.0);
+            flowDistortionB = randomInRange(0.4, 1.8);
+            flowScale = randomInRange(1, 2);
+            flowEase = randomInRange(0.1, 0.35);
+        }
+        
+        if (Math.random() < 0.4) {
+            bloomIntensity = randomInRange(0.3, 0.8);
+            bloomThreshold = randomInRange(0.75, 0.9);
+        }
+    } 
+    else if (archetype === "cyber") {
+        speed = randomInRange(3.5, 6.5);
+        colorBlending = randomInRange(3.5, 6.0);
+        horizontalPressure = randomInRange(5, 9);
+        verticalPressure = randomInRange(5, 9);
+        waveFrequencyX = randomInRange(4, 8.5);
+        waveFrequencyY = randomInRange(4, 8.5);
+        waveAmplitude = randomInRange(5.5, 9.0);
+        colorSaturation = randomInRange(3, 8);
+        colorBrightness = randomInRange(1.0, 1.25);
+        
+        yOffsetWaveMultiplier = randomInRange(5.5, 9.0);
+        yOffsetColorMultiplier = randomInRange(5.5, 9.0);
+        yOffsetFlowMultiplier = randomInRange(5.5, 9.0);
+        
+        backgroundColor = Math.random() < 0.7 ? "#000000" : "#02000a";
+        
+        bloomIntensity = randomInRange(1.0, 2.4);
+        bloomThreshold = randomInRange(0.4, 0.65);
+        fresnelEnabled = true;
+        fresnelIntensity = randomInRange(1.2, 2.8);
+        fresnelPower = randomInRange(1.5, 3.0);
+        fresnelColor = colors[Math.floor(Math.random() * 3)].color;
+        
+        chromaticAberration = randomInRange(5, 16);
+        domainWarpEnabled = Math.random() < 0.75;
+        if (domainWarpEnabled) {
+            domainWarpIntensity = randomInRange(0.5, 1.3);
+            domainWarpScale = randomInRange(2.0, 4.0);
+        }
+        flowEnabled = true;
+        flowDistortionA = randomInRange(2.0, 4.5);
+        flowDistortionB = randomInRange(3.0, 6.5);
+    }
+    else if (archetype === "textured") {
+        speed = randomInRange(0.1, 0.5);
+        colorBlending = randomInRange(2.5, 5.0);
+        waveFrequencyX = randomInRange(2.5, 5.5);
+        waveFrequencyY = randomInRange(2.5, 5.5);
+        waveAmplitude = randomInRange(2.0, 5.0);
+        colorSaturation = randomInRange(-2.0, 1.0);
+        colorBrightness = randomInRange(0.9, 1.05);
+        
+        enableProceduralTexture = true;
+        textureVoidLikelihood = randomInRange(0.15, 0.45);
+        textureBandDensity = randomInRange(0.5, 2.5);
+        textureEase = randomInRange(0.7, 0.97);
+        proceduralBackgroundColor = backgroundColor;
+        
+        grainIntensity = randomInRange(0.2, 0.5);
+        grainScale = randomInRange(2.0, 5.0);
+        grainSpeed = randomInRange(0.02, 0.12);
+        
+        textureShapeTriangles = randomInt(20, 50);
+        textureShapeCircles = randomInt(10, 35);
+        textureShapeBars = randomInt(10, 30);
+        textureShapeSquiggles = randomInt(5, 20);
+        
+        vignetteIntensity = randomInRange(0.4, 0.75);
+    }
+    else if (archetype === "iridescent") {
+        speed = randomInRange(1.6, 3.8);
+        colorBlending = randomInRange(6.0, 8.5);
+        waveFrequencyX = randomInRange(3.0, 6.0);
+        waveFrequencyY = randomInRange(3.0, 6.0);
+        waveAmplitude = randomInRange(3.0, 6.5);
+        colorSaturation = randomInRange(-3.0, 0);
+        colorBrightness = randomInRange(1.0, 1.15);
+        
+        iridescenceEnabled = true;
+        iridescenceIntensity = randomInRange(0.7, 1.0);
+        iridescenceSpeed = randomInRange(1.5, 3.5);
+        fresnelEnabled = true;
+        fresnelIntensity = randomInRange(1.2, 2.5);
+        fresnelPower = randomInRange(1.8, 3.5);
+        fresnelColor = "#FFFFFF";
+        
+        bloomIntensity = randomInRange(0.4, 1.1);
+        chromaticAberration = randomInRange(2, 7);
+        
+        domainWarpEnabled = Math.random() < 0.6;
+        if (domainWarpEnabled) {
+            domainWarpIntensity = randomInRange(0.2, 0.6);
+        }
+    }
+    else {
+        // wireframe theme
+        wireframe = true;
+        speed = randomInRange(1.2, 3.5);
+        colorBlending = randomInRange(4.0, 7.5);
+        waveFrequencyX = randomInRange(2.5, 6.5);
+        waveFrequencyY = randomInRange(2.5, 6.5);
+        waveAmplitude = randomInRange(4.5, 9.0);
+        
+        const isDark = Math.random() < 0.7;
+        if (isDark) {
+            backgroundColor = Math.random() < 0.5 ? "#000000" : (palette.background || "#050510");
+            colorSaturation = randomInRange(2.0, 6.0);
+            colorBrightness = randomInRange(1.0, 1.35);
+            bloomIntensity = randomInRange(0.8, 2.0);
+            fresnelIntensity = randomInRange(1.2, 2.6);
+            chromaticAberration = randomInRange(3, 14);
+        } else {
+            backgroundColor = Math.random() < 0.5 ? "#FFFFFF" : "#F8FAFC";
+            colorSaturation = randomInRange(-1.0, 2.0);
+            colorBrightness = randomInRange(0.55, 0.8);
+            bloomIntensity = 0;
+            fresnelIntensity = 0.5;
+            chromaticAberration = randomInRange(0, 3);
+        }
+        
+        fresnelEnabled = true;
+        fresnelPower = randomInRange(1.5, 3.0);
+        fresnelColor = isDark ? colors[Math.floor(Math.random() * 3)].color : "#1e293b";
+        
+        resolution = randomInRange(0.3, 0.8);
+        
+        domainWarpEnabled = Math.random() < 0.6;
+        if (domainWarpEnabled) {
+            domainWarpIntensity = randomInRange(0.3, 0.8);
+        }
+    }
+    
+    return {
+        colors,
+        speed,
+        colorBlending,
+        horizontalPressure,
+        verticalPressure,
+        shadows,
+        highlights,
+        colorSaturation,
+        colorBrightness,
+        waveFrequencyX,
+        waveFrequencyY,
+        waveAmplitude,
+        backgroundAlpha,
+        backgroundColor,
+        grainIntensity,
+        grainScale,
+        grainSparsity,
+        grainSpeed,
+        resolution,
+        yOffset,
+        yOffsetWaveMultiplier,
+        yOffsetColorMultiplier,
+        yOffsetFlowMultiplier,
+        flowEnabled,
+        flowDistortionA,
+        flowDistortionB,
+        flowScale,
+        flowEase,
+        enableProceduralTexture,
+        textureVoidLikelihood,
+        textureVoidWidthMin,
+        textureVoidWidthMax,
+        textureBandDensity,
+        textureColorBlending,
+        textureSeed,
+        textureEase,
+        proceduralBackgroundColor,
+        textureShapeTriangles,
+        textureShapeCircles,
+        textureShapeBars,
+        textureShapeSquiggles,
+        domainWarpEnabled,
+        domainWarpIntensity,
+        domainWarpScale,
+        vignetteIntensity,
+        vignetteRadius,
+        fresnelEnabled,
+        fresnelPower,
+        fresnelIntensity,
+        fresnelColor,
+        iridescenceEnabled,
+        iridescenceIntensity,
+        iridescenceSpeed,
+        bloomIntensity,
+        bloomThreshold,
+        chromaticAberration,
+        wireframe
+    };
+}
 
 const defaultConfig: NeatConfig = NEAT_PRESET as NeatConfig;
 
@@ -36,7 +423,23 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [recordingProgress, setRecordingProgress] = React.useState<number>(0);
     const [recordDuration, setRecordDuration] = React.useState<number>(5);
     const [recordResolution, setRecordResolution] = React.useState<string>("current");
+    const [recordFormat, setRecordFormat] = React.useState<'mp4' | 'webm'>('mp4');
     const stopRecordingRef = React.useRef<(() => void) | null>(null);
+
+    // Custom states for smart randomize and image drop color extractor
+    const [randomPresetConfig, setRandomPresetConfig] = React.useState<NeatConfig | null>(null);
+    const [dragActive, setDragActive] = React.useState<boolean>(false);
+    const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [selectedArchetype, setSelectedArchetype] = React.useState<string>("random");
+
+    const allPresets = React.useMemo(() => {
+        const base = { ...PRESETS };
+        if (randomPresetConfig) {
+            // @ts-ignore
+            base["Random"] = randomPresetConfig;
+        }
+        return base as Record<string, NeatConfig>;
+    }, [randomPresetConfig]);
 
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
@@ -154,7 +557,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setChromaticAberration(config.chromaticAberration ?? 0);
     }
 
-    const [selectedPresetIndex, setSelectedPresetIndex] = React.useState<number>(0);
+    const [selectedPreset, setSelectedPreset] = React.useState<string>("Neat");
     const [colors, setColors] = React.useState<NeatColor[]>(defaultConfig.colors ?? []);
     const [wireframe, setWireframe] = React.useState<boolean>(defaultConfig.wireframe ?? false);
     const [speed, setSpeed] = React.useState<number>(defaultConfig.speed ?? 4);
@@ -586,7 +989,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (!gradientRef.current || isRecording) return;
         setIsRecording(true);
         setRecordingProgress(0);
-        logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution });
+        logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution, format: recordFormat });
 
         // Determine target dimensions
         const canvas = gradientRef.current;
@@ -602,6 +1005,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             filename: 'neat.firecms.co',
             width,
             height,
+            format: recordFormat,
             onProgress: (p) => setRecordingProgress(p),
             onComplete: () => {
                 setIsRecording(false);
@@ -610,7 +1014,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             },
         });
         stopRecordingRef.current = stop;
-    }, [analytics, recordDuration, recordResolution, isRecording]);
+    }, [analytics, recordDuration, recordResolution, recordFormat, isRecording]);
 
     const handleStopRecording = useCallback(() => {
         if (stopRecordingRef.current) {
@@ -805,27 +1209,111 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
     }, [configKey]);
 
-    const selectedPreset = Object.keys(PRESETS)[selectedPresetIndex];
+    // Toast notification auto-dismissal
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
 
-    function setPreset(preset: string) {
-        setSelectedPresetIndex(Object.keys(PRESETS).indexOf(preset));
-        updatePresetConfig(PRESETS[preset]);
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        }
+    };
+
+    const handleDragLeaveOverlay = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+    };
+
+    const processImageFile = async (file: File) => {
+        try {
+            setToast({ message: "Extracting colors from image...", type: 'success' });
+            const extracted = await extractColorsFromImage(file);
+            if (extracted && extracted.length >= 5) {
+                // Update first 5 colors, disable 6th
+                const nextColors = colors.map((col, idx) => {
+                    if (idx < 5) {
+                        return { color: extracted[idx], enabled: true };
+                    } else {
+                        return { ...col, enabled: false };
+                    }
+                });
+                setColors(nextColors);
+                setToast({ message: "Successfully extracted 5 colors from image!", type: 'success' });
+            }
+        } catch (err: any) {
+            setToast({ message: err.message || "Failed to extract colors", type: 'error' });
+        }
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            if (file.type.startsWith("image/")) {
+                await processImageFile(file);
+            } else {
+                setToast({ message: "Only image files are supported", type: 'error' });
+            }
+        }
+    };
+
+    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            await processImageFile(e.target.files[0]);
+        }
+    };
+
+    const handleSmartRandomize = (archetype?: string) => {
+        const arch = archetype || ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
+        const newConfig = generateSmartConfig(arch);
+        
+        setRandomPresetConfig(newConfig);
+        setPreset("Random", newConfig);
+        
+        setToast({ message: `Generated ${arch} theme`, type: 'success' });
+    };
+
+    function setPreset(preset: string, customConfig?: NeatConfig) {
+        const targetConfig = customConfig || allPresets[preset];
+        if (targetConfig) {
+            setSelectedPreset(preset);
+            updatePresetConfig(targetConfig);
+        }
     }
 
-    const fontClass = fontMap[selectedPreset] || 'font-sans';
+    const fontClass = fontMap[selectedPreset as keyof typeof fontMap] || 'font-sans';
 
     const prevPreset = () => {
-        setSelectedPresetIndex((selectedPresetIndex - 1 + Object.keys(PRESETS).length) % Object.keys(PRESETS).length);
-        setPreset(Object.keys(PRESETS)[(selectedPresetIndex - 1 + Object.keys(PRESETS).length) % Object.keys(PRESETS).length]);
+        const keys = Object.keys(allPresets);
+        const currentIndex = keys.indexOf(selectedPreset);
+        const nextIndex = (currentIndex - 1 + keys.length) % keys.length;
+        setPreset(keys[nextIndex]);
     };
     const nextPreset = () => {
-        setSelectedPresetIndex((selectedPresetIndex + 1) % Object.keys(PRESETS).length);
-        setPreset(Object.keys(PRESETS)[(selectedPresetIndex + 1) % Object.keys(PRESETS).length]);
+        const keys = Object.keys(allPresets);
+        const currentIndex = keys.indexOf(selectedPreset);
+        const nextIndex = (currentIndex + 1) % keys.length;
+        setPreset(keys[nextIndex]);
     };
 
     // Keyboard shortcuts: arrows for presets, 'c' to toggle controls, 'h' to toggle UI
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
+            // Ignore keydown events if user is typing in input or textarea
+            const target = event.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                return;
+            }
             if (event.key === "ArrowRight") nextPreset();
             else if (event.key === "ArrowLeft") prevPreset();
             else if (event.key.toLowerCase() === 'c') setDrawerOpen((v) => !v);
@@ -833,7 +1321,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [selectedPresetIndex]);
+    }, [selectedPreset, allPresets]);
 
     // Touch swipe support for changing presets on mobile
     const touchStartX = useRef(0);
@@ -878,10 +1366,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [selectedPresetIndex, analytics]);
+    }, [selectedPreset, analytics]);
 
     return (
-        <div ref={editorContainerRef} className="relative w-full h-screen">
+        <div 
+            ref={editorContainerRef} 
+            className="relative w-full h-screen"
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+        >
             {/* Fullscreen gradient canvas */}
             <div className="fixed w-full h-full top-0 left-0 z-0">
                 <canvas className="w-full h-full block" ref={canvasRef} />
@@ -952,8 +1445,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         setPreset(preset);
                                     }}
                                 >
-                                    {Object.keys(PRESETS).map((preset) => (
-                                        <SelectItem className={fontMap[preset] + " "}
+                                    {Object.keys(allPresets).map((preset) => (
+                                        <SelectItem className={(fontMap[preset as keyof typeof fontMap] || "font-sans") + " "}
                                                     key={preset} value={preset}>
                                             {preset}
                                         </SelectItem>
@@ -977,6 +1470,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         onClick={() => setDrawerOpen(true)}>
                                     Edit
                                 </Button>
+                                <Tooltip title="Smart Randomize Theme">
+                                    <IconButton className="text-inherit"
+                                                aria-label="Smart Randomize"
+                                                onClick={() => handleSmartRandomize()}>
+                                        <Sparkles className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
                                 <div className="w-px h-7 bg-white/20"/>
                                 <Tooltip title="Get the code">
                                     <Button variant="text" size="sm" className="px-2 py-1"
@@ -1135,9 +1635,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         setPreset(preset);
                                     }}
                                 >
-                                    {Object.keys(PRESETS).map((preset) => (
+                                    {Object.keys(allPresets).map((preset) => (
                                         <SelectItem
-                                            className={fontMap[preset] + " "}
+                                            className={(fontMap[preset as keyof typeof fontMap] || "font-sans") + " "}
                                             key={preset}
                                             value={preset}
                                         >
@@ -1159,6 +1659,25 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             />
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                                    <div className="font-semibold text-sm mb-1 flex items-center gap-1.5">
+                                        <Upload className="w-4 h-4 text-blue-400" />
+                                        <span>Image Color Extractor</span>
+                                    </div>
+                                    <p className="text-[11px] opacity-70">
+                                        Drop an image anywhere, or select one to extract 5 dominant colors.
+                                    </p>
+                                    <label className="flex items-center justify-center w-full px-4 py-2 mt-1 text-xs border border-white/20 border-dashed rounded-lg cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all text-neutral-200">
+                                        <span className="flex items-center gap-1"><Upload className="w-3.5 h-3.5" /> Choose Image</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleImageSelect}
+                                        />
+                                    </label>
                                 </div>
 
                                 {/* Procedural Texture section - moved to top for better UX */}
@@ -1791,6 +2310,27 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 </div>
                             </div>
 
+                            {/* Format */}
+                            <div className={isRecording ? 'opacity-40 pointer-events-none' : ''}>
+                                <span className="text-[10px] tracking-widest font-bold uppercase opacity-70">Format</span>
+                                <div className="flex items-center gap-2 mt-2">
+                                    {(['mp4', 'webm'] as const).map((f) => (
+                                        <button
+                                            key={f}
+                                            disabled={isRecording}
+                                            onClick={() => setRecordFormat(f)}
+                                            className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                                                recordFormat === f
+                                                    ? 'bg-white text-black border-white font-semibold'
+                                                    : 'bg-white/5 text-white/70 border-white/20 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            {f.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Progress bar (visible during recording) */}
                             {isRecording && (
                                 <div>
@@ -1821,6 +2361,38 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         )}
                     </DialogActions>
                 </Dialog>
+
+
+
+                {/* Toast Notification Banner */}
+                {toast && (
+                    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-black/80 border border-white/25 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-2xl text-white text-xs sm:text-sm flex items-center gap-2.5 animate-in fade-in slide-in-from-top-4 duration-300">
+                        <div className={`w-2.5 h-2.5 rounded-full ${toast.type === 'success' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'}`} />
+                        <span className="font-medium">{toast.message}</span>
+                    </div>
+                )}
+
+                {/* Drag and Drop Glassmorphic Overlay */}
+                {dragActive && (
+                    <div 
+                        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md border-4 border-dashed border-white/20 m-4 rounded-3xl transition-all duration-300"
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDragLeaveOverlay}
+                        onDrop={handleDrop}
+                    >
+                        <div className="bg-neutral-900/80 border border-white/10 p-8 rounded-2xl flex flex-col items-center gap-4 text-center max-w-md shadow-2xl pointer-events-none">
+                            <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">
+                                <Upload className="w-8 h-8 text-neutral-300 animate-bounce" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Drop your image here</h3>
+                                <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">
+                                    Drop any JPEG, PNG, or WebP image to extract a 5-color palette and update the animated background gradient.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
