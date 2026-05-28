@@ -8,7 +8,7 @@ import { Select, SelectItem } from "./ui/select";
 import { Sheet } from "./ui/sheet";
 import { Slider } from "./ui/slider";
 import { Tooltip } from "./ui/tooltip";
-import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload, Palette, Box, Wind, Sliders, Image, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload, Palette, Box, Wind, Sliders, Image, RotateCcw, Camera, Lock, Unlock, Minus } from "lucide-react";
 import { ColorSwatch } from "./ColorSwatch";
 import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor, hslToHex, extractColorsFromImage } from "../utils/colors";
@@ -443,6 +443,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         return base as Record<string, NeatConfig>;
     }, [randomPresetConfig]);
 
+    const isPlanePreset = React.useCallback((presetName: string) => {
+        const config = allPresets[presetName];
+        if (!config) return false;
+        return config.shapeType === 'plane' || config.shapeType === undefined;
+    }, [allPresets]);
+
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
 
@@ -558,6 +564,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setBloomIntensity(config.bloomIntensity ?? 0);
         setBloomThreshold(config.bloomThreshold ?? 0.7);
         setChromaticAberration(config.chromaticAberration ?? 0);
+        setSilhouetteFade(config.silhouetteFade ?? 0.25);
+        setCylinderFade(config.cylinderFade ?? 0.08);
+        setRibbonFade(config.ribbonFade ?? 0.05);
 
         // 3D Shapes config setters
         setShapeType(config.shapeType ?? 'plane');
@@ -573,6 +582,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setCylinderHeight(config.cylinderHeight ?? 40);
         setPlaneBend(config.planeBend ?? 0);
         setPlaneTwist(config.planeTwist ?? 0);
+
+        // Camera config setters
+        setCameraLock(config.cameraLock ?? false);
+        setCameraX(config.cameraX ?? 0);
+        setCameraY(config.cameraY ?? 0);
+        setCameraZ(config.cameraZ ?? 0);
+        setCameraRotationX(config.cameraRotationX ?? 0);
+        setCameraRotationY(config.cameraRotationY ?? 0);
+        setCameraRotationZ(config.cameraRotationZ ?? 0);
+        setCameraZoom(config.cameraZoom ?? 1.0);
     }
 
     const [selectedPreset, setSelectedPreset] = React.useState<string>("Neat");
@@ -646,6 +665,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [bloomThreshold, setBloomThreshold] = React.useState<number>(defaultConfig.bloomThreshold ?? 0.7);
     const [chromaticAberration, setChromaticAberration] = React.useState<number>(defaultConfig.chromaticAberration ?? 0);
 
+    const [silhouetteFade, setSilhouetteFade] = React.useState<number>(defaultConfig.silhouetteFade ?? 0.25);
+    const [cylinderFade, setCylinderFade] = React.useState<number>(defaultConfig.cylinderFade ?? 0.08);
+    const [ribbonFade, setRibbonFade] = React.useState<number>(defaultConfig.ribbonFade ?? 0.05);
+
     // === Shape state ===
     const [shapeType, setShapeType] = React.useState<'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon'>(defaultConfig.shapeType ?? 'plane');
     const [shapeRotationX, setShapeRotationX] = React.useState<number>(defaultConfig.shapeRotationX ?? 0);
@@ -660,6 +683,26 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [cylinderHeight, setCylinderHeight] = React.useState<number>(defaultConfig.cylinderHeight ?? 40);
     const [planeBend, setPlaneBend] = React.useState<number>(defaultConfig.planeBend ?? 0);
     const [planeTwist, setPlaneTwist] = React.useState<number>(defaultConfig.planeTwist ?? 0);
+
+    // === Camera state ===
+    const [cameraLock, setCameraLock] = React.useState<boolean>(defaultConfig.cameraLock ?? false);
+    const [cameraX, setCameraX] = React.useState<number>(defaultConfig.cameraX ?? 0);
+    const [cameraY, setCameraY] = React.useState<number>(defaultConfig.cameraY ?? 0);
+    const [cameraZ, setCameraZ] = React.useState<number>(defaultConfig.cameraZ ?? 0);
+    const [cameraRotationX, setCameraRotationX] = React.useState<number>(defaultConfig.cameraRotationX ?? 0);
+    const [cameraRotationY, setCameraRotationY] = React.useState<number>(defaultConfig.cameraRotationY ?? 0);
+    const [cameraRotationZ, setCameraRotationZ] = React.useState<number>(defaultConfig.cameraRotationZ ?? 0);
+    const [cameraZoom, setCameraZoom] = React.useState<number>(defaultConfig.cameraZoom ?? 1.0);
+
+    const resetCamera = React.useCallback(() => {
+        setCameraX(0);
+        setCameraY(0);
+        setCameraZ(0);
+        setCameraRotationX(0);
+        setCameraRotationY(0);
+        setCameraRotationZ(0);
+        setCameraZoom(1.0);
+    }, []);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -911,6 +954,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             bloomThreshold,
             chromaticAberration,
 
+            silhouetteFade,
+            cylinderFade,
+            ribbonFade,
+
             // Shapes parameters
             shapeType,
             shapeRotationX,
@@ -925,6 +972,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             cylinderHeight,
             planeBend,
             planeTwist,
+
+            // Camera parameters
+            cameraLock,
+            cameraX,
+            cameraY,
+            cameraZ,
+            cameraRotationX,
+            cameraRotationY,
+            cameraRotationZ,
+            cameraZoom,
         });
         return gradientRef.current.destroy;
     }, []);
@@ -996,6 +1053,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.bloomIntensity = bloomIntensity;
         gradientRef.current.bloomThreshold = bloomThreshold;
         gradientRef.current.chromaticAberration = chromaticAberration;
+        gradientRef.current.silhouetteFade = silhouetteFade;
+        gradientRef.current.cylinderFade = cylinderFade;
+        gradientRef.current.ribbonFade = ribbonFade;
 
         // Shape properties
         gradientRef.current.shapeType = shapeType;
@@ -1011,6 +1071,24 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.cylinderHeight = cylinderHeight;
         gradientRef.current.planeBend = planeBend;
         gradientRef.current.planeTwist = planeTwist;
+
+        // Camera properties
+        // @ts-ignore
+        gradientRef.current.cameraLock = cameraLock;
+        // @ts-ignore
+        gradientRef.current.cameraX = cameraX;
+        // @ts-ignore
+        gradientRef.current.cameraY = cameraY;
+        // @ts-ignore
+        gradientRef.current.cameraZ = cameraZ;
+        // @ts-ignore
+        gradientRef.current.cameraRotationX = cameraRotationX;
+        // @ts-ignore
+        gradientRef.current.cameraRotationY = cameraRotationY;
+        // @ts-ignore
+        gradientRef.current.cameraRotationZ = cameraRotationZ;
+        // @ts-ignore
+        gradientRef.current.cameraZoom = cameraZoom;
     }, [
         tweened,
         colors,
@@ -1055,6 +1133,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         cylinderHeight,
         planeBend,
         planeTwist,
+        silhouetteFade,
+        cylinderFade,
+        ribbonFade,
+
+        cameraLock,
+        cameraX,
+        cameraY,
+        cameraZ,
+        cameraRotationX,
+        cameraRotationY,
+        cameraRotationZ,
+        cameraZoom,
     ]);
 
     // Mouse drag-to-rotate interaction for 3D shapes
@@ -1064,6 +1154,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     useEffect(() => {
         const handleStart = (clientX: number, clientY: number, target: HTMLElement) => {
+            if (cameraLock) return;
             // Check if click target is inside a sidebar or dialog
             if (target.closest('.neat-sidebar') || target.closest('[role="dialog"]') || target.closest('button') || target.closest('input') || target.closest('select')) {
                 return;
@@ -1071,10 +1162,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             
             isDraggingRotation.current = true;
             dragStartPos.current = { x: clientX, y: clientY };
-            dragStartRotation.current = { x: shapeRotationX, y: shapeRotationY };
+            dragStartRotation.current = { x: cameraRotationX, y: cameraRotationY };
         };
 
         const handleMove = (clientX: number, clientY: number) => {
+            if (cameraLock) return;
             if (!isDraggingRotation.current) return;
             
             const dx = clientX - dragStartPos.current.x;
@@ -1082,8 +1174,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             
             // Adjust rotation sensitivity
             const sensitivity = 0.007;
-            setShapeRotationY(dragStartRotation.current.y + dx * sensitivity);
-            setShapeRotationX(dragStartRotation.current.x + dy * sensitivity);
+            setCameraRotationY(dragStartRotation.current.y + dx * sensitivity);
+            setCameraRotationX(dragStartRotation.current.x + dy * sensitivity);
         };
 
         const handleEnd = () => {
@@ -1125,7 +1217,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleEnd);
         };
-    }, [shapeRotationX, shapeRotationY]);
+    }, [cameraLock, cameraRotationX, cameraRotationY]);
+
+
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -1365,6 +1459,19 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         cylinderHeight,
         planeBend,
         planeTwist,
+        silhouetteFade,
+        cylinderFade,
+        ribbonFade,
+
+        // Camera settings
+        cameraLock,
+        cameraX,
+        cameraY,
+        cameraZ,
+        cameraRotationX,
+        cameraRotationY,
+        cameraRotationZ,
+        cameraZoom,
     };
 
     // Reset FPS min/max whenever config changes
@@ -1588,6 +1695,72 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             >
                                 Beautiful 3D gradient animations for your website
                             </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Floating camera controls bar (shown only when UI is visible) */}
+                {uiVisible && (
+                    <div className="fixed bottom-[135px] sm:bottom-20 left-1/2 -translate-x-1/2 z-20 bg-black/25 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5">
+                        <div className="flex items-center gap-1 text-neutral-400 border-r border-white/10 pr-2 h-7">
+                            <Camera className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Camera</span>
+                        </div>
+                        
+                        <Tooltip title={cameraLock ? "Unlock Camera" : "Lock Camera"}>
+                            <IconButton
+                                onClick={() => setCameraLock(!cameraLock)}
+                                className="text-neutral-300 hover:text-white w-7 h-7"
+                            >
+                                {cameraLock ? <Lock className="w-4 h-4 text-red-400/80" /> : <Unlock className="w-4 h-4" />}
+                            </IconButton>
+                        </Tooltip>
+
+                        <div className="w-px h-5 bg-white/10" />
+
+                        <Tooltip title="Reset Camera">
+                            <IconButton
+                                onClick={resetCamera}
+                                disabled={cameraLock}
+                                className="text-neutral-300 hover:text-white disabled:opacity-20 w-7 h-7"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </IconButton>
+                        </Tooltip>
+
+                        <div className="w-px h-5 bg-white/10" />
+
+                        <div className="flex items-center gap-1">
+                            <span className="opacity-40 text-[9px] uppercase font-bold tracking-wider">Zoom:</span>
+                            <Tooltip title="Zoom Out">
+                                <IconButton
+                                    onClick={() => setCameraZoom(z => Math.max(0.1, z - 0.1))}
+                                    disabled={cameraLock}
+                                    className="text-neutral-300 hover:text-white disabled:opacity-20 w-7 h-7"
+                                >
+                                    <Minus className="w-4 h-4" />
+                                </IconButton>
+                            </Tooltip>
+                            <span className="font-mono w-8 text-center text-xs text-neutral-300">{cameraZoom.toFixed(1)}x</span>
+                            <Tooltip title="Zoom In">
+                                <IconButton
+                                    onClick={() => setCameraZoom(z => Math.min(10, z + 0.1))}
+                                    disabled={cameraLock}
+                                    className="text-neutral-300 hover:text-white disabled:opacity-20 w-7 h-7"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </IconButton>
+                            </Tooltip>
+                        </div>
+
+                        <div className="hidden sm:block w-px h-5 bg-white/10" />
+
+                        <div className="hidden sm:flex w-40 text-center shrink-0 items-center justify-center h-7">
+                            {cameraLock ? (
+                                <span className="text-[9px] text-red-400/80 font-bold uppercase tracking-wider animate-pulse">LOCKED</span>
+                            ) : (
+                                <span className="text-[9px] text-neutral-400 font-medium">Drag to rotate • Scroll to animate</span>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1876,23 +2049,38 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             <select
                                                 value={shapeType}
                                                 onChange={(e) => setShapeType(e.target.value as any)}
-                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full"
+                                                disabled={isPlanePreset(selectedPreset)}
+                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <option value="plane">Plane</option>
+                                                <option value="plane">Plane {isPlanePreset(selectedPreset) ? "(Locked)" : ""}</option>
                                                 <option value="sphere">Sphere</option>
                                                 <option value="torus">Torus</option>
                                                 <option value="cylinder">Cylinder</option>
                                                 <option value="ribbon">Ribbon</option>
                                             </select>
                                         </div>
+                                        {isPlanePreset(selectedPreset) && (
+                                            <div className="text-[10px] text-amber-400 pl-28 leading-normal mt-0.5">
+                                                ℹ️ This preset is locked to a Plane shape.
+                                            </div>
+                                        )}
 
                                         {/* Sphere Specific Controls */}
                                         {shapeType === 'sphere' && (
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Radius</span>
-                                                <Slider value={[sphereRadius]} min={5} max={30} step={0.5}
-                                                        onValueChange={(v) => setSphereRadius(v[0] as number)}/>
-                                            </div>
+                                            <>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Radius</span>
+                                                    <Slider value={[sphereRadius]} min={5} max={30} step={0.5}
+                                                            onValueChange={(v) => setSphereRadius(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade transparency of the outer silhouette edges of 3D shapes.">
+                                                        Silhouette Fade
+                                                    </Tooltip>
+                                                    <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
+                                                            onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
+                                                </div>
+                                            </>
                                         )}
 
                                         {/* Torus Specific Controls */}
@@ -1907,6 +2095,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Tube Radius</span>
                                                     <Slider value={[torusTube]} min={1} max={15} step={0.2}
                                                             onValueChange={(v) => setTorusTube(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade transparency of the outer silhouette edges of 3D shapes.">
+                                                        Silhouette Fade
+                                                    </Tooltip>
+                                                    <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
+                                                            onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
                                                 </div>
                                             </>
                                         )}
@@ -1924,6 +2119,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <Slider value={[cylinderHeight]} min={10} max={60} step={1}
                                                             onValueChange={(v) => setCylinderHeight(v[0] as number)}/>
                                                 </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade transparency of the outer silhouette edges of 3D shapes.">
+                                                        Silhouette Fade
+                                                    </Tooltip>
+                                                    <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
+                                                            onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade the top and bottom open ends of the cylinder.">
+                                                        End Cap Fade
+                                                    </Tooltip>
+                                                    <Slider value={[cylinderFade]} min={0} max={0.5} step={0.01}
+                                                            onValueChange={(v) => setCylinderFade(v[0] as number)}/>
+                                                </div>
                                             </>
                                         )}
 
@@ -1939,6 +2148,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Twist</span>
                                                     <Slider value={[planeTwist]} min={-5} max={5} step={0.1}
                                                             onValueChange={(v) => setPlaneTwist(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade transparency of the outer silhouette edges of 3D shapes.">
+                                                        Silhouette Fade
+                                                    </Tooltip>
+                                                    <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
+                                                            onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fade all 4 outer borders of the ribbon.">
+                                                        Border Fade
+                                                    </Tooltip>
+                                                    <Slider value={[ribbonFade]} min={0} max={0.5} step={0.01}
+                                                            onValueChange={(v) => setRibbonFade(v[0] as number)}/>
                                                 </div>
                                             </>
                                         )}
@@ -2085,6 +2308,87 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 </Tooltip>
                                                 <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2}
                                                         onValueChange={(v) => setShapeAutoRotateSpeedY(v[0] as number)}/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 2b: Camera Settings */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Camera className="w-4 h-4 text-blue-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Camera Controls</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Adjust the camera zoom, position, and rotation around the shape. Lock the camera to freeze view interaction.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        {/* Lock toggle */}
+                                        <Label className="cursor-pointer flex items-center justify-between [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800 p-1 rounded-lg">
+                                            <span className="text-xs font-semibold">Lock Camera</span>
+                                            <Checkbox checked={cameraLock} onChange={(checked: boolean) => setCameraLock(checked)} />
+                                        </Label>
+
+                                        {/* Action Buttons: Reset */}
+                                        <div className="flex justify-end">
+                                            <button
+                                                onClick={resetCamera}
+                                                className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold flex items-center gap-0.5"
+                                                title="Reset camera settings to default"
+                                            >
+                                                <RotateCcw className="w-2.5 h-2.5" /> Reset Camera
+                                            </button>
+                                        </div>
+
+                                        {/* Camera Zoom */}
+                                        <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraZoom(1.0)}>
+                                            <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Zoom factor. Double click to reset to 1.0.">
+                                                Zoom Scale
+                                            </Tooltip>
+                                            <Slider value={[cameraZoom]} min={0.1} max={5} step={0.05} disabled={cameraLock}
+                                                    onValueChange={(v) => setCameraZoom(v[0] as number)}/>
+                                        </div>
+
+                                        {/* Camera Displacement */}
+                                        <div className="space-y-2 border-t border-white/5 pt-2">
+                                            <div className="text-[10px] tracking-widest font-bold uppercase opacity-70">Displacement</div>
+                                            
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraX(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace X</span>
+                                                <Slider value={[cameraX]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraX(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraY(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace Y</span>
+                                                <Slider value={[cameraY]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraY(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraZ(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace Z</span>
+                                                <Slider value={[cameraZ]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraZ(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Camera Rotations */}
+                                        <div className="space-y-2 border-t border-white/5 pt-2">
+                                            <div className="text-[10px] tracking-widest font-bold uppercase opacity-70">Rotations</div>
+                                            
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationX(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Pitch</span>
+                                                <Slider value={[cameraRotationX]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraRotationX(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationY(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Yaw</span>
+                                                <Slider value={[cameraRotationY]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraRotationY(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationZ(0)}>
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Roll</span>
+                                                <Slider value={[cameraRotationZ]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                        onValueChange={(v) => setCameraRotationZ(v[0] as number)}/>
                                             </div>
                                         </div>
                                     </div>

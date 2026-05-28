@@ -84,6 +84,19 @@ export type NeatConfig = {
     planeBend?: number;
     planeTwist?: number;
     transparentTextureVoid?: boolean;
+    silhouetteFade?: number;
+    cylinderFade?: number;
+    ribbonFade?: number;
+
+    // Camera settings
+    cameraLock?: boolean;
+    cameraX?: number;
+    cameraY?: number;
+    cameraZ?: number;
+    cameraRotationX?: number;
+    cameraRotationY?: number;
+    cameraRotationZ?: number;
+    cameraZoom?: number;
 };
 
 export type NeatColor = {

@@ -1,7 +1,7 @@
-import { vertexShaderSource, buildUniforms, buildColorFunctions, buildNoise, fragmentShaderSource } from "./lib/src/shaders.ts";
+import { vertexShaderSource, buildVertUniforms, buildFragUniforms, buildColorFunctions, buildNoise, fragmentShaderSource } from "./lib/src/shaders.ts";
 
-const vertShaderSourceCombined = buildUniforms() + buildNoise() + buildColorFunctions() + vertexShaderSource;
-const fragShaderSourceCombined = buildUniforms() + buildColorFunctions() + buildNoise() + fragmentShaderSource;
+const vertShaderSourceCombined = buildVertUniforms() + buildNoise() + buildColorFunctions() + vertexShaderSource;
+const fragShaderSourceCombined = buildFragUniforms() + buildColorFunctions() + buildNoise() + fragmentShaderSource;
 
 const gl = document.getElementById("c").getContext("webgl");
 const vs = gl.createShader(gl.VERTEX_SHADER);

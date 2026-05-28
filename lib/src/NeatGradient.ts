@@ -111,6 +111,9 @@ export class NeatGradient implements NeatController {
     private _bloomIntensity: number = 0;
     private _bloomThreshold: number = 0.7;
     private _chromaticAberration: number = 0;
+    private _silhouetteFade: number = 0.25;
+    private _cylinderFade: number = 0.08;
+    private _ribbonFade: number = 0.05;
 
     // 3D Shapes config
     private _shapeType: 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon' = 'plane';
@@ -126,6 +129,16 @@ export class NeatGradient implements NeatController {
     private _cylinderHeight: number = 40;
     private _planeBend: number = 0;
     private _planeTwist: number = 0;
+
+    // Camera settings
+    private _cameraLock: boolean = false;
+    private _cameraX: number = 0;
+    private _cameraY: number = 0;
+    private _cameraZ: number = 0;
+    private _cameraRotationX: number = 0;
+    private _cameraRotationY: number = 0;
+    private _cameraRotationZ: number = 0;
+    private _cameraZoom: number = 1.0;
 
     private _proceduralTexture: WebGLTexture | null = null;
     private _proceduralBackgroundColor: string = "#000000";
@@ -146,6 +159,12 @@ export class NeatGradient implements NeatController {
     private _yOffsetWaveMultiplier: number = 0.004;
     private _yOffsetColorMultiplier: number = 0.004;
     private _yOffsetFlowMultiplier: number = 0.004;
+
+    // Cached offscreen canvases for procedural texture generation
+    private _sourceCanvas: HTMLCanvasElement | null = null;
+    private _sourceCtx: CanvasRenderingContext2D | null = null;
+    private _maskedCanvas: HTMLCanvasElement | null = null;
+    private _maskedCtx: CanvasRenderingContext2D | null = null;
 
     // Performance optimizations
     private _resizeTimeoutId: number | null = null;
@@ -222,6 +241,19 @@ export class NeatGradient implements NeatController {
             bloomIntensity = 0.0,
             bloomThreshold = 0.7,
             chromaticAberration = 0.0,
+            silhouetteFade = 0.25,
+            cylinderFade = 0.08,
+            ribbonFade = 0.05,
+
+            // Camera configuration
+            cameraLock = false,
+            cameraX = 0,
+            cameraY = 0,
+            cameraZ = 0,
+            cameraRotationX = 0,
+            cameraRotationY = 0,
+            cameraRotationZ = 0,
+            cameraZoom = 1.0,
 
             // 3D shapes default
             shapeType = 'plane',
@@ -311,6 +343,18 @@ export class NeatGradient implements NeatController {
         this.bloomIntensity = bloomIntensity;
         this.bloomThreshold = bloomThreshold;
         this.chromaticAberration = chromaticAberration;
+        this.silhouetteFade = silhouetteFade;
+        this.cylinderFade = cylinderFade;
+        this.ribbonFade = ribbonFade;
+
+        this._cameraLock = cameraLock;
+        this._cameraX = cameraX;
+        this._cameraY = cameraY;
+        this._cameraZ = cameraZ;
+        this._cameraRotationX = cameraRotationX;
+        this._cameraRotationY = cameraRotationY;
+        this._cameraRotationZ = cameraRotationZ;
+        this._cameraZoom = cameraZoom;
 
         this._shapeType = shapeType;
         this._shapeRotationX = shapeRotationX;
@@ -358,8 +402,19 @@ export class NeatGradient implements NeatController {
                 // Update modelViewMatrix in every frame to support dynamic rotation and auto-rotation
                 const camera = this.glState.camera;
                 const modelViewMatrix = new Matrix4();
-                modelViewMatrix.translate(-camera.position[0], -camera.position[1], -camera.position[2]);
+                
+                // 1. Camera translation (default camera distance + displacement)
+                modelViewMatrix.translate(
+                    -camera.position[0] - this._cameraX,
+                    -camera.position[1] - this._cameraY,
+                    -camera.position[2] - this._cameraZ
+                );
                 modelViewMatrix.translate(0, 0, -1);
+                
+                // 2. Camera rotation (revolving around target)
+                modelViewMatrix.rotateX(-this._cameraRotationX);
+                modelViewMatrix.rotateY(-this._cameraRotationY);
+                modelViewMatrix.rotateZ(-this._cameraRotationZ);
                 
                 let rx = this._shapeRotationX;
                 let ry = this._shapeRotationY;
@@ -380,8 +435,8 @@ export class NeatGradient implements NeatController {
                 modelViewMatrix.rotateY(ry);
                 modelViewMatrix.rotateZ(rz);
                 
-                const mvLoc = gl.getUniformLocation(program, "modelViewMatrix");
-                gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
+                const mvLoc = locations.uniforms["modelViewMatrix"];
+                if (mvLoc) gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
 
                 // Only upload static uniforms when they've been modified
                 if (this._uniformsDirty) {
@@ -440,6 +495,9 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_bloom_intensity'], this._bloomIntensity);
                     gl.uniform1f(locations.uniforms['u_bloom_threshold'], this._bloomThreshold);
                     gl.uniform1f(locations.uniforms['u_chromatic_aberration'], this._chromaticAberration);
+                    gl.uniform1f(locations.uniforms['u_silhouette_fade'], this._silhouetteFade);
+                    gl.uniform1f(locations.uniforms['u_cylinder_fade'], this._cylinderFade);
+                    gl.uniform1f(locations.uniforms['u_ribbon_fade'], this._ribbonFade);
 
                     this._uniformsDirty = false;
                 }
@@ -515,14 +573,14 @@ export class NeatGradient implements NeatController {
 
             gl.viewport(0, 0, width, height);
 
-            updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
+            updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
 
 
             // Recompute projection matrix on resize
-            const projLoc = gl.getUniformLocation(this.glState.program, "projectionMatrix");
+            const projLoc = this.glState.locations.uniforms["projectionMatrix"];
             gl.useProgram(this.glState.program);
-            gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
+            if (projLoc) gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
         };
 
         // Debounce resize to prevent excessive operations
@@ -747,37 +805,57 @@ export class NeatGradient implements NeatController {
             }
         };
     }
-
+    get speed(): number {
+        return this._speed * 20;
+    }
     set speed(speed: number) {
         this._uniformsDirty = true;
         this._speed = speed / 20;
     }
 
+    get horizontalPressure(): number {
+        return this._horizontalPressure * 4;
+    }
     set horizontalPressure(horizontalPressure: number) {
         this._uniformsDirty = true;
         this._horizontalPressure = horizontalPressure / 4;
     }
 
+    get verticalPressure(): number {
+        return this._verticalPressure * 4;
+    }
     set verticalPressure(verticalPressure: number) {
         this._uniformsDirty = true;
         this._verticalPressure = verticalPressure / 4;
     }
 
+    get waveFrequencyX(): number {
+        return this._waveFrequencyX / 0.04;
+    }
     set waveFrequencyX(waveFrequencyX: number) {
         this._uniformsDirty = true;
         this._waveFrequencyX = waveFrequencyX * 0.04;
     }
 
+    get waveFrequencyY(): number {
+        return this._waveFrequencyY / 0.04;
+    }
     set waveFrequencyY(waveFrequencyY: number) {
         this._uniformsDirty = true;
         this._waveFrequencyY = waveFrequencyY * 0.04;
     }
 
+    get waveAmplitude(): number {
+        return this._waveAmplitude / 0.75;
+    }
     set waveAmplitude(waveAmplitude: number) {
         this._uniformsDirty = true;
         this._waveAmplitude = waveAmplitude * .75;
     }
 
+    get colors(): NeatColor[] {
+        return this._colors;
+    }
     set colors(colors: NeatColor[]) {
         this._uniformsDirty = true;
         this._colors = colors;
@@ -785,83 +863,115 @@ export class NeatGradient implements NeatController {
         this._colorsChanged = true;
     }
 
+    get highlights(): number {
+        return this._highlights * 100;
+    }
     set highlights(highlights: number) {
         this._uniformsDirty = true;
         this._highlights = highlights / 100;
     }
 
+    get shadows(): number {
+        return this._shadows * 100;
+    }
     set shadows(shadows: number) {
         this._uniformsDirty = true;
         this._shadows = shadows / 100;
     }
 
+    get colorSaturation(): number {
+        return this._saturation * 10;
+    }
     set colorSaturation(colorSaturation: number) {
         this._uniformsDirty = true;
         this._saturation = colorSaturation / 10;
     }
 
+    get colorBrightness(): number {
+        return this._brightness;
+    }
     set colorBrightness(colorBrightness: number) {
         this._uniformsDirty = true;
         this._brightness = colorBrightness;
     }
 
+    get colorBlending(): number {
+        return this._colorBlending * 10;
+    }
     set colorBlending(colorBlending: number) {
         this._uniformsDirty = true;
         this._colorBlending = colorBlending / 10;
     }
 
+    get grainScale(): number {
+        return this._grainScale;
+    }
     set grainScale(grainScale: number) {
         this._uniformsDirty = true;
         this._grainScale = grainScale == 0 ? 1 : grainScale;
     }
 
+    get grainIntensity(): number {
+        return this._grainIntensity;
+    }
     set grainIntensity(grainIntensity: number) {
         this._uniformsDirty = true;
         this._grainIntensity = grainIntensity;
     }
 
+    get grainSparsity(): number {
+        return this._grainSparsity;
+    }
     set grainSparsity(grainSparsity: number) {
         this._uniformsDirty = true;
         this._grainSparsity = grainSparsity;
     }
 
+    get grainSpeed(): number {
+        return this._grainSpeed;
+    }
     set grainSpeed(grainSpeed: number) {
         this._uniformsDirty = true;
         this._grainSpeed = grainSpeed;
     }
 
+    get wireframe(): boolean {
+        return this._wireframe;
+    }
     set wireframe(wireframe: boolean) {
         this._uniformsDirty = true;
         this._wireframe = wireframe;
     }
 
+    get resolution(): number {
+        return this._resolution;
+    }
     set resolution(resolution: number) {
         if (this._resolution === resolution) return;
-        this._uniformsDirty = true;
         this._resolution = resolution;
-        if (this.glState) {
-            const gl = this.glState.gl;
-            gl.deleteProgram(this.glState.program);
-            gl.deleteBuffer(this.glState.buffers.position);
-            gl.deleteBuffer(this.glState.buffers.normal);
-            gl.deleteBuffer(this.glState.buffers.uv);
-            gl.deleteBuffer(this.glState.buffers.index);
-            gl.deleteBuffer(this.glState.buffers.wireframeIndex);
-        }
-        this.glState = this._initScene(resolution);
+        this._updateGeometry();
     }
 
+    get backgroundColor(): string {
+        return this._backgroundColor;
+    }
     set backgroundColor(backgroundColor: string) {
         this._uniformsDirty = true;
         this._backgroundColor = backgroundColor;
         this._backgroundColorRgb = this._hexToRgb(backgroundColor);
     }
 
+    get backgroundAlpha(): number {
+        return this._backgroundAlpha;
+    }
     set backgroundAlpha(backgroundAlpha: number) {
         this._uniformsDirty = true;
         this._backgroundAlpha = backgroundAlpha;
     }
 
+    get yOffset(): number {
+        return this._yOffset;
+    }
     set yOffset(yOffset: number) {
         this._uniformsDirty = true;
         this._yOffset = yOffset;
@@ -894,21 +1004,33 @@ export class NeatGradient implements NeatController {
         this._yOffsetFlowMultiplier = value / 1000;
     }
 
+    get flowDistortionA(): number {
+        return this._flowDistortionA;
+    }
     set flowDistortionA(value: number) {
         this._uniformsDirty = true;
         this._flowDistortionA = value;
     }
 
+    get flowDistortionB(): number {
+        return this._flowDistortionB;
+    }
     set flowDistortionB(value: number) {
         this._uniformsDirty = true;
         this._flowDistortionB = value;
     }
 
+    get flowScale(): number {
+        return this._flowScale;
+    }
     set flowScale(value: number) {
         this._uniformsDirty = true;
         this._flowScale = value;
     }
 
+    get flowEase(): number {
+        return this._flowEase;
+    }
     set flowEase(value: number) {
         this._uniformsDirty = true;
         this._flowEase = value;
@@ -925,6 +1047,9 @@ export class NeatGradient implements NeatController {
 
 
 
+    get enableProceduralTexture(): boolean {
+        return this._enableProceduralTexture;
+    }
     set enableProceduralTexture(value: boolean) {
         this._uniformsDirty = true;
         this._enableProceduralTexture = value;
@@ -933,6 +1058,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureVoidLikelihood(): number {
+        return this._textureVoidLikelihood;
+    }
     set textureVoidLikelihood(value: number) {
         this._uniformsDirty = true;
         this._textureVoidLikelihood = value;
@@ -941,6 +1069,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureVoidWidthMin(): number {
+        return this._textureVoidWidthMin;
+    }
     set textureVoidWidthMin(value: number) {
         this._uniformsDirty = true;
         this._textureVoidWidthMin = value;
@@ -949,6 +1080,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureVoidWidthMax(): number {
+        return this._textureVoidWidthMax;
+    }
     set textureVoidWidthMax(value: number) {
         this._uniformsDirty = true;
         this._textureVoidWidthMax = value;
@@ -957,6 +1091,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureBandDensity(): number {
+        return this._textureBandDensity;
+    }
     set textureBandDensity(value: number) {
         this._uniformsDirty = true;
         this._textureBandDensity = value;
@@ -965,6 +1102,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureColorBlending(): number {
+        return this._textureColorBlending;
+    }
     set textureColorBlending(value: number) {
         this._uniformsDirty = true;
         this._textureColorBlending = value;
@@ -973,6 +1113,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureSeed(): number {
+        return this._textureSeed;
+    }
     set textureSeed(value: number) {
         this._uniformsDirty = true;
         this._textureSeed = value;
@@ -1002,6 +1145,9 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get proceduralBackgroundColor(): string {
+        return this._proceduralBackgroundColor;
+    }
     set proceduralBackgroundColor(value: string) {
         this._uniformsDirty = true;
         this._proceduralBackgroundColor = value;
@@ -1010,20 +1156,32 @@ export class NeatGradient implements NeatController {
         }
     }
 
+    get textureShapeTriangles(): number {
+        return this._textureShapeTriangles;
+    }
     set textureShapeTriangles(value: number) {
         this._uniformsDirty = true;
         this._textureShapeTriangles = value;
         if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
+    }
+    get textureShapeCircles(): number {
+        return this._textureShapeCircles;
     }
     set textureShapeCircles(value: number) {
         this._uniformsDirty = true;
         this._textureShapeCircles = value;
         if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
+    get textureShapeBars(): number {
+        return this._textureShapeBars;
+    }
     set textureShapeBars(value: number) {
         this._uniformsDirty = true;
         this._textureShapeBars = value;
         if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
+    }
+    get textureShapeSquiggles(): number {
+        return this._textureShapeSquiggles;
     }
     set textureShapeSquiggles(value: number) {
         this._uniformsDirty = true;
@@ -1075,12 +1233,12 @@ export class NeatGradient implements NeatController {
         // Keep camera updated with the new shapeType and dimensions
         const width = this._ref.clientWidth;
         const height = this._ref.clientHeight;
-        updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
+        updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
         // Recompute projection matrix
-        const projLoc = gl.getUniformLocation(this.glState.program, "projectionMatrix");
+        const projLoc = this.glState.locations.uniforms["projectionMatrix"];
         gl.useProgram(this.glState.program);
-        gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
+        if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
 
         this._uniformsDirty = true;
     }
@@ -1190,7 +1348,7 @@ export class NeatGradient implements NeatController {
 
         const camera = new OrthographicCamera(0, 0, 0, 0, 0, 1000);
         camera.position = [0, 0, 5];
-        updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
+        updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
         // Define attributes
         const aPosition = gl.getAttribLocation(program, "position");
@@ -1226,6 +1384,7 @@ export class NeatGradient implements NeatController {
         gl.uniform1i(colorsCountLoc, COLORS_COUNT);
 
         const uniformsList = [
+            "projectionMatrix", "modelViewMatrix",
             "u_time", "u_resolution", "u_color_pressure", "u_wave_frequency_x", "u_wave_frequency_y",
             "u_wave_amplitude", "u_colors_count", "u_plane_width", "u_plane_height", "u_shadows",
             "u_highlights", "u_grain_intensity", "u_grain_sparsity", "u_grain_scale", "u_grain_speed",
@@ -1238,7 +1397,7 @@ export class NeatGradient implements NeatController {
             "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
             "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
             "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
-            "u_shape_type"
+            "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade"
         ];
 
         const locations: WebGLState["locations"] = {
@@ -1292,10 +1451,15 @@ export class NeatGradient implements NeatController {
         // Texture size - 1024 provides good balance between quality and performance
         // Reduced from 2048 for better performance
         const texSize = 1024;
-        const sourceCanvas = document.createElement('canvas');
-        sourceCanvas.width = texSize;
-        sourceCanvas.height = texSize;
-        const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+        
+        if (!this._sourceCanvas) {
+            this._sourceCanvas = document.createElement('canvas');
+            this._sourceCanvas.width = texSize;
+            this._sourceCanvas.height = texSize;
+            this._sourceCtx = this._sourceCanvas.getContext('2d');
+        }
+        const sourceCanvas = this._sourceCanvas;
+        const sCtx = this._sourceCtx;
         if (!sCtx) return null;
 
         let seed = this._textureSeed;
@@ -1355,67 +1519,124 @@ export class NeatGradient implements NeatController {
 
         // Triangles: use configurable count
         for (let i = 0; i < this._textureShapeTriangles; i++) {
-            sCtx.fillStyle = getInterColor();
-            sCtx.beginPath();
+            const fillStyle = getInterColor();
             const x = random() * texSize;
             const y = random() * texSize;
             const s = 100 + random() * 300;
-            sCtx.moveTo(x, y);
-            sCtx.lineTo(x + (random() - 0.5) * s, y + (random() - 0.5) * s);
-            sCtx.lineTo(x + (random() - 0.5) * s, y + (random() - 0.5) * s);
-            sCtx.fill();
+            const x1 = (random() - 0.5) * s;
+            const y1 = (random() - 0.5) * s;
+            const x2 = (random() - 0.5) * s;
+            const y2 = (random() - 0.5) * s;
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    sCtx.fillStyle = fillStyle;
+                    sCtx.beginPath();
+                    const tx = x + dx * texSize;
+                    const ty = y + dy * texSize;
+                    sCtx.moveTo(tx, ty);
+                    sCtx.lineTo(tx + x1, ty + y1);
+                    sCtx.lineTo(tx + x2, ty + y2);
+                    sCtx.fill();
+                }
+            }
         }
 
         // Circles / rings: use configurable count
         for (let i = 0; i < this._textureShapeCircles; i++) {
-            sCtx.strokeStyle = getInterColor();
-            sCtx.lineWidth = 10 + random() * 50;
-            sCtx.beginPath();
+            const strokeStyle = getInterColor();
+            const lineWidth = 10 + random() * 50;
             const x = random() * texSize;
             const y = random() * texSize;
             const r = 50 + random() * 150;
-            sCtx.arc(x, y, r, 0, Math.PI * 2);
-            sCtx.stroke();
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    sCtx.strokeStyle = strokeStyle;
+                    sCtx.lineWidth = lineWidth;
+                    sCtx.beginPath();
+                    sCtx.arc(x + dx * texSize, y + dy * texSize, r, 0, Math.PI * 2);
+                    sCtx.stroke();
+                }
+            }
         }
 
         // Bars: use configurable count
         for (let i = 0; i < this._textureShapeBars; i++) {
-            sCtx.fillStyle = getInterColor();
-            sCtx.save();
-            sCtx.translate(random() * texSize, random() * texSize);
-            sCtx.rotate(random() * Math.PI);
-            sCtx.fillRect(-150, -25, 300, 50);
-            sCtx.restore();
+            const fillStyle = getInterColor();
+            const x = random() * texSize;
+            const y = random() * texSize;
+            const rot = random() * Math.PI;
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    sCtx.fillStyle = fillStyle;
+                    sCtx.save();
+                    sCtx.translate(x + dx * texSize, y + dy * texSize);
+                    sCtx.rotate(rot);
+                    sCtx.fillRect(-150, -25, 300, 50);
+                    sCtx.restore();
+                }
+            }
         }
 
         // Squiggles: use configurable count
         sCtx.lineWidth = 15;
         sCtx.lineCap = 'round';
         for (let i = 0; i < this._textureShapeSquiggles; i++) {
-            sCtx.strokeStyle = getInterColor();
-            sCtx.beginPath();
-            let x = random() * texSize;
-            let y = random() * texSize;
-            sCtx.moveTo(x, y);
+            const strokeStyle = getInterColor();
+            const x = random() * texSize;
+            const y = random() * texSize;
+            
+            const curves: Array<{ cx1: number, cy1: number, cx2: number, cy2: number, ex: number, ey: number }> = [];
+            let cx = 0;
+            let cy = 0;
             for (let j = 0; j < 4; j++) {
-                sCtx.bezierCurveTo(
-                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300,
-                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300,
-                    x + (random() - 0.5) * 300, y + (random() - 0.5) * 300
-                );
-                x += (random() - 0.5) * 300;
-                y += (random() - 0.5) * 300;
+                const ex = cx + (random() - 0.5) * 300;
+                const ey = cy + (random() - 0.5) * 300;
+                curves.push({
+                    cx1: cx + (random() - 0.5) * 300,
+                    cy1: cy + (random() - 0.5) * 300,
+                    cx2: cx + (random() - 0.5) * 300,
+                    cy2: cy + (random() - 0.5) * 300,
+                    ex: ex,
+                    ey: ey
+                });
+                cx = ex;
+                cy = ey;
             }
-            sCtx.stroke();
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    sCtx.strokeStyle = strokeStyle;
+                    sCtx.beginPath();
+                    const tx = x + dx * texSize;
+                    const ty = y + dy * texSize;
+                    sCtx.moveTo(tx, ty);
+                    
+                    for (const curve of curves) {
+                        sCtx.bezierCurveTo(
+                            tx + curve.cx1, ty + curve.cy1,
+                            tx + curve.cx2, ty + curve.cy2,
+                            tx + curve.ex, ty + curve.ey
+                        );
+                    }
+                    sCtx.stroke();
+                }
+            }
         }
 
         // === MASKED CANVAS ===
         // Masking: Seed isolation
         setSeed(50000);
-        const canvas = document.createElement('canvas');
-        canvas.width = texSize;
-        canvas.height = texSize;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!this._maskedCanvas) {
+            this._maskedCanvas = document.createElement('canvas');
+            this._maskedCanvas.width = texSize;
+            this._maskedCanvas.height = texSize;
+            this._maskedCtx = this._maskedCanvas.getContext('2d');
+        }
+        const canvas = this._maskedCanvas;
+        const ctx = this._maskedCtx;
         if (!ctx) return null;
 
         // Start filled with the chosen void color so gaps show that color
@@ -1484,11 +1705,48 @@ export class NeatGradient implements NeatController {
         return tex;
     }
 
+    get silhouetteFade(): number {
+        return this._silhouetteFade;
+    }
+    set silhouetteFade(value: number) {
+        if (this._silhouetteFade !== value) {
+            this._silhouetteFade = value;
+            this._uniformsDirty = true;
+        }
+    }
+
+    get cylinderFade(): number {
+        return this._cylinderFade;
+    }
+    set cylinderFade(value: number) {
+        if (this._cylinderFade !== value) {
+            this._cylinderFade = value;
+            this._uniformsDirty = true;
+        }
+    }
+
+    get ribbonFade(): number {
+        return this._ribbonFade;
+    }
+    set ribbonFade(value: number) {
+        if (this._ribbonFade !== value) {
+            this._ribbonFade = value;
+            this._uniformsDirty = true;
+        }
+    }
+
+    get domainWarpEnabled(): boolean {
+        return this._domainWarpEnabled;
+    }
     set domainWarpEnabled(enabled: boolean) {
         if (this._domainWarpEnabled !== enabled) {
             this._domainWarpEnabled = enabled;
             this._uniformsDirty = true;
         }
+    }
+
+    get domainWarpIntensity(): number {
+        return this._domainWarpIntensity;
     }
     set domainWarpIntensity(intensity: number) {
         if (this._domainWarpIntensity !== intensity) {
@@ -1496,11 +1754,19 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get domainWarpScale(): number {
+        return this._domainWarpScale;
+    }
     set domainWarpScale(scale: number) {
         if (this._domainWarpScale !== scale) {
             this._domainWarpScale = scale;
             this._uniformsDirty = true;
         }
+    }
+
+    get vignetteIntensity(): number {
+        return this._vignetteIntensity;
     }
     set vignetteIntensity(intensity: number) {
         if (this._vignetteIntensity !== intensity) {
@@ -1508,11 +1774,19 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get vignetteRadius(): number {
+        return this._vignetteRadius;
+    }
     set vignetteRadius(radius: number) {
         if (this._vignetteRadius !== radius) {
             this._vignetteRadius = radius;
             this._uniformsDirty = true;
         }
+    }
+
+    get fresnelEnabled(): boolean {
+        return this._fresnelEnabled;
     }
     set fresnelEnabled(enabled: boolean) {
         if (this._fresnelEnabled !== enabled) {
@@ -1520,17 +1794,29 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get fresnelPower(): number {
+        return this._fresnelPower;
+    }
     set fresnelPower(power: number) {
         if (this._fresnelPower !== power) {
             this._fresnelPower = power;
             this._uniformsDirty = true;
         }
     }
+
+    get fresnelIntensity(): number {
+        return this._fresnelIntensity;
+    }
     set fresnelIntensity(intensity: number) {
         if (this._fresnelIntensity !== intensity) {
             this._fresnelIntensity = intensity;
             this._uniformsDirty = true;
         }
+    }
+
+    get fresnelColor(): string {
+        return this._fresnelColor;
     }
     set fresnelColor(fresnelColor: string) {
         if (this._fresnelColor !== fresnelColor) {
@@ -1539,11 +1825,19 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get iridescenceEnabled(): boolean {
+        return this._iridescenceEnabled;
+    }
     set iridescenceEnabled(enabled: boolean) {
         if (this._iridescenceEnabled !== enabled) {
             this._iridescenceEnabled = enabled;
             this._uniformsDirty = true;
         }
+    }
+
+    get iridescenceIntensity(): number {
+        return this._iridescenceIntensity;
     }
     set iridescenceIntensity(intensity: number) {
         if (this._iridescenceIntensity !== intensity) {
@@ -1551,11 +1845,19 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get iridescenceSpeed(): number {
+        return this._iridescenceSpeed;
+    }
     set iridescenceSpeed(speed: number) {
         if (this._iridescenceSpeed !== speed) {
             this._iridescenceSpeed = speed;
             this._uniformsDirty = true;
         }
+    }
+
+    get bloomIntensity(): number {
+        return this._bloomIntensity;
     }
     set bloomIntensity(intensity: number) {
         if (this._bloomIntensity !== intensity) {
@@ -1563,11 +1865,19 @@ export class NeatGradient implements NeatController {
             this._uniformsDirty = true;
         }
     }
+
+    get bloomThreshold(): number {
+        return this._bloomThreshold;
+    }
     set bloomThreshold(threshold: number) {
         if (this._bloomThreshold !== threshold) {
             this._bloomThreshold = threshold;
             this._uniformsDirty = true;
         }
+    }
+
+    get chromaticAberration(): number {
+        return this._chromaticAberration;
     }
     set chromaticAberration(aberration: number) {
         if (this._chromaticAberration !== aberration) {
@@ -1671,6 +1981,69 @@ export class NeatGradient implements NeatController {
             this._planeTwist = val;
             this._updateGeometry();
         }
+    }
+
+    // Camera Getters and Setters
+    get cameraLock(): boolean { return this._cameraLock; }
+    set cameraLock(val: boolean) {
+        this._cameraLock = val;
+    }
+
+    get cameraX(): number { return this._cameraX; }
+    set cameraX(val: number) {
+        this._cameraX = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraY(): number { return this._cameraY; }
+    set cameraY(val: number) {
+        this._cameraY = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraZ(): number { return this._cameraZ; }
+    set cameraZ(val: number) {
+        this._cameraZ = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraRotationX(): number { return this._cameraRotationX; }
+    set cameraRotationX(val: number) {
+        this._cameraRotationX = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraRotationY(): number { return this._cameraRotationY; }
+    set cameraRotationY(val: number) {
+        this._cameraRotationY = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraRotationZ(): number { return this._cameraRotationZ; }
+    set cameraRotationZ(val: number) {
+        this._cameraRotationZ = val;
+        this._uniformsDirty = true;
+    }
+
+    get cameraZoom(): number { return this._cameraZoom; }
+    set cameraZoom(val: number) {
+        if (this._cameraZoom !== val) {
+            this._cameraZoom = val;
+            this._updateCameraFrustum();
+        }
+    }
+
+    _updateCameraFrustum() {
+        if (!this.glState) return;
+        const gl = this.glState.gl;
+        const width = this._ref.clientWidth;
+        const height = this._ref.clientHeight;
+        updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
+
+        const projLoc = this.glState.locations.uniforms["projectionMatrix"];
+        gl.useProgram(this.glState.program);
+        if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
+        this._uniformsDirty = true;
     }
 }
 

@@ -71,6 +71,7 @@ export class OrthographicCamera {
     far: number;
     position: [number, number, number];
     projectionMatrix: Matrix4;
+    zoom: number;
 
     constructor(left: number, right: number, top: number, bottom: number, near: number, far: number) {
         this.left = left;
@@ -80,6 +81,7 @@ export class OrthographicCamera {
         this.near = near;
         this.far = far;
         this.position = [0, 0, 0];
+        this.zoom = 1.0;
         this.projectionMatrix = new Matrix4();
         this.updateProjectionMatrix();
     }
@@ -100,7 +102,8 @@ export class OrthographicCamera {
     }
 }
 
-export function updateCamera(camera: OrthographicCamera, width: number, height: number, planeWidth: number = 50, planeHeight: number = 50, shapeType: string = "plane") {
+export function updateCamera(camera: OrthographicCamera, width: number, height: number, planeWidth: number = 50, planeHeight: number = 50, shapeType: string = "plane", zoom: number = 1.0) {
+    camera.zoom = zoom;
     const ratio = width / height;
 
     if (shapeType === "plane") {
@@ -162,6 +165,12 @@ export function updateCamera(camera: OrthographicCamera, width: number, height: 
             camera.bottom *= mobileZoomFactor;
         }
     }
+
+    // Apply camera zoom to the boundary coordinates
+    camera.left /= zoom;
+    camera.right /= zoom;
+    camera.top /= zoom;
+    camera.bottom /= zoom;
 
     camera.near = -100;
     camera.far = 1000;

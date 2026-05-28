@@ -308,20 +308,22 @@ void main() {
         grain *= u_grain_intensity;
     }
 
+    color += vec3(grain);
+
     float edgeAlpha = 1.0;
     
     // Silhouette falloff for 3D shapes
     if (u_shape_type > 0.5) {
-        edgeAlpha = smoothstep(0.0, 0.25, ndotv);
+        edgeAlpha = smoothstep(0.0, u_silhouette_fade, ndotv);
     }
     
     // UV boundary falloff for open shapes
     if (u_shape_type == 3.0) { // Cylinder: fade top/bottom ends
-        float vFade = smoothstep(0.0, 0.08, vUv.y) * smoothstep(1.0, 0.92, vUv.y);
+        float vFade = smoothstep(0.0, u_cylinder_fade, vUv.y) * smoothstep(1.0, 1.0 - u_cylinder_fade, vUv.y);
         edgeAlpha *= vFade;
     } else if (u_shape_type == 4.0) { // Ribbon: fade all 4 borders
-        float uFade = smoothstep(0.0, 0.05, vUv.x) * smoothstep(1.0, 0.95, vUv.x);
-        float vFade = smoothstep(0.0, 0.05, vUv.y) * smoothstep(1.0, 0.95, vUv.y);
+        float uFade = smoothstep(0.0, u_ribbon_fade, vUv.x) * smoothstep(1.0, 1.0 - u_ribbon_fade, vUv.x);
+        float vFade = smoothstep(0.0, u_ribbon_fade, vUv.y) * smoothstep(1.0, 1.0 - u_ribbon_fade, vUv.y);
         edgeAlpha *= uFade * vFade;
     }
 
@@ -457,6 +459,9 @@ uniform float u_bloom_threshold;
 uniform float u_chromatic_aberration;
 uniform float u_shape_type;
 uniform float u_transparent_texture_void;
+uniform float u_silhouette_fade;
+uniform float u_cylinder_fade;
+uniform float u_ribbon_fade;
 `;
 }
 

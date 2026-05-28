@@ -52,7 +52,12 @@ export const NEAT_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.5,
     flowEnabled: true,
-} satisfies NeatConfig;
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,} satisfies NeatConfig;
 
 export const STRIPE_PRESET = {
     colors: [
@@ -106,7 +111,12 @@ export const STRIPE_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.4,
     flowEnabled: false,
-} satisfies NeatConfig;
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,} satisfies NeatConfig;
 
 export const FIRECMS_PRESET = {
     "colors": [
@@ -160,7 +170,12 @@ export const FIRECMS_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.6,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 export const FUNKY_PRESET = {
     colors: [
         {
@@ -229,7 +244,12 @@ export const FUNKY_PRESET = {
     textureShapeCircles: 15,
     textureShapeBars: 15,
     textureShapeSquiggles: 10,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const FLUID_PRESET = {
     colors: [
@@ -299,7 +319,12 @@ export const FLUID_PRESET = {
     yOffsetWaveMultiplier: 5.5,
     yOffsetColorMultiplier: 5.2,
     yOffsetFlowMultiplier: 6.0,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const YEX_PRESET = {
     colors: [
@@ -369,7 +394,12 @@ export const YEX_PRESET = {
     yOffsetWaveMultiplier: 3.8,
     yOffsetColorMultiplier: 4.2,
     yOffsetFlowMultiplier: 5.5,
-}
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,}
 
 export const VIRUS_PRESET = {
     colors: [
@@ -439,7 +469,12 @@ export const VIRUS_PRESET = {
     textureShapeCircles: 15,
     textureShapeBars: 15,
     textureShapeSquiggles: 10,
-}
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,}
 
 export const FLAME_PRESET = {
     "colors": [
@@ -489,7 +524,12 @@ export const FLAME_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.25,
     flowEnabled: true,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const BLOOM_PRESET = {
     colors: [
@@ -570,7 +610,12 @@ export const BLOOM_PRESET = {
     bloomIntensity: 0.8,
     bloomThreshold: 0.9,
     chromaticAberration: 4,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const SANDS_PRESET = {
     colors: [
@@ -620,7 +665,12 @@ export const SANDS_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.55,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const MONTEREY_PRESET = {
     colors: [
@@ -690,7 +740,12 @@ export const MONTEREY_PRESET = {
     yOffsetColorMultiplier: 4.8,
     yOffsetFlowMultiplier: 5.2,
     flowEnabled: true,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const ALEJANDRA_PRESET = {
     colors: [
@@ -756,7 +811,12 @@ export const ALEJANDRA_PRESET = {
     yOffsetWaveMultiplier: 6.2,
     yOffsetColorMultiplier: 5.8,
     yOffsetFlowMultiplier: 6.5,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const LEMON_PRESET = {
     "colors": [
@@ -806,7 +866,12 @@ export const LEMON_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.48,
     flowEnabled: true,
-}
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,}
 
 export const GLITCH_PRESET = {
     colors: [
@@ -887,7 +952,12 @@ export const GLITCH_PRESET = {
     bloomIntensity: 3,
     bloomThreshold: 0.7,
     chromaticAberration: 0,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const PASTEL_PRESET = {
     colors: [
@@ -968,7 +1038,12 @@ export const PASTEL_PRESET = {
     bloomIntensity: 0.4,
     bloomThreshold: 0.7,
     chromaticAberration: 9,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const CLOUDS_PRESET = {
     colors: [
@@ -1030,7 +1105,12 @@ export const CLOUDS_PRESET = {
     textureShapeCircles: 15,
     textureShapeBars: 15,
     textureShapeSquiggles: 10,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const DARK_MODE = {
     colors: [
@@ -1081,7 +1161,12 @@ export const DARK_MODE = {
     enableProceduralTexture: false,
     textureEase: 0.68,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const NIGHT_DUNES = {
     colors: [
@@ -1135,7 +1220,12 @@ export const NIGHT_DUNES = {
     enableProceduralTexture: false,
     textureEase: 0.8,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 
 export const PRUSSIAN_BLUE_PRESET = {
@@ -1190,7 +1280,12 @@ export const PRUSSIAN_BLUE_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.75,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 export const NIGHTTIME = {
     colors: [
         {
@@ -1255,7 +1350,12 @@ export const NIGHTTIME = {
     textureShapeCircles: 15,
     textureShapeBars: 15,
     textureShapeSquiggles: 10,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const PSYCHEDELIC_PRESET = {
     ...STRIPE_PRESET,
@@ -1278,57 +1378,12 @@ export const PSYCHEDELIC_PRESET = {
     enableProceduralTexture: false,
     textureEase: 0.12,
     flowEnabled: false,
-};
 
-
-export const SPLASH_PRESET = {
-    "colors": [
-        {
-            "color": "#ffbe0b",
-            "enabled": true
-        },
-        {
-            "color": "#fb5607",
-            "enabled": true
-        },
-        {
-            "color": "#ff006e",
-            "enabled": true
-        },
-        {
-            "color": "#8338ec",
-            "enabled": true
-        },
-        {
-            "color": "#3a86ff",
-            "enabled": true
-        }
-    ],
-    "speed": 4,
-    "horizontalPressure": 2,
-    "verticalPressure": 2,
-    "waveFrequencyX": 1,
-    "waveFrequencyY": 2,
-    "waveAmplitude": 7,
-    "shadows": 10,
-    "highlights": 10,
-    "colorBrightness": 1,
-    "colorSaturation": 2,
-    "wireframe": false,
-    "colorBlending": 5,
-    "backgroundColor": "#FFBE0B",
-    "backgroundAlpha": 1,
-    "grainScale": 2,
-    "grainIntensity": 0.3,
-    "grainSpeed": 0,
-    "resolution": 1,
-    yOffsetWaveMultiplier: 9.0,
-    yOffsetColorMultiplier: 8.5,
-    yOffsetFlowMultiplier: 9.5,
-    enableProceduralTexture: false,
-    textureEase: 0.32,
-    flowEnabled: false,
-};
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 
 export const FOREST_PRESET = {
@@ -1374,7 +1429,12 @@ export const FOREST_PRESET = {
     "resolution": 1,
     enableProceduralTexture: false,
     flowEnabled: false,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 
 
@@ -1457,7 +1517,12 @@ const OCEANS_ELEVEN_PRESET = {
     bloomIntensity: 2.1,
     bloomThreshold: 0.7,
     chromaticAberration: 0.5,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const BUBBLE_GUM = {
     colors: [
@@ -1542,7 +1607,12 @@ export const BUBBLE_GUM = {
     bloomIntensity: 0,
     bloomThreshold: 0.95,
     chromaticAberration: 0,
-};
+
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,};
 
 export const GLASSMORPHIC_BLOB_PRESET = {
     colors: [
@@ -1578,19 +1648,19 @@ export const GLASSMORPHIC_BLOB_PRESET = {
     waveFrequencyY: 2.5,
     waveAmplitude: 6,
     shadows: 3,
-    highlights: 5,
-    colorBrightness: 1.1,
-    colorSaturation: -3,
+    highlights: 4,
+    colorBrightness: 0.85,
+    colorSaturation: -2,
     wireframe: false,
-    colorBlending: 4,
-    backgroundColor: '#0a0518',
+    colorBlending: 3,
+    backgroundColor: '#2F2E28',
     backgroundAlpha: 1,
     grainScale: 4,
     grainSparsity: 0,
     grainIntensity: 0.15,
     grainSpeed: 0.5,
     resolution: 1,
-    yOffset: 83986,
+    yOffset: 4554,
     yOffsetWaveMultiplier: 4,
     yOffsetColorMultiplier: 4,
     yOffsetFlowMultiplier: 10,
@@ -1600,6 +1670,7 @@ export const GLASSMORPHIC_BLOB_PRESET = {
     flowEase: 0.25,
     flowEnabled: false,
     enableProceduralTexture: false,
+    transparentTextureVoid: false,
     textureVoidLikelihood: 0.27,
     textureVoidWidthMin: 60,
     textureVoidWidthMax: 420,
@@ -1624,45 +1695,74 @@ export const GLASSMORPHIC_BLOB_PRESET = {
     iridescenceEnabled: false,
     iridescenceIntensity: 0.8,
     iridescenceSpeed: 1.5,
-    bloomIntensity: 0.1,
-    bloomThreshold: 0.25,
-    chromaticAberration: 20,
+    bloomIntensity: 0.4,
+    bloomThreshold: 0.75,
+    chromaticAberration: 15,
     shapeType: 'sphere',
-    shapeRotationX: -3.5030000000000006,
-    shapeRotationY: -10.51,
+    shapeRotationX: -2.49,
+    shapeRotationY: -0.89,
     shapeRotationZ: 0,
-    shapeAutoRotateSpeedX: 0.8,
+    shapeAutoRotateSpeedX: 1,
     shapeAutoRotateSpeedY: 1.2,
-    sphereRadius: 15.5,
+    sphereRadius: 21,
     torusRadius: 15,
     torusTube: 5,
     cylinderRadius: 10,
     cylinderHeight: 40,
     planeBend: 0,
     planeTwist: 0,
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    cameraLock: false,
+    cameraX: 16.5,
+    cameraY: 0,
+    cameraZ: 0,
+    cameraRotationX: 0,
+    cameraRotationY: 0,
+    cameraRotationZ: 0,
+    cameraZoom: 2.55,
 } satisfies NeatConfig;
 
 
 export const COSMIC_VORTEX_PRESET = {
     colors: [
-        { color: '#0F0635', enabled: true },
-        { color: '#FF00EA', enabled: true },
-        { color: '#00EFFF', enabled: true },
-        { color: '#8B6AE6', enabled: true },
-        { color: '#0F0635', enabled: true },
-        { color: '#FBFF00', enabled: false },
+        {
+            color: '#0F0635',
+            enabled: true,
+        },
+        {
+            color: '#FF00EA',
+            enabled: true,
+        },
+        {
+            color: '#00EFFF',
+            enabled: true,
+        },
+        {
+            color: '#8B6AE6',
+            enabled: true,
+        },
+        {
+            color: '#0F0635',
+            enabled: true,
+        },
+        {
+            color: '#FBFF00',
+            enabled: false,
+        },
     ],
     speed: 3.5,
     horizontalPressure: 4,
     verticalPressure: 4,
-    waveFrequencyX: 3.0,
-    waveFrequencyY: 3.0,
-    waveAmplitude: 7.0,
+    waveFrequencyX: 3,
+    waveFrequencyY: 3,
+    waveAmplitude: 7,
     shadows: 2,
     highlights: 8,
     colorBrightness: 1.2,
     colorSaturation: 8,
-    wireframe: false,
+    wireframe: true,
     colorBlending: 8,
     backgroundColor: '#03010b',
     backgroundAlpha: 1,
@@ -1670,37 +1770,69 @@ export const COSMIC_VORTEX_PRESET = {
     grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 0,
-    resolution: 1.0,
-    yOffsetWaveMultiplier: 5.0,
-    yOffsetColorMultiplier: 5.0,
-    yOffsetFlowMultiplier: 5.0,
-    flowEnabled: true,
+    resolution: 1,
+    yOffset: 11349,
+    yOffsetWaveMultiplier: 5,
+    yOffsetColorMultiplier: 5,
+    yOffsetFlowMultiplier: 5,
     flowDistortionA: 1.8,
     flowDistortionB: 2.2,
-    flowScale: 2.0,
+    flowScale: 2,
     flowEase: 0.35,
+    flowEnabled: true,
     enableProceduralTexture: false,
+    transparentTextureVoid: false,
+    textureVoidLikelihood: 0.29,
+    textureVoidWidthMin: 120,
+    textureVoidWidthMax: 420,
+    textureBandDensity: 2.9,
+    textureColorBlending: 0.06,
+    textureSeed: 536,
+    textureEase: 0.93,
+    proceduralBackgroundColor: '#775454',
+    textureShapeTriangles: 20,
+    textureShapeCircles: 15,
+    textureShapeBars: 15,
+    textureShapeSquiggles: 10,
     domainWarpEnabled: true,
     domainWarpIntensity: 0.8,
-    domainWarpScale: 4.0,
+    domainWarpScale: 4,
     vignetteIntensity: 0.7,
     vignetteRadius: 0.65,
     fresnelEnabled: true,
-    fresnelPower: 2.0,
+    fresnelPower: 2,
     fresnelIntensity: 1.8,
     fresnelColor: '#00EFFF',
     iridescenceEnabled: false,
+    iridescenceIntensity: 0.5,
+    iridescenceSpeed: 1,
     bloomIntensity: 1.5,
     bloomThreshold: 0.6,
     chromaticAberration: 5,
     shapeType: 'torus',
-    shapeRotationX: 0.5,
+    shapeRotationX: 0.26,
     shapeRotationY: -0.5,
     shapeRotationZ: 0,
-    shapeAutoRotateSpeedX: 1.5,
-    shapeAutoRotateSpeedY: 2.0,
-    torusRadius: 15,
-    torusTube: 4,
+    shapeAutoRotateSpeedX: 0,
+    shapeAutoRotateSpeedY: 0,
+    sphereRadius: 15,
+    torusRadius: 23,
+    torusTube: 7,
+    cylinderRadius: 10,
+    cylinderHeight: 40,
+    planeBend: 0,
+    planeTwist: 0,
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    cameraLock: false,
+    cameraX: 0,
+    cameraY: 0,
+    cameraZ: 0,
+    cameraRotationX: -0.09800000000000006,
+    cameraRotationY: -3.752,
+    cameraRotationZ: 0,
+    cameraZoom: 2.4000000000000012,
 } satisfies NeatConfig;
 
 export const TIME_PRESET = {
@@ -1731,7 +1863,7 @@ export const TIME_PRESET = {
         },
     ],
     speed: 2.5,
-    horizontalPressure: 6,
+    horizontalPressure: 5,
     verticalPressure: 5,
     waveFrequencyX: 2,
     waveFrequencyY: 3,
@@ -1748,8 +1880,8 @@ export const TIME_PRESET = {
     grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 0,
-    resolution: 0.3,
-    yOffset: 89936,
+    resolution: 0.4,
+    yOffset: 28659,
     yOffsetWaveMultiplier: 1,
     yOffsetColorMultiplier: 4.8,
     yOffsetFlowMultiplier: 5.3,
@@ -1773,9 +1905,9 @@ export const TIME_PRESET = {
     textureShapeBars: 15,
     textureShapeSquiggles: 27,
     domainWarpEnabled: true,
-    domainWarpIntensity: 0.25,
-    domainWarpScale: 4.1,
-    vignetteIntensity: 0.55,
+    domainWarpIntensity: 0.1,
+    domainWarpScale: 2.4,
+    vignetteIntensity: 0.45,
     vignetteRadius: 0.55,
     fresnelEnabled: false,
     fresnelPower: 2.7,
@@ -1788,10 +1920,10 @@ export const TIME_PRESET = {
     bloomThreshold: 0.6,
     chromaticAberration: 17,
     shapeType: 'ribbon',
-    shapeRotationX: 1.895,
-    shapeRotationY: -20.539,
+    shapeRotationX: 0.3480000000000001,
+    shapeRotationY: -26.783,
     shapeRotationZ: -0.29,
-    shapeAutoRotateSpeedX: -0.6,
+    shapeAutoRotateSpeedX: 0,
     shapeAutoRotateSpeedY: 0,
     sphereRadius: 15,
     torusRadius: 15,
@@ -1800,113 +1932,25 @@ export const TIME_PRESET = {
     cylinderHeight: 40,
     planeBend: 2.3,
     planeTwist: -2.9,
+    silhouetteFade: 0.83,
+    cylinderFade: 0.08,
+    ribbonFade: 0.31,
+    cameraLock: false,
+    cameraX: 0,
+    cameraY: 0,
+    cameraZ: 0,
+    cameraRotationX: -0.014,
+    cameraRotationY: -0.23800000000000002,
+    cameraRotationZ: 0,
+    cameraZoom: 1,
 } satisfies NeatConfig;
 
-export const SATIN_SILK_PRESET = {
-    colors: [
-        {
-            color: '#B38F16',
-            enabled: true,
-        },
-        {
-            color: '#CB9854',
-            enabled: true,
-        },
-        {
-            color: '#CE96CE',
-            enabled: true,
-        },
-        {
-            color: '#E0115F',
-            enabled: true,
-        },
-        {
-            color: '#FFFFFF',
-            enabled: false,
-        },
-        {
-            color: '#<n><n>000000</n></n>',
-            enabled: false,
-        },
-    ],
-    speed: 2.5,
-    horizontalPressure: 3,
-    verticalPressure: 4,
-    waveFrequencyX: 2,
-    waveFrequencyY: 3,
-    waveAmplitude: 6,
-    shadows: 2,
-    highlights: 0,
-    colorBrightness: 0.9,
-    colorSaturation: -7,
-    wireframe: false,
-    colorBlending: 8,
-    backgroundColor: '#A1A4B7',
-    backgroundAlpha: 1,
-    grainScale: 0,
-    grainSparsity: 0,
-    grainIntensity: 0.575,
-    grainSpeed: 0,
-    resolution: 0.3,
-    yOffset: 132300,
-    yOffsetWaveMultiplier: 1,
-    yOffsetColorMultiplier: 4.8,
-    yOffsetFlowMultiplier: 5.3,
-    flowDistortionA: 1.1,
-    flowDistortionB: 0.8,
-    flowScale: 1.6,
-    flowEase: 0.32,
-    flowEnabled: false,
-    enableProceduralTexture: false,
-    transparentTextureVoid: true,
-    textureVoidLikelihood: 0.29,
-    textureVoidWidthMin: 120,
-    textureVoidWidthMax: 420,
-    textureBandDensity: 2.9,
-    textureColorBlending: 0.06,
-    textureSeed: 536,
-    textureEase: 0.93,
-    proceduralBackgroundColor: '#<n>775454</n>',
-    textureShapeTriangles: 48,
-    textureShapeCircles: 15,
-    textureShapeBars: 15,
-    textureShapeSquiggles: 27,
-    domainWarpEnabled: true,
-    domainWarpIntensity: 0.25,
-    domainWarpScale: 0.8,
-    vignetteIntensity: 0.55,
-    vignetteRadius: 0.55,
-    fresnelEnabled: false,
-    fresnelPower: 2.7,
-    fresnelIntensity: 1.3,
-    fresnelColor: '#F7E7CE',
-    iridescenceEnabled: false,
-    iridescenceIntensity: 0.5,
-    iridescenceSpeed: 1,
-    bloomIntensity: 1,
-    bloomThreshold: 0.6,
-    chromaticAberration: 11.5,
-    shapeType: 'ribbon',
-    shapeRotationX: -2.0920000000000005,
-    shapeRotationY: -19.601000000000003,
-    shapeRotationZ: 0,
-    shapeAutoRotateSpeedX: -0.2,
-    shapeAutoRotateSpeedY: 0,
-    sphereRadius: 15,
-    torusRadius: 15,
-    torusTube: 5,
-    cylinderRadius: 10,
-    cylinderHeight: 40,
-    planeBend: -2.5,
-    planeTwist: -4.4,
-} satisfies NeatConfig;
 
 export const PRESETS = {
     "Neat": NEAT_PRESET,
     "Blob": GLASSMORPHIC_BLOB_PRESET,
     "Cosmic Vortex": COSMIC_VORTEX_PRESET,
     "Time": TIME_PRESET,
-    "Satin Silk": SATIN_SILK_PRESET,
     "Fluid": FLUID_PRESET,
     "Flame": FLAME_PRESET,
     "Funky": FUNKY_PRESET,
@@ -1920,7 +1964,6 @@ export const PRESETS = {
     "Lemon": LEMON_PRESET,
     "Yex": YEX_PRESET,
     "Psychedelic": PSYCHEDELIC_PRESET,
-    "Splash": SPLASH_PRESET,
     "Dark Mode": DARK_MODE,
     "FireCMS": FIRECMS_PRESET,
     "Stripe": STRIPE_PRESET,
@@ -1935,10 +1978,9 @@ export const PRESETS = {
 
 export const fontMap = {
     Neat: 'font-sans',
-    "Blob": 'font-sans',
+    "Blob": 'font-pacifico',
     "Cosmic Vortex": 'font-sans',
     "Time": 'font-sans',
-    "Satin Silk": 'font-sans',
     FireCMS: 'font-rubik',
     Fluid: 'font-source-serif-pro',
     Lemon: 'font-londrina',
@@ -1955,7 +1997,6 @@ export const fontMap = {
     Clouds: 'font-nunito-sans',
     Monterey: 'font-merriweather',
     Psychedelic: 'font-concert-one',
-    Splash: 'font-pacifico',
     Pastel: 'font-poppins',
     Oceanic: 'font-libre-baskerville',
     "Oceans Eleven": 'font-source-serif-pro',

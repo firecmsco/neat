@@ -1,5 +1,5 @@
-import { buildUniforms, buildColorFunctions, buildNoise, fragmentShaderSource } from './lib/src/shaders.ts';
+import { buildFragUniforms, buildColorFunctions, buildNoise, fragmentShaderSource } from './lib/src/shaders.ts';
 
-const fragShaderSourceCombined = buildUniforms() + buildColorFunctions() + buildNoise() + fragmentShaderSource;
+const fragShaderSourceCombined = buildFragUniforms() + buildColorFunctions() + buildNoise() + fragmentShaderSource;
 
 console.log(fragShaderSourceCombined);
