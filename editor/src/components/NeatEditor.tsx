@@ -8,7 +8,7 @@ import { Select, SelectItem } from "./ui/select";
 import { Sheet } from "./ui/sheet";
 import { Slider } from "./ui/slider";
 import { Tooltip } from "./ui/tooltip";
-import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload, Palette, Box, Wind, Sliders, Image, RotateCcw } from "lucide-react";
 import { ColorSwatch } from "./ColorSwatch";
 import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor, hslToHex, extractColorsFromImage } from "../utils/colors";
@@ -1790,737 +1790,865 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         <div className="flex flex-col h-full">
                             <div
                                 className="p-4 pt-20 flex flex-col gap-6 overflow-auto flex-grow panel-scroll">
-                                <div className="flex items-center justify-between">
-                                    <span
-                                        className="text-[10px] tracking-widest font-bold uppercase opacity-70">Preset</span>
-                                    <span className="text-[10px] opacity-50">← → to browse</span>
-                                </div>
-
-                                <Select
-                                    value={selectedPreset}
-                                    className={fontClass + " text-xl bg-white/10 border border-white/20 rounded-lg px-2 py-1"}
-                                    onValueChange={(preset) => {
-                                        logEvent(analytics, 'select_preset', { preset });
-                                        setPreset(preset);
-                                    }}
-                                >
-                                    {Object.keys(allPresets).map((preset) => (
-                                        <SelectItem
-                                            className={(fontMap[preset as keyof typeof fontMap] || "font-sans") + " "}
-                                            key={preset}
-                                            value={preset}
-                                        >
-                                            {preset}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
-
-                                <div
-                                    className="bg-white/10 border border-white/20 rounded-xl p-3">
-                                    <div
-                                        className="flex space-x-4 justify-evenly mt-1 mb-1">
-                                        {colors.map((color, index) => (
-                                            <ColorSwatch
-                                                key={index}
-                                                color={color}
-                                                showEnabled={true}
-                                                onChange={(newColor) => handleColorChange(newColor, index)}
-                                            />
-                                        ))}
+                                
+                                {/* Section 1: Presets & Colors */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Palette className="w-4 h-4 text-pink-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Presets & Colors</span>
                                     </div>
-                                </div>
-
-                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm mb-1 flex items-center gap-1.5">
-                                        <Upload className="w-4 h-4 text-blue-400" />
-                                        <span>Image Color Extractor</span>
-                                    </div>
-                                    <p className="text-[11px] opacity-70">
-                                        Drop an image anywhere, or select one to extract 5 dominant colors.
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Choose a starting preset or customize the 5 gradient colors. You can also extract colors from an image.
                                     </p>
-                                    <label className="flex items-center justify-center w-full px-4 py-2 mt-1 text-xs border border-white/20 border-dashed rounded-lg cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all text-neutral-200">
-                                        <span className="flex items-center gap-1"><Upload className="w-3.5 h-3.5" /> Choose Image</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleImageSelect}
-                                        />
-                                    </label>
+                                    
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] tracking-widest font-bold uppercase opacity-70">Preset</span>
+                                            <span className="text-[10px] opacity-50">← → to browse</span>
+                                        </div>
+
+                                        <Select
+                                            value={selectedPreset}
+                                            className={fontClass + " text-xl bg-white/10 border border-white/20 rounded-lg px-2 py-1"}
+                                            onValueChange={(preset) => {
+                                                logEvent(analytics, 'select_preset', { preset });
+                                                setPreset(preset);
+                                            }}
+                                        >
+                                            {Object.keys(allPresets).map((preset) => (
+                                                <SelectItem
+                                                    className={(fontMap[preset as keyof typeof fontMap] || "font-sans") + " "}
+                                                    key={preset}
+                                                    value={preset}
+                                                >
+                                                    {preset}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
+
+                                        <div className="bg-white/10 border border-white/20 rounded-xl p-3">
+                                            <div className="flex space-x-4 justify-evenly mt-1 mb-1">
+                                                {colors.map((color, index) => (
+                                                    <ColorSwatch
+                                                        key={index}
+                                                        color={color}
+                                                        showEnabled={true}
+                                                        onChange={(newColor) => handleColorChange(newColor, index)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                                            <div className="font-semibold text-xs mb-1 flex items-center gap-1.5">
+                                                <Upload className="w-3.5 h-3.5 text-blue-400" />
+                                                <span>Image Color Extractor</span>
+                                            </div>
+                                            <p className="text-[11px] opacity-70">
+                                                Drop an image anywhere, or select one to extract 5 dominant colors.
+                                            </p>
+                                            <label className="flex items-center justify-center w-full px-4 py-2 mt-1 text-xs border border-white/20 border-dashed rounded-lg cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all text-neutral-200">
+                                                <span className="flex items-center gap-1"><Upload className="w-3.5 h-3.5" /> Choose Image</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleImageSelect}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Procedural Texture section - moved to top for better UX */}
-                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm mb-2">Procedural Texture</div>
-                                    <Label
-                                        className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                        <span className="text-xs w-28 text-right">Enable</span>
-                                        <div className={"w-full flex"}>
-                                            <Checkbox
-                                                checked={enableProceduralTexture}
-                                                onChange={(checked: boolean) => setEnableProceduralTexture(checked)}/>
+                                {/* Section 2: 3D Geometry */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Box className="w-4 h-4 text-blue-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">3D Geometry</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Configure the 3D shape type, resolution, mesh wireframe, positioning, manual rotations, and auto-rotation speeds.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Shape Type</span>
+                                            <select
+                                                value={shapeType}
+                                                onChange={(e) => setShapeType(e.target.value as any)}
+                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full"
+                                            >
+                                                <option value="plane">Plane</option>
+                                                <option value="sphere">Sphere</option>
+                                                <option value="torus">Torus</option>
+                                                <option value="cylinder">Cylinder</option>
+                                                <option value="ribbon">Ribbon</option>
+                                            </select>
                                         </div>
-                                    </Label>
-                                    {enableProceduralTexture && (
-                                        <div className="text-xs opacity-70 italic mt-2 pl-2">
-                                            ℹ️ Texture replaces color pressure controls
+
+                                        {/* Sphere Specific Controls */}
+                                        {shapeType === 'sphere' && (
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Radius</span>
+                                                <Slider value={[sphereRadius]} min={5} max={30} step={0.5}
+                                                        onValueChange={(v) => setSphereRadius(v[0] as number)}/>
+                                            </div>
+                                        )}
+
+                                        {/* Torus Specific Controls */}
+                                        {shapeType === 'torus' && (
+                                            <>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Radius</span>
+                                                    <Slider value={[torusRadius]} min={5} max={30} step={0.5}
+                                                            onValueChange={(v) => setTorusRadius(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Tube Radius</span>
+                                                    <Slider value={[torusTube]} min={1} max={15} step={0.2}
+                                                            onValueChange={(v) => setTorusTube(v[0] as number)}/>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Cylinder Specific Controls */}
+                                        {shapeType === 'cylinder' && (
+                                            <>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Radius</span>
+                                                    <Slider value={[cylinderRadius]} min={2} max={25} step={0.5}
+                                                            onValueChange={(v) => setCylinderRadius(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Height</span>
+                                                    <Slider value={[cylinderHeight]} min={10} max={60} step={1}
+                                                            onValueChange={(v) => setCylinderHeight(v[0] as number)}/>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Ribbon Specific Controls */}
+                                        {shapeType === 'ribbon' && (
+                                            <>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Bend</span>
+                                                    <Slider value={[planeBend]} min={-5} max={5} step={0.1}
+                                                            onValueChange={(v) => setPlaneBend(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Twist</span>
+                                                    <Slider value={[planeTwist]} min={-5} max={5} step={0.1}
+                                                            onValueChange={(v) => setPlaneTwist(v[0] as number)}/>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Resolution & Wireframe */}
+                                        <div className="space-y-2 border-t border-white/5 pt-2">
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="The density of triangles in the 3D mesh. Reduce to increase performance.">
+                                                    Resolution
+                                                </Tooltip>
+                                                <Slider value={[resolution]} step={0.05}
+                                                        min={0.05} max={2}
+                                                        onValueChange={(v) => setResolution(v[0] as number)}/>
+                                            </div>
+
+                                            <Label className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Show the underlying triangle mesh skeleton (bypasses color shader).">
+                                                    Wireframe
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={wireframe}
+                                                              onChange={(checked: boolean) => setWireframe(checked)}/>
+                                                </div>
+                                            </Label>
+                                            {wireframe && (
+                                                <div className="text-xs opacity-70 italic mt-1 pl-2">
+                                                    ℹ️ colors, grain, and textures are less visible in wireframe
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                    {enableProceduralTexture && (
-                                        <>
+
+                                        {/* Position & Height Multipliers */}
+                                        <div className="space-y-2 border-t border-white/5 pt-2">
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Gap Frequency</span>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Position of the shape along the vertical axis.">
+                                                    Vertical Offset
+                                                </Tooltip>
                                                 <Slider
-                                                    value={[textureVoidLikelihood]}
-                                                    step={0.01} min={0} max={1}
-                                                    onValueChange={(v) => setTextureVoidLikelihood(v[0] as number)}/>
+                                                    value={[yOffset]}
+                                                    step={1}
+                                                    min={0}
+                                                    max={100000}
+                                                    onValueChange={(v) => setYOffset(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Min Gap Width</span>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Controls how much the 3D displacement height affects waves.">
+                                                    Wave Multiplier
+                                                </Tooltip>
                                                 <Slider
-                                                    value={[textureVoidWidthMin]}
-                                                    step={10} min={10} max={200}
-                                                    onValueChange={(v) => setTextureVoidWidthMin(v[0] as number)}/>
+                                                    value={[yOffsetWaveMultiplier]}
+                                                    step={0.1}
+                                                    min={0}
+                                                    max={20}
+                                                    onValueChange={(v) => setYOffsetWaveMultiplier(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Max Gap Width</span>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Controls how much the 3D displacement height affects coloring.">
+                                                    Color Multiplier
+                                                </Tooltip>
                                                 <Slider
-                                                    value={[textureVoidWidthMax]}
-                                                    step={10} min={50} max={600}
-                                                    onValueChange={(v) => setTextureVoidWidthMax(v[0] as number)}/>
+                                                    value={[yOffsetColorMultiplier]}
+                                                    step={0.1}
+                                                    min={0}
+                                                    max={20}
+                                                    onValueChange={(v) => setYOffsetColorMultiplier(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Band Density</span>
-                                                <Slider value={[textureBandDensity]}
-                                                        step={0.1} min={0.1} max={3}
-                                                        onValueChange={(v) => setTextureBandDensity(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Color Blending</span>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Controls how much the 3D displacement height affects motion flow.">
+                                                    Flow Multiplier
+                                                </Tooltip>
                                                 <Slider
-                                                    value={[textureColorBlending]}
-                                                    step={0.01} min={0} max={1}
-                                                    onValueChange={(v) => setTextureColorBlending(v[0] as number)}/>
+                                                    value={[yOffsetFlowMultiplier]}
+                                                    step={0.1}
+                                                    min={0}
+                                                    max={20}
+                                                    onValueChange={(v) => setYOffsetFlowMultiplier(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* 3D Rotations */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="text-xs font-semibold mb-1 flex justify-between items-center">
+                                                <span>Rotations</span>
+                                                <button
+                                                    onClick={() => {
+                                                        setShapeRotationX(0);
+                                                        setShapeRotationY(0);
+                                                        setShapeRotationZ(0);
+                                                    }}
+                                                    className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold flex items-center gap-0.5"
+                                                    title="Reset all rotations to 0"
+                                                >
+                                                    <RotateCcw className="w-2.5 h-2.5" /> Reset
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeRotationX(0)}>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around X axis. Double-click label or slider to reset to 0.">
+                                                    Rotate X
+                                                </Tooltip>
+                                                <Slider value={[shapeRotationX]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                        onValueChange={(v) => setShapeRotationX(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeRotationY(0)}>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around Y axis. Double-click label or slider to reset to 0.">
+                                                    Rotate Y
+                                                </Tooltip>
+                                                <Slider value={[shapeRotationY]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                        onValueChange={(v) => setShapeRotationY(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeRotationZ(0)}>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around Z axis. Double-click label or slider to reset to 0.">
+                                                    Rotate Z
+                                                </Tooltip>
+                                                <Slider value={[shapeRotationZ]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                        onValueChange={(v) => setShapeRotationZ(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Auto Rotations */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="text-xs font-semibold mb-1 flex justify-between items-center">
+                                                <span>Auto-Rotate Speed</span>
+                                                <button
+                                                    onClick={() => {
+                                                        setShapeAutoRotateSpeedX(0);
+                                                        setShapeAutoRotateSpeedY(0);
+                                                    }}
+                                                    className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold flex items-center gap-0.5"
+                                                    title="Reset auto-rotation speeds to 0"
+                                                >
+                                                    <RotateCcw className="w-2.5 h-2.5" /> Reset
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeAutoRotateSpeedX(0)}>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Continuous auto-rotation speed around X axis. Double-click label or slider to reset to 0.">
+                                                    X Speed
+                                                </Tooltip>
+                                                <Slider value={[shapeAutoRotateSpeedX]} min={-10} max={10} step={0.2}
+                                                        onValueChange={(v) => setShapeAutoRotateSpeedX(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeAutoRotateSpeedY(0)}>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Continuous auto-rotation speed around Y axis. Double-click label or slider to reset to 0.">
+                                                    Y Speed
+                                                </Tooltip>
+                                                <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2}
+                                                        onValueChange={(v) => setShapeAutoRotateSpeedY(v[0] as number)}/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 3: Motion & Distortion */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Wind className="w-4 h-4 text-emerald-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Motion & Distortion</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Adjust the animation speed, base wave patterns, fluid flow fields, and curl domain warp distortions.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Overall animation speed. If paused (0), waves and flow field simulation will freeze.">
+                                                Speed
+                                            </Tooltip>
+                                            <Slider
+                                                value={[speed]}
+                                                step={0.5}
+                                                min={0}
+                                                max={10}
+                                                onValueChange={(v) => setSpeed(v[0] as number)}
+                                            />
+                                        </div>
+                                        {speed === 0 && (
+                                            <div className="text-xs opacity-70 italic pl-2">
+                                                ℹ️ Animation paused - Waves and Flow frozen
+                                            </div>
+                                        )}
+
+                                        {/* Waves section */}
+                                        <div className={`space-y-2 border-t border-white/5 pt-2 transition-opacity ${speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="text-xs font-semibold mb-1 flex items-center justify-between">
+                                                <span>Base Waves</span>
+                                                {speed === 0 && <span className="text-[10px] opacity-60">Needs speed &gt; 0</span>}
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Seed</span>
-                                                <Slider value={[textureSeed]}
-                                                        step={1} min={0} max={1000}
-                                                        onValueChange={(v) => setTextureSeed(v[0] as number)}/>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Number of wave crests along the X axis.">
+                                                    Frequency X
+                                                </Tooltip>
+                                                <Slider value={[waveFrequencyX]} min={0}
+                                                        max={10}
+                                                        disabled={speed === 0}
+                                                        onValueChange={(v) => setWaveFrequencyX(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Ease (Flow↔Image)</span>
-                                                <Slider value={[textureEase]}
-                                                        step={0.01} min={0} max={1}
-                                                        onValueChange={(v) => setTextureEase(v[0] as number)}/>
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Number of wave crests along the Y axis.">
+                                                    Frequency Y
+                                                </Tooltip>
+                                                <Slider value={[waveFrequencyY]} min={0}
+                                                        max={10}
+                                                        disabled={speed === 0}
+                                                        onValueChange={(v) => setWaveFrequencyY(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Void Color</span>
-                                                <div className="flex items-center gap-2 w-full">
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Vertical height/intensity of waves.">
+                                                    Amplitude
+                                                </Tooltip>
+                                                <Slider value={[waveAmplitude]} min={0}
+                                                        max={10}
+                                                        disabled={speed === 0}
+                                                        onValueChange={(v) => setWaveAmplitude(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Flow Field subsection */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Fluid-like simulation warping the gradient colors and shape over time.">
+                                                    Flow Field
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={flowEnabled}
+                                                              onChange={(checked: boolean) => setFlowEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            {speed === 0 && flowEnabled && (
+                                                <div className="text-xs opacity-70 italic pl-2">
+                                                    ⚠️ Flow needs animation speed &gt; 0
+                                                </div>
+                                            )}
+                                            <div className={`space-y-2 transition-opacity ${!flowEnabled || speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Wave Amplitude</span>
+                                                    <Slider value={[flowDistortionA]} step={0.1}
+                                                            min={0} max={5}
+                                                            disabled={!flowEnabled || speed === 0}
+                                                            onValueChange={(v) => setFlowDistortionA(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Wave Frequency</span>
+                                                    <Slider value={[flowDistortionB]} step={0.1}
+                                                            min={0} max={10}
+                                                            disabled={!flowEnabled || speed === 0}
+                                                            onValueChange={(v) => setFlowDistortionB(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Wave Scale</span>
+                                                    <Slider value={[flowScale]} step={0.1}
+                                                            min={0} max={5}
+                                                            disabled={!flowEnabled || speed === 0}
+                                                            onValueChange={(v) => setFlowScale(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Ease (Blend)</span>
+                                                    <Slider value={[flowEase]} step={0.01}
+                                                            min={0} max={1}
+                                                            disabled={!flowEnabled || speed === 0}
+                                                            onValueChange={(v) => setFlowEase(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Domain Warp subsection */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Complex curl noise distortion that warps gradient color mapping lines.">
+                                                    Domain Warp
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={domainWarpEnabled}
+                                                              onChange={(checked: boolean) => setDomainWarpEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            <div className={`space-y-2 transition-opacity ${!domainWarpEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Intensity</span>
+                                                    <Slider value={[domainWarpIntensity]} step={0.05}
+                                                            min={0} max={1.5}
+                                                            disabled={!domainWarpEnabled}
+                                                            onValueChange={(v) => setDomainWarpIntensity(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Scale</span>
+                                                    <Slider value={[domainWarpScale]} step={0.1}
+                                                            min={0.5} max={10}
+                                                            disabled={!domainWarpEnabled}
+                                                            onValueChange={(v) => setDomainWarpScale(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 4: Colors & Textures */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Sparkles className="w-4 h-4 text-purple-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Colors & Textures</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Blend colors using pressure settings or enable procedural textures to generate complex geometric noise patterns.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        {/* Color pressure section */}
+                                        <div className={`space-y-2 transition-opacity ${enableProceduralTexture ? 'opacity-40 pointer-events-none' : ''}`}>
+                                            <div className="text-xs font-semibold mb-1 flex items-center justify-between">
+                                                <span>Color Pressure</span>
+                                                {enableProceduralTexture && <span className="text-[10px] opacity-60">Disabled with texture</span>}
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="How strongly/fluidly colors blend together.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Blending</span>
+                                                </Tooltip>
+                                                <Slider value={[colorBlending]} min={0}
+                                                        max={10}
+                                                        disabled={enableProceduralTexture}
+                                                        onValueChange={(v) => setColorBlending(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Horizontal color stretch pressure.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Horizontal</span>
+                                                </Tooltip>
+                                                <Slider value={[horizontalPressure]} min={0}
+                                                        max={10}
+                                                        disabled={enableProceduralTexture}
+                                                        onValueChange={(v) => setHorizontalPressure(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Vertical color stretch pressure.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Vertical</span>
+                                                </Tooltip>
+                                                <Slider value={[verticalPressure]} min={0}
+                                                        max={10}
+                                                        disabled={enableProceduralTexture}
+                                                        onValueChange={(v) => setVerticalPressure(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Procedural Texture section */}
+                                        <div className="space-y-2 border-t border-white/5 pt-2">
+                                            <div className="font-semibold text-xs mb-2">Procedural Texture</div>
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip title="Enable custom generated geometry-aligned patterns instead of solid fluid flow.">
+                                                    <span className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20">Enable</span>
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox
+                                                        checked={enableProceduralTexture}
+                                                        onChange={(checked: boolean) => setEnableProceduralTexture(checked)}/>
+                                                </div>
+                                            </Label>
+                                            {enableProceduralTexture && (
+                                                <div className="text-xs opacity-70 italic mt-1 pl-2">
+                                                    ℹ️ Texture replaces color pressure controls
+                                                </div>
+                                            )}
+                                            {enableProceduralTexture && (
+                                                <div className="space-y-2 mt-2">
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Gap Frequency</span>
+                                                        <Slider
+                                                            value={[textureVoidLikelihood]}
+                                                            step={0.01} min={0} max={1}
+                                                            onValueChange={(v) => setTextureVoidLikelihood(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Min Gap Width</span>
+                                                        <Slider
+                                                            value={[textureVoidWidthMin]}
+                                                            step={10} min={10} max={200}
+                                                            onValueChange={(v) => setTextureVoidWidthMin(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Max Gap Width</span>
+                                                        <Slider
+                                                            value={[textureVoidWidthMax]}
+                                                            step={10} min={50} max={600}
+                                                            onValueChange={(v) => setTextureVoidWidthMax(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Band Density</span>
+                                                        <Slider value={[textureBandDensity]}
+                                                                step={0.1} min={0.1} max={3}
+                                                                onValueChange={(v) => setTextureBandDensity(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Color Blending</span>
+                                                        <Slider
+                                                            value={[textureColorBlending]}
+                                                            step={0.01} min={0} max={1}
+                                                            onValueChange={(v) => setTextureColorBlending(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Seed</span>
+                                                        <Slider value={[textureSeed]}
+                                                                step={1} min={0} max={1000}
+                                                                onValueChange={(v) => setTextureSeed(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Ease (Flow↔Image)</span>
+                                                        <Slider value={[textureEase]}
+                                                                step={0.01} min={0} max={1}
+                                                                onValueChange={(v) => setTextureEase(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Void Color</span>
+                                                        <div className="flex items-center gap-2 w-full">
+                                                            <ColorSwatch
+                                                                color={{
+                                                                    color: proceduralBackgroundColor,
+                                                                    enabled: true
+                                                                }}
+                                                                showEnabled={false}
+                                                                onChange={(c) => setProceduralBackgroundColor(c.color)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Transparent Void</span>
+                                                        <div className="w-full flex">
+                                                            <Checkbox
+                                                                checked={transparentTextureVoid}
+                                                                onChange={(checked: boolean) => setTransparentTextureVoid(checked)}/>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Triangles</span>
+                                                        <Slider
+                                                            value={[textureShapeTriangles]}
+                                                            step={1} min={0} max={100}
+                                                            onValueChange={(v) => setTextureShapeTriangles(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Circles</span>
+                                                        <Slider
+                                                            value={[textureShapeCircles]}
+                                                            step={1} min={0} max={100}
+                                                            onValueChange={(v) => setTextureShapeCircles(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Bars</span>
+                                                        <Slider value={[textureShapeBars]}
+                                                                step={1} min={0} max={100}
+                                                                onValueChange={(v) => setTextureShapeBars(v[0] as number)}/>
+                                                    </div>
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <span className="w-28 text-right pr-2 text-xs">Squiggles</span>
+                                                        <Slider
+                                                            value={[textureShapeSquiggles]}
+                                                            step={1} min={0} max={100}
+                                                            onValueChange={(v) => setTextureShapeSquiggles(v[0] as number)}/>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 5: Visual Effects & Grading */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Sliders className="w-4 h-4 text-amber-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Visual Effects & Grading</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Fine-tune lighting adjustments, saturation, vignette, bloom glow, chromatic aberration, rim glow, iridescence, and film grain.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        {/* Color adjustments */}
+                                        <div className="space-y-2">
+                                            <div className="text-xs font-semibold mb-1">Color Adjustments</div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Adjust shadows (dark values) of the final composition.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Shadows</span>
+                                                </Tooltip>
+                                                <Slider value={[shadows]} min={0} max={10}
+                                                        onValueChange={(v) => setShadows(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Adjust highlights (light values) of the final composition.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Highlights</span>
+                                                </Tooltip>
+                                                <Slider value={[highlights]} min={0}
+                                                        max={10}
+                                                        onValueChange={(v) => setHighlights(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Adjust color saturation / vibrancy.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Saturation</span>
+                                                </Tooltip>
+                                                <Slider value={[saturation]} min={-10}
+                                                        max={10}
+                                                        onValueChange={(v) => setSaturation(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Adjust overall brightness exposure.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Brightness</span>
+                                                </Tooltip>
+                                                <Slider value={[brightness]} step={0.05}
+                                                        min={0} max={10}
+                                                        onValueChange={(v) => setBrightness(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Vignette */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="text-xs font-semibold mb-1 flex items-center justify-between">
+                                                <Tooltip title="Gradually darken the viewport edges.">
+                                                    <span className="cursor-help border-b border-dashed border-white/20">Vignette</span>
+                                                </Tooltip>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[vignetteIntensity]} step={0.05}
+                                                        min={0} max={1}
+                                                        onValueChange={(v) => setVignetteIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className={`space-y-2 transition-opacity ${vignetteIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                                    <Slider value={[vignetteRadius]} step={0.05}
+                                                            min={0.1} max={1}
+                                                            disabled={vignetteIntensity === 0}
+                                                            onValueChange={(v) => setVignetteRadius(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Bloom */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="text-xs font-semibold mb-1 flex items-center justify-between">
+                                                <Tooltip title="Makes bright highlights bleed glow into surrounding areas.">
+                                                    <span className="cursor-help border-b border-dashed border-white/20">Bloom</span>
+                                                </Tooltip>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[bloomIntensity]} step={0.1}
+                                                        min={0} max={3}
+                                                        onValueChange={(v) => setBloomIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className={`space-y-2 transition-opacity ${bloomIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Threshold</span>
+                                                    <Slider value={[bloomThreshold]} step={0.05}
+                                                            min={0} max={1}
+                                                            disabled={bloomIntensity === 0}
+                                                            onValueChange={(v) => setBloomThreshold(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Chromatic Aberration */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip title="Simulates prism lens color separation at the edges.">
+                                                    <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 text-left">Chromatic Aberration</span>
+                                                </Tooltip>
+                                                <Slider value={[chromaticAberration]} step={0.5}
+                                                        min={0} max={20}
+                                                        onValueChange={(v) => setChromaticAberration(v[0] as number)}/>
+                                            </div>
+                                        </div>
+
+                                        {/* Fresnel (Rim Glow) */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip title="Add a glowing halo color border along silhouette edges.">
+                                                    <span className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20">Rim Glow</span>
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={fresnelEnabled}
+                                                              onChange={(checked: boolean) => setFresnelEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            <div className={`space-y-2 transition-opacity ${!fresnelEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Power</span>
+                                                    <Slider value={[fresnelPower]} step={0.1}
+                                                            min={0.5} max={5}
+                                                            disabled={!fresnelEnabled}
+                                                            onValueChange={(v) => setFresnelPower(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                    <Slider value={[fresnelIntensity]} step={0.1}
+                                                            min={0} max={3}
+                                                            disabled={!fresnelEnabled}
+                                                            onValueChange={(v) => setFresnelIntensity(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Color</span>
+                                                    <div className="w-full flex">
+                                                        <ColorSwatch
+                                                            color={{ color: fresnelColor, enabled: true }}
+                                                            showEnabled={false}
+                                                            onChange={(c) => setFresnelColor(c.color)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Iridescence */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip title="Soap bubble / oil slick rainbow shifting highlights on the 3D surface.">
+                                                    <span className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20">Iridescence</span>
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={iridescenceEnabled}
+                                                              onChange={(checked: boolean) => setIridescenceEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            <div className={`space-y-2 transition-opacity ${!iridescenceEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                    <Slider value={[iridescenceIntensity]} step={0.05}
+                                                            min={0} max={1}
+                                                            disabled={!iridescenceEnabled}
+                                                            onValueChange={(v) => setIridescenceIntensity(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Speed</span>
+                                                    <Slider value={[iridescenceSpeed]} step={0.1}
+                                                            min={0} max={5}
+                                                            disabled={!iridescenceEnabled}
+                                                            onValueChange={(v) => setIridescenceSpeed(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Grain */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <div className="text-xs font-semibold mb-1">
+                                                <Tooltip title="Add textured noise / film grain filter over the canvas.">
+                                                    <span className="cursor-help border-b border-dashed border-white/20">Film Grain</span>
+                                                </Tooltip>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                <Slider value={[grainIntensity]}
+                                                        step={0.025} min={0} max={1}
+                                                        onValueChange={(v) => setGrainIntensity(v[0] as number)}/>
+                                            </div>
+                                            <div className={`space-y-2 transition-opacity ${grainIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Scale</span>
+                                                    <Slider value={[grainScale]} step={1}
+                                                            min={0} max={100}
+                                                            disabled={grainIntensity === 0}
+                                                            onValueChange={(v) => setGrainScale(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Sparsity</span>
+                                                    <Slider value={[grainSparsity]} step={0.02}
+                                                            min={0} max={1}
+                                                            disabled={grainIntensity === 0}
+                                                            onValueChange={(v) => setGrainSparsity(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Speed</span>
+                                                    <Slider value={[grainSpeed]} step={0.1}
+                                                            min={0} max={10}
+                                                            disabled={grainIntensity === 0}
+                                                            onValueChange={(v) => setGrainSpeed(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 6: Background Settings */}
+                                <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+                                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                                        <Image className="w-4 h-4 text-teal-400" />
+                                        <span className="font-bold text-sm tracking-wider uppercase text-neutral-100">Background</span>
+                                    </div>
+                                    <p className="text-[11px] text-neutral-400 leading-normal">
+                                        Configure the canvas background color and transparency underneath the 3D shape.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Color</span>
+                                            <div className="w-full flex my-2">
+                                                <div className="text-center pl-2">
                                                     <ColorSwatch
                                                         color={{
-                                                            color: proceduralBackgroundColor,
+                                                            color: backgroundColor,
                                                             enabled: true
                                                         }}
                                                         showEnabled={false}
-                                                        onChange={(c) => setProceduralBackgroundColor(c.color)}
+                                                        onChange={color => setBackgroundColor(color.color)}
                                                     />
                                                 </div>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Transparent Void</span>
-                                                <div className="w-full flex">
-                                                    <Checkbox
-                                                        checked={transparentTextureVoid}
-                                                        onChange={(checked: boolean) => setTransparentTextureVoid(checked)}/>
+                                                <div className="flex-grow pl-2 flex flex-col gap-2">
+                                                    <span className="text-xs">Alpha</span>
+                                                    <Slider value={[backgroundAlpha]}
+                                                            step={0.05} min={0} max={1}
+                                                            onValueChange={(v) => setBackgroundAlpha(v[0] as number)}/>
                                                 </div>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Triangles</span>
-                                                <Slider
-                                                    value={[textureShapeTriangles]}
-                                                    step={1} min={0} max={100}
-                                                    onValueChange={(v) => setTextureShapeTriangles(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Circles</span>
-                                                <Slider
-                                                    value={[textureShapeCircles]}
-                                                    step={1} min={0} max={100}
-                                                    onValueChange={(v) => setTextureShapeCircles(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Bars</span>
-                                                <Slider value={[textureShapeBars]}
-                                                        step={1} min={0} max={100}
-                                                        onValueChange={(v) => setTextureShapeBars(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Squiggles</span>
-                                                <Slider
-                                                    value={[textureShapeSquiggles]}
-                                                    step={1} min={0} max={100}
-                                                    onValueChange={(v) => setTextureShapeSquiggles(v[0] as number)}/>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Color pressure section - disabled when texture is enabled */}
-                                <div className={`space-y-2 bg-white/5 border border-white/10 rounded-xl p-3 transition-opacity ${enableProceduralTexture ? 'opacity-40 pointer-events-none' : ''}`}>
-                                    <div className="font-semibold text-sm mb-2 flex items-center justify-between">
-                                        <span>Color Pressure</span>
-                                        {enableProceduralTexture && (
-                                            <span className="text-[10px] opacity-60">Disabled with texture</span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Blending</span>
-                                        <Slider value={[colorBlending]} min={0}
-                                                max={10}
-                                                disabled={enableProceduralTexture}
-                                                onValueChange={(v) => setColorBlending(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Horizontal</span>
-                                        <Slider value={[horizontalPressure]} min={0}
-                                                max={10}
-                                                disabled={enableProceduralTexture}
-                                                onValueChange={(v) => setHorizontalPressure(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Vertical</span>
-                                        <Slider value={[verticalPressure]} min={0}
-                                                max={10}
-                                                disabled={enableProceduralTexture}
-                                                onValueChange={(v) => setVerticalPressure(v[0] as number)}/>
-                                    </div>
-                                </div>
-
-                                {/* Animation section */}
-                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm mb-2">Animation</div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Speed</span>
-                                        <Slider
-                                            value={[speed]}
-                                            step={.5}
-                                            min={0}
-                                            max={10}
-                                            onValueChange={(v) => setSpeed(v[0] as number)}
-                                        />
-                                    </div>
-                                    {speed === 0 && (
-                                        <div className="text-xs opacity-70 italic mt-2 pl-2">
-                                            ℹ️ Animation paused - Waves and Flow frozen
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Shape section */}
-                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm mb-2">Shape</div>
-                                    <Tooltip
-                                        title={"The density of triangles in the 3D mesh. Reduce to increase performance"}>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Resolution</span>
-                                            <Slider value={[resolution]} step={0.05}
-                                                    min={0.05} max={2}
-                                                    onValueChange={(v) => setResolution(v[0] as number)}/>
-                                        </div>
-                                    </Tooltip>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Vertical Offset</span>
-                                        <Slider
-                                            value={[yOffset]}
-                                            step={1}
-                                            min={0}
-                                            max={100000}
-                                            onValueChange={(v) => setYOffset(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Wave Multiplier</span>
-                                        <Slider
-                                            value={[yOffsetWaveMultiplier]}
-                                            step={0.1}
-                                            min={0}
-                                            max={20}
-                                            onValueChange={(v) => setYOffsetWaveMultiplier(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Color Multiplier</span>
-                                        <Slider
-                                            value={[yOffsetColorMultiplier]}
-                                            step={0.1}
-                                            min={0}
-                                            max={20}
-                                            onValueChange={(v) => setYOffsetColorMultiplier(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Flow Multiplier</span>
-                                        <Slider
-                                            value={[yOffsetFlowMultiplier]}
-                                            step={0.1}
-                                            min={0}
-                                            max={20}
-                                            onValueChange={(v) => setYOffsetFlowMultiplier(v[0] as number)}/>
-                                    </div>
-                                    <Label
-                                        className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                        <span className="text-xs w-28 text-right">Wireframe</span>
-                                        <div className={"w-full flex"}>
-                                            <Checkbox checked={wireframe}
-                                                      onChange={(checked: boolean) => setWireframe(checked)}/>
-                                        </div>
-                                    </Label>
-                                    {wireframe && (
-                                        <div className="text-xs opacity-70 italic mt-2 pl-2">
-                                            ℹ️ Wireframe mode: colors, grain, and texture effects are less visible
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* 3D Shapes section */}
-                                <div className="space-y-3 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm flex items-center justify-between">
-                                        <span>3D Shape</span>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Shape Type</span>
-                                        <select
-                                            value={shapeType}
-                                            onChange={(e) => setShapeType(e.target.value as any)}
-                                            className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full"
-                                        >
-                                            <option value="plane">Plane</option>
-                                            <option value="sphere">Sphere</option>
-                                            <option value="torus">Torus</option>
-                                            <option value="cylinder">Cylinder</option>
-                                            <option value="ribbon">Ribbon</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Sphere Specific Controls */}
-                                    {shapeType === 'sphere' && (
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Radius</span>
-                                            <Slider value={[sphereRadius]} min={5} max={30} step={0.5}
-                                                    onValueChange={(v) => setSphereRadius(v[0] as number)}/>
-                                        </div>
-                                    )}
-
-                                    {/* Torus Specific Controls */}
-                                    {shapeType === 'torus' && (
-                                        <>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
-                                                <Slider value={[torusRadius]} min={5} max={30} step={0.5}
-                                                        onValueChange={(v) => setTorusRadius(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Tube Radius</span>
-                                                <Slider value={[torusTube]} min={1} max={15} step={0.2}
-                                                        onValueChange={(v) => setTorusTube(v[0] as number)}/>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {/* Cylinder Specific Controls */}
-                                    {shapeType === 'cylinder' && (
-                                        <>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
-                                                <Slider value={[cylinderRadius]} min={2} max={25} step={0.5}
-                                                        onValueChange={(v) => setCylinderRadius(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Height</span>
-                                                <Slider value={[cylinderHeight]} min={10} max={60} step={1}
-                                                        onValueChange={(v) => setCylinderHeight(v[0] as number)}/>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {/* Ribbon Specific Controls */}
-                                    {shapeType === 'ribbon' && (
-                                        <>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Bend</span>
-                                                <Slider value={[planeBend]} min={-5} max={5} step={0.1}
-                                                        onValueChange={(v) => setPlaneBend(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Twist</span>
-                                                <Slider value={[planeTwist]} min={-5} max={5} step={0.1}
-                                                        onValueChange={(v) => setPlaneTwist(v[0] as number)}/>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {/* 3D Rotations */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Rotations</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Rotate X</span>
-                                            <Slider value={[shapeRotationX]} min={-Math.PI} max={Math.PI} step={0.05}
-                                                    onValueChange={(v) => setShapeRotationX(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Rotate Y</span>
-                                            <Slider value={[shapeRotationY]} min={-Math.PI} max={Math.PI} step={0.05}
-                                                    onValueChange={(v) => setShapeRotationY(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Rotate Z</span>
-                                            <Slider value={[shapeRotationZ]} min={-Math.PI} max={Math.PI} step={0.05}
-                                                    onValueChange={(v) => setShapeRotationZ(v[0] as number)}/>
-                                        </div>
-                                    </div>
-
-                                    {/* Auto Rotations */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Auto-Rotate Speed</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">X Speed</span>
-                                            <Slider value={[shapeAutoRotateSpeedX]} min={-10} max={10} step={0.2}
-                                                    onValueChange={(v) => setShapeAutoRotateSpeedX(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Y Speed</span>
-                                            <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2}
-                                                    onValueChange={(v) => setShapeAutoRotateSpeedY(v[0] as number)}/>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Waves section - disabled when speed is 0 */}
-                                <div className={`space-y-2 bg-white/5 border border-white/10 rounded-xl p-3 transition-opacity ${speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                    <div className="font-semibold text-sm mb-2 flex items-center justify-between">
-                                        <span>Waves</span>
-                                        {speed === 0 && (
-                                            <span className="text-[10px] opacity-60">Needs animation speed</span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Frequency X</span>
-                                        <Slider value={[waveFrequencyX]} min={0}
-                                                max={10}
-                                                disabled={speed === 0}
-                                                onValueChange={(v) => setWaveFrequencyX(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Frequency Y</span>
-                                        <Slider value={[waveFrequencyY]} min={0}
-                                                max={10}
-                                                disabled={speed === 0}
-                                                onValueChange={(v) => setWaveFrequencyY(v[0] as number)}/>
-                                    </div>
-                                    <div className="flex flex-row gap-2 items-end">
-                                        <span className="w-28 text-right pr-2 text-xs">Amplitude</span>
-                                        <Slider value={[waveAmplitude]} min={0}
-                                                max={10}
-                                                disabled={speed === 0}
-                                                onValueChange={(v) => setWaveAmplitude(v[0] as number)}/>
-                                    </div>
-                                </div>
-
-                                {/* Visual Effects section - grouping post-processing and grain */}
-                                <div className={`space-y-3 bg-white/5 border border-white/10 rounded-xl p-3 transition-opacity ${wireframe ? 'opacity-70' : ''}`}>
-                                    <div className="font-semibold text-sm flex items-center justify-between">
-                                        <span>Visual Effects</span>
-                                        {wireframe && (
-                                            <span className="text-[10px] opacity-60">Less visible in wireframe</span>
-                                        )}
-                                    </div>
-
-                                    {/* Post-processing */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Color Adjustment</div>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Shadows</span>
-                                            <Slider value={[shadows]} min={0} max={10}
-                                                    onValueChange={(v) => setShadows(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Highlights</span>
-                                            <Slider value={[highlights]} min={0}
-                                                    max={10}
-                                                    onValueChange={(v) => setHighlights(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Saturation</span>
-                                            <Slider value={[saturation]} min={-10}
-                                                    max={10}
-                                                    onValueChange={(v) => setSaturation(v[0] as number)}/>
-                                        </div>
-                                        <div className="flex flex-row gap-2 items-end">
-                                            <span className="w-28 text-right pr-2 text-xs">Brightness</span>
-                                            <Slider value={[brightness]} step={0.05}
-                                                    min={0} max={10}
-                                                    onValueChange={(v) => setBrightness(v[0] as number)}/>
-                                        </div>
-                                    </div>
-
-                                    {/* Grain */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Grain</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                            <Slider value={[grainIntensity]}
-                                                    step={0.025} min={0} max={1}
-                                                    onValueChange={(v) => setGrainIntensity(v[0] as number)}/>
-                                        </div>
-                                        <div className={`space-y-2 transition-opacity ${grainIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Scale</span>
-                                                <Slider value={[grainScale]} step={1}
-                                                        min={0} max={100}
-                                                        disabled={grainIntensity === 0}
-                                                        onValueChange={(v) => setGrainScale(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Sparsity</span>
-                                                <Slider value={[grainSparsity]} step={.02}
-                                                        min={0} max={1}
-                                                        disabled={grainIntensity === 0}
-                                                        onValueChange={(v) => setGrainSparsity(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Speed</span>
-                                                <Slider value={[grainSpeed]} step={0.1}
-                                                        min={0} max={10}
-                                                        disabled={grainIntensity === 0}
-                                                        onValueChange={(v) => setGrainSpeed(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Background section */}
-                                <div className="space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm mb-2">Background</div>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <span className="w-28 text-right pr-2 text-xs">Color</span>
-                                        <div className={"w-full flex my-4"}>
-                                            <div className="text-center pl-2">
-                                                <ColorSwatch
-                                                    color={{
-                                                        color: backgroundColor,
-                                                        enabled: true
-                                                    }}
-                                                    showEnabled={false}
-                                                    onChange={color => setBackgroundColor(color.color)}
-                                                />
-                                            </div>
-                                            <div className="flex-grow pl-2 flex flex-col gap-2">
-                                                <span className="text-xs">Alpha</span>
-                                                <Slider value={[backgroundAlpha]}
-                                                        step={0.05} min={0} max={1}
-                                                        onValueChange={(v) => setBackgroundAlpha(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Distortion Effects section - grouping related features */}
-                                <div className="space-y-3 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm">Distortion Effects</div>
-
-                                    {/* Flow Field subsection */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <Label
-                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                            <span className="text-xs w-24 text-right font-semibold">Flow Field</span>
-                                            <div className={"w-full flex"}>
-                                                <Checkbox checked={flowEnabled}
-                                                          onChange={(checked: boolean) => setFlowEnabled(checked)}/>
-                                            </div>
-                                        </Label>
-                                        {speed === 0 && flowEnabled && (
-                                            <div className="text-xs opacity-70 italic pl-2">
-                                                ⚠️ Flow needs animation speed &gt; 0
-                                            </div>
-                                        )}
-                                        <div className={`space-y-2 transition-opacity ${!flowEnabled || speed === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Wave Amplitude</span>
-                                                <Slider value={[flowDistortionA]} step={0.1}
-                                                        min={0} max={5}
-                                                        disabled={!flowEnabled || speed === 0}
-                                                        onValueChange={(v) => setFlowDistortionA(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Wave Frequency</span>
-                                                <Slider value={[flowDistortionB]} step={0.1}
-                                                        min={0} max={10}
-                                                        disabled={!flowEnabled || speed === 0}
-                                                        onValueChange={(v) => setFlowDistortionB(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Wave Scale</span>
-                                                <Slider value={[flowScale]} step={0.1}
-                                                        min={0} max={5}
-                                                        disabled={!flowEnabled || speed === 0}
-                                                        onValueChange={(v) => setFlowScale(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Ease (Blend)</span>
-                                                <Slider value={[flowEase]} step={0.01}
-                                                        min={0} max={1}
-                                                        disabled={!flowEnabled || speed === 0}
-                                                        onValueChange={(v) => setFlowEase(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Domain Warp subsection */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <Label
-                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                            <span className="text-xs w-24 text-right font-semibold">Domain Warp</span>
-                                            <div className={"w-full flex"}>
-                                                <Checkbox checked={domainWarpEnabled}
-                                                          onChange={(checked: boolean) => setDomainWarpEnabled(checked)}/>
-                                            </div>
-                                        </Label>
-                                        <div className={`space-y-2 transition-opacity ${!domainWarpEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                                <Slider value={[domainWarpIntensity]} step={0.05}
-                                                        min={0} max={1.5}
-                                                        disabled={!domainWarpEnabled}
-                                                        onValueChange={(v) => setDomainWarpIntensity(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Scale</span>
-                                                <Slider value={[domainWarpScale]} step={0.1}
-                                                        min={0.5} max={10}
-                                                        disabled={!domainWarpEnabled}
-                                                        onValueChange={(v) => setDomainWarpScale(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                </div>
-
-                                {/* Post-Processing Effects section */}
-                                <div className="space-y-3 bg-white/5 border border-white/10 rounded-xl p-3">
-                                    <div className="font-semibold text-sm">Post-Processing</div>
-
-                                    {/* Vignette */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Vignette</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                            <Slider value={[vignetteIntensity]} step={0.05}
-                                                    min={0} max={1}
-                                                    onValueChange={(v) => setVignetteIntensity(v[0] as number)}/>
-                                        </div>
-                                        <div className={`space-y-2 transition-opacity ${vignetteIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
-                                                <Slider value={[vignetteRadius]} step={0.05}
-                                                        min={0.1} max={1}
-                                                        disabled={vignetteIntensity === 0}
-                                                        onValueChange={(v) => setVignetteRadius(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Bloom */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Bloom</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                            <Slider value={[bloomIntensity]} step={0.1}
-                                                    min={0} max={3}
-                                                    onValueChange={(v) => setBloomIntensity(v[0] as number)}/>
-                                        </div>
-                                        <div className={`space-y-2 transition-opacity ${bloomIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Threshold</span>
-                                                <Slider value={[bloomThreshold]} step={0.05}
-                                                        min={0} max={1}
-                                                        disabled={bloomIntensity === 0}
-                                                        onValueChange={(v) => setBloomThreshold(v[0] as number)}/>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Chromatic Aberration */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <div className="text-xs font-semibold mb-1">Chromatic Aberration</div>
-                                        <div className="flex flex-row gap-2 items-center">
-                                            <span className="w-28 text-right pr-2 text-xs">Amount</span>
-                                            <Slider value={[chromaticAberration]} step={0.5}
-                                                    min={0} max={20}
-                                                    onValueChange={(v) => setChromaticAberration(v[0] as number)}/>
-                                        </div>
-                                    </div>
-
-                                    {/* Fresnel */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <Label
-                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                            <span className="text-xs w-24 text-right font-semibold">Rim Glow</span>
-                                            <div className={"w-full flex"}>
-                                                <Checkbox checked={fresnelEnabled}
-                                                          onChange={(checked: boolean) => setFresnelEnabled(checked)}/>
-                                            </div>
-                                        </Label>
-                                        <div className={`space-y-2 transition-opacity ${!fresnelEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Power</span>
-                                                <Slider value={[fresnelPower]} step={0.1}
-                                                        min={0.5} max={5}
-                                                        disabled={!fresnelEnabled}
-                                                        onValueChange={(v) => setFresnelPower(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                                <Slider value={[fresnelIntensity]} step={0.1}
-                                                        min={0} max={3}
-                                                        disabled={!fresnelEnabled}
-                                                        onValueChange={(v) => setFresnelIntensity(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Color</span>
-                                                <div className="w-full flex">
-                                                    <ColorSwatch
-                                                        color={{ color: fresnelColor, enabled: true }}
-                                                        showEnabled={false}
-                                                        onChange={(c) => setFresnelColor(c.color)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Iridescence */}
-                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
-                                        <Label
-                                            className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
-                                            <span className="text-xs w-24 text-right font-semibold">Iridescence</span>
-                                            <div className={"w-full flex"}>
-                                                <Checkbox checked={iridescenceEnabled}
-                                                          onChange={(checked: boolean) => setIridescenceEnabled(checked)}/>
-                                            </div>
-                                        </Label>
-                                        <div className={`space-y-2 transition-opacity ${!iridescenceEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Intensity</span>
-                                                <Slider value={[iridescenceIntensity]} step={0.05}
-                                                        min={0} max={1}
-                                                        disabled={!iridescenceEnabled}
-                                                        onValueChange={(v) => setIridescenceIntensity(v[0] as number)}/>
-                                            </div>
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <span className="w-28 text-right pr-2 text-xs">Speed</span>
-                                                <Slider value={[iridescenceSpeed]} step={0.1}
-                                                        min={0} max={5}
-                                                        disabled={!iridescenceEnabled}
-                                                        onValueChange={(v) => setIridescenceSpeed(v[0] as number)}/>
                                             </div>
                                         </div>
                                     </div>

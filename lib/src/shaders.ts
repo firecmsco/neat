@@ -1,5 +1,6 @@
 export const vertexShaderSource = `void main() {
     vUv = uv;
+    vPosition = position;
 
     // SCROLLING LOGIC
     // Separate multipliers for wave, color, and flow offsets
@@ -41,11 +42,36 @@ export const vertexShaderSource = `void main() {
     // We take the computed flow UVs and apply the color offset
     // Scale by plane height to match wave offset speed (world space vs UV space)
     vec3 color = u_colors[0].color;
-    // ...
-    vec2 adjustedUv = flowUv;
-    adjustedUv.y += colorOffset / u_plane_height; // Scroll the color mixing pattern
 
-    vec2 noise_cord = adjustedUv * u_color_pressure;
+    vec3 distortedPos = position;
+    if (u_shape_type > 0.5) {
+        if (u_flow_enabled > 0.5) {
+            if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
+                vec3 ppp = position / 25.0;
+                ppp.xyz += 0.1 * cos((1.5 * u_flow_scale) * ppp.yxz + 1.1 * u_time + vec3(0.1, 1.1, 2.1));
+                ppp.xyz += 0.1 * cos((2.3 * u_flow_scale) * ppp.zxy + 1.3 * u_time + vec3(3.2, 3.4, 1.2));
+                ppp.xyz += 0.1 * cos((2.2 * u_flow_scale) * ppp.yxz + 1.7 * u_time + vec3(1.8, 5.2, 3.1));
+                ppp.xyz += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.zxy + 1.4 * u_time + vec3(6.3, 3.9, 4.5));
+
+                float r = length(ppp);
+                distortedPos = mix(position, vec3(
+                    position.x * (1.0 - u_flow_ease) + r * u_flow_ease * 25.0,
+                    position.y,
+                    position.z * (1.0 - u_flow_ease) + r * u_flow_ease * 25.0
+                ), u_flow_ease);
+            }
+        }
+    }
+
+    vec3 noise_cord;
+    if (u_shape_type > 0.5) {
+        noise_cord = vec3(distortedPos.x / 50.0, (distortedPos.y + colorOffset) / 50.0, distortedPos.z / 50.0);
+    } else {
+        vec2 adjustedUv = flowUv;
+        adjustedUv.y += colorOffset / u_plane_height;
+        noise_cord = vec3(adjustedUv, 0.0);
+    }
+
     const float minNoise = .0;
     const float maxNoise = .9;
 
@@ -56,11 +82,16 @@ export const vertexShaderSource = `void main() {
                 float noiseSpeed = (1. + float(i)) * 0.11;
                 float noiseSeed = 13. + float(i) * 7.;
 
+                float noise_z = u_time * noiseSpeed;
+                if (u_shape_type > 0.5) {
+                    noise_z = noise_cord.z * u_color_pressure.x * u_color_pressure.x + u_time * noiseSpeed;
+                }
+
                 float noise = snoise(
                     vec3(
-                        noise_cord.x * u_color_pressure.x + u_time * noiseFlow * 2.,
-                        noise_cord.y * u_color_pressure.y,
-                        u_time * noiseSpeed
+                        noise_cord.x * u_color_pressure.x * u_color_pressure.x + u_time * noiseFlow * 2.,
+                        noise_cord.y * u_color_pressure.y * u_color_pressure.y,
+                        noise_z
                     ) + noiseSeed
                 ) - (.1 * float(i)) + (.5 * u_color_blending);
 
@@ -114,25 +145,51 @@ void main() {
     float texAlpha = 1.0;
 
     if (u_enable_procedural_texture > 0.5) {
-        vec2 ppp = -1.0 + 2.0 * finalUv;
-        ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
-        ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
-        ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
-        ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
-        float r = length(ppp);
-        
-        float vx = (finalUv.x * u_texture_ease) + (r * (1.0 - u_texture_ease));
-        float vy = (finalUv.y * u_texture_ease) + (0.0 * (1.0 - u_texture_ease));
-        vec2 texUv = vec2(vx, vy);
+        if (u_shape_type > 0.5) {
+            float parallaxFactor = 0.25;
+            float scrollOffset = (u_y_offset * u_y_offset_color_multiplier) * parallaxFactor;
+            vec3 scrolledPos = vPosition;
+            scrolledPos.y -= scrollOffset;
+            
+            vec3 p = (scrolledPos * 1.5) / 50.0;
+            vec2 uvX = p.yz + vec2(0.5);
+            vec2 uvY = p.zx + vec2(0.5);
+            vec2 uvZ = p.xy + vec2(0.5);
+            
+            vec4 colX = texture2D(u_procedural_texture, fract(uvX));
+            vec4 colY = texture2D(u_procedural_texture, fract(uvY));
+            vec4 colZ = texture2D(u_procedural_texture, fract(uvZ));
+            
+            vec3 n = normalize(vNormal);
+            vec3 blendWeights = abs(n);
+            blendWeights = blendWeights / (blendWeights.x + blendWeights.y + blendWeights.z + 0.0001);
+            
+            vec4 texSample = colX * blendWeights.x + colY * blendWeights.y + colZ * blendWeights.z;
+            baseColor = texSample.rgb;
+            if (u_transparent_texture_void > 0.5) {
+                texAlpha = texSample.a;
+            }
+        } else {
+            vec2 ppp = -1.0 + 2.0 * finalUv;
+            ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
+            ppp += 0.1 * cos((2.3 * u_flow_scale) * ppp.yx + 1.3 * u_time + vec2(3.2, 3.4));
+            ppp += 0.1 * cos((2.2 * u_flow_scale) * ppp.yx + 1.7 * u_time + vec2(1.8, 5.2));
+            ppp += u_flow_distortion_a * cos((u_flow_distortion_b * u_flow_scale) * ppp.yx + 1.4 * u_time + vec2(6.3, 3.9));
+            float r = length(ppp);
+            
+            float vx = (finalUv.x * u_texture_ease) + (r * (1.0 - u_texture_ease));
+            float vy = (finalUv.y * u_texture_ease) + (0.0 * (1.0 - u_texture_ease));
+            vec2 texUv = vec2(vx, vy);
 
-        float parallaxFactor = 0.25;
-        texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
-        texUv *= 1.5;
+            float parallaxFactor = 0.25;
+            texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
+            texUv *= 1.5;
 
-        vec4 texSample = texture2D(u_procedural_texture, fract(texUv));
-        baseColor = texSample.rgb;
-        if (u_transparent_texture_void > 0.5) {
-            texAlpha = texSample.a;
+            vec4 texSample = texture2D(u_procedural_texture, fract(texUv));
+            baseColor = texSample.rgb;
+            if (u_transparent_texture_void > 0.5) {
+                texAlpha = texSample.a;
+            }
         }
     } else {
         baseColor = v_color;
@@ -142,7 +199,13 @@ void main() {
 
     // === DOMAIN WARPING (simplified: 3 fbm calls instead of 5) ===
     if (u_domain_warp_enabled > 0.5) {
-        vec3 p = vec3(finalUv * u_domain_warp_scale, u_time * 0.15);
+        vec3 p;
+        if (u_shape_type > 0.5) {
+            p = vec3((vPosition / 50.0 + vec3(0.5)) * u_domain_warp_scale);
+            p.z += u_time * 0.15;
+        } else {
+            p = vec3(finalUv * u_domain_warp_scale, u_time * 0.15);
+        }
         vec2 q = vec2(fbm(p), fbm(p + vec3(5.2, 1.3, 0.0)));
         float f = fbm(p + vec3(4.0 * q, 0.0));
         vec3 warpColor = color * (1.0 + f * 0.8 * u_domain_warp_intensity);
@@ -198,7 +261,11 @@ void main() {
 
     // === VIGNETTE ===
     if (u_vignette_intensity > 0.0) {
-        float dist = length(vUv - vec2(0.5));
+        vec2 vigUv = vUv;
+        if (u_shape_type > 0.5) {
+            vigUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
+        }
+        float dist = length(vigUv - vec2(0.5));
         float vig = smoothstep(u_vignette_radius, u_vignette_radius * 0.3, dist);
         color *= mix(1.0, vig, u_vignette_intensity);
     }
@@ -213,7 +280,11 @@ void main() {
     // === CHROMATIC ABERRATION ===
     if (u_chromatic_aberration > 0.0) {
         float caAmount = u_chromatic_aberration * 0.008;
-        float dist = length(vUv - vec2(0.5));
+        vec2 caUv = vUv;
+        if (u_shape_type > 0.5) {
+            caUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
+        }
+        float dist = length(caUv - vec2(0.5));
         float rShift = v_displacement_amount + caAmount * dist;
         float bShift = v_displacement_amount - caAmount * dist;
         color.r *= 1.0 + rShift * caAmount * 10.0;
@@ -276,6 +347,7 @@ varying vec3 v_color;
 varying float v_displacement_amount;
 varying vec3 vViewPosition;
 varying vec3 vNormal;
+varying vec3 vPosition;
 
 uniform float u_time;
 uniform vec2 u_resolution;
@@ -312,6 +384,8 @@ uniform float u_fresnel_enabled;
 uniform float u_fresnel_power;
 uniform float u_fresnel_intensity;
 uniform vec3 u_fresnel_color;
+
+uniform float u_shape_type;
 `;
 }
 
@@ -325,6 +399,7 @@ varying vec3 v_color;
 varying float v_displacement_amount;
 varying vec3 vViewPosition;
 varying vec3 vNormal;
+varying vec3 vPosition;
 
 uniform float u_time;
 uniform vec2 u_resolution;
