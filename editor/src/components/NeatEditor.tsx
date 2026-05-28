@@ -155,6 +155,7 @@ function generateSmartConfig(archetype: string): NeatConfig {
     let flowEase = randomInRange(0.1, 0.5);
     
     let enableProceduralTexture = false;
+    let transparentTextureVoid = false;
     let textureVoidLikelihood = randomInRange(0.2, 0.45);
     let textureVoidWidthMin = randomInRange(50, 150);
     let textureVoidWidthMax = randomInRange(200, 450);
@@ -375,6 +376,7 @@ function generateSmartConfig(archetype: string): NeatConfig {
         flowScale,
         flowEase,
         enableProceduralTexture,
+        transparentTextureVoid,
         textureVoidLikelihood,
         textureVoidWidthMin,
         textureVoidWidthMax,
@@ -533,6 +535,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.textureSeed !== undefined) setTextureSeed(config.textureSeed);
         if (config.textureEase !== undefined) setTextureEase(config.textureEase);
         if (config.proceduralBackgroundColor !== undefined) setProceduralBackgroundColor(config.proceduralBackgroundColor);
+        setTransparentTextureVoid(config.transparentTextureVoid ?? false);
         setTextureShapeTriangles(config.textureShapeTriangles ?? 20);
         setTextureShapeCircles(config.textureShapeCircles ?? 15);
         setTextureShapeBars(config.textureShapeBars ?? 15);
@@ -555,6 +558,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setBloomIntensity(config.bloomIntensity ?? 0);
         setBloomThreshold(config.bloomThreshold ?? 0.7);
         setChromaticAberration(config.chromaticAberration ?? 0);
+
+        // 3D Shapes config setters
+        setShapeType(config.shapeType ?? 'plane');
+        setShapeRotationX(config.shapeRotationX ?? 0);
+        setShapeRotationY(config.shapeRotationY ?? 0);
+        setShapeRotationZ(config.shapeRotationZ ?? 0);
+        setShapeAutoRotateSpeedX(config.shapeAutoRotateSpeedX ?? 0);
+        setShapeAutoRotateSpeedY(config.shapeAutoRotateSpeedY ?? 0);
+        setSphereRadius(config.sphereRadius ?? 15);
+        setTorusRadius(config.torusRadius ?? 15);
+        setTorusTube(config.torusTube ?? 5);
+        setCylinderRadius(config.cylinderRadius ?? 10);
+        setCylinderHeight(config.cylinderHeight ?? 40);
+        setPlaneBend(config.planeBend ?? 0);
+        setPlaneTwist(config.planeTwist ?? 0);
     }
 
     const [selectedPreset, setSelectedPreset] = React.useState<string>("Neat");
@@ -604,6 +622,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [textureSeed, setTextureSeed] = React.useState<number>(defaultConfig.textureSeed ?? 333);
     const [textureEase, setTextureEase] = React.useState<number>(defaultConfig.textureEase ?? 0.5);
     const [proceduralBackgroundColor, setProceduralBackgroundColor] = React.useState<string>(defaultConfig.proceduralBackgroundColor ?? "#000000");
+    const [transparentTextureVoid, setTransparentTextureVoid] = React.useState<boolean>(defaultConfig.transparentTextureVoid ?? false);
     const [textureShapeTriangles, setTextureShapeTriangles] = React.useState<number>(defaultConfig.textureShapeTriangles ?? 20);
     const [textureShapeCircles, setTextureShapeCircles] = React.useState<number>(defaultConfig.textureShapeCircles ?? 15);
     const [textureShapeBars, setTextureShapeBars] = React.useState<number>(defaultConfig.textureShapeBars ?? 15);
@@ -626,6 +645,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [bloomIntensity, setBloomIntensity] = React.useState<number>(defaultConfig.bloomIntensity ?? 0);
     const [bloomThreshold, setBloomThreshold] = React.useState<number>(defaultConfig.bloomThreshold ?? 0.7);
     const [chromaticAberration, setChromaticAberration] = React.useState<number>(defaultConfig.chromaticAberration ?? 0);
+
+    // === Shape state ===
+    const [shapeType, setShapeType] = React.useState<'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon'>(defaultConfig.shapeType ?? 'plane');
+    const [shapeRotationX, setShapeRotationX] = React.useState<number>(defaultConfig.shapeRotationX ?? 0);
+    const [shapeRotationY, setShapeRotationY] = React.useState<number>(defaultConfig.shapeRotationY ?? 0);
+    const [shapeRotationZ, setShapeRotationZ] = React.useState<number>(defaultConfig.shapeRotationZ ?? 0);
+    const [shapeAutoRotateSpeedX, setShapeAutoRotateSpeedX] = React.useState<number>(defaultConfig.shapeAutoRotateSpeedX ?? 0);
+    const [shapeAutoRotateSpeedY, setShapeAutoRotateSpeedY] = React.useState<number>(defaultConfig.shapeAutoRotateSpeedY ?? 0);
+    const [sphereRadius, setSphereRadius] = React.useState<number>(defaultConfig.sphereRadius ?? 15);
+    const [torusRadius, setTorusRadius] = React.useState<number>(defaultConfig.torusRadius ?? 15);
+    const [torusTube, setTorusTube] = React.useState<number>(defaultConfig.torusTube ?? 5);
+    const [cylinderRadius, setCylinderRadius] = React.useState<number>(defaultConfig.cylinderRadius ?? 10);
+    const [cylinderHeight, setCylinderHeight] = React.useState<number>(defaultConfig.cylinderHeight ?? 40);
+    const [planeBend, setPlaneBend] = React.useState<number>(defaultConfig.planeBend ?? 0);
+    const [planeTwist, setPlaneTwist] = React.useState<number>(defaultConfig.planeTwist ?? 0);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const gradientRef = useRef<NeatGradient>();
@@ -845,6 +879,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             flowEnabled,
 
             enableProceduralTexture,
+            transparentTextureVoid,
             textureVoidLikelihood,
             textureVoidWidthMin,
             textureVoidWidthMax,
@@ -875,6 +910,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             bloomIntensity,
             bloomThreshold,
             chromaticAberration,
+
+            // Shapes parameters
+            shapeType,
+            shapeRotationX,
+            shapeRotationY,
+            shapeRotationZ,
+            shapeAutoRotateSpeedX,
+            shapeAutoRotateSpeedY,
+            sphereRadius,
+            torusRadius,
+            torusTube,
+            cylinderRadius,
+            cylinderHeight,
+            planeBend,
+            planeTwist,
         });
         return gradientRef.current.destroy;
     }, []);
@@ -919,6 +969,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.textureEase = textureEase;
         gradientRef.current.proceduralBackgroundColor = proceduralBackgroundColor;
         // @ts-ignore
+        gradientRef.current.transparentTextureVoid = transparentTextureVoid;
+        // @ts-ignore
         gradientRef.current.textureShapeTriangles = textureShapeTriangles;
         // @ts-ignore
         gradientRef.current.textureShapeCircles = textureShapeCircles;
@@ -944,6 +996,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.bloomIntensity = bloomIntensity;
         gradientRef.current.bloomThreshold = bloomThreshold;
         gradientRef.current.chromaticAberration = chromaticAberration;
+
+        // Shape properties
+        gradientRef.current.shapeType = shapeType;
+        gradientRef.current.shapeRotationX = shapeRotationX;
+        gradientRef.current.shapeRotationY = shapeRotationY;
+        gradientRef.current.shapeRotationZ = shapeRotationZ;
+        gradientRef.current.shapeAutoRotateSpeedX = shapeAutoRotateSpeedX;
+        gradientRef.current.shapeAutoRotateSpeedY = shapeAutoRotateSpeedY;
+        gradientRef.current.sphereRadius = sphereRadius;
+        gradientRef.current.torusRadius = torusRadius;
+        gradientRef.current.torusTube = torusTube;
+        gradientRef.current.cylinderRadius = cylinderRadius;
+        gradientRef.current.cylinderHeight = cylinderHeight;
+        gradientRef.current.planeBend = planeBend;
+        gradientRef.current.planeTwist = planeTwist;
     }, [
         tweened,
         colors,
@@ -952,6 +1019,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         // yOffset removed
         enableProceduralTexture,
         proceduralBackgroundColor,
+        transparentTextureVoid,
         textureVoidLikelihood,
         textureVoidWidthMin,
         textureVoidWidthMax,
@@ -972,7 +1040,92 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         iridescenceEnabled, iridescenceIntensity, iridescenceSpeed,
         bloomIntensity, bloomThreshold,
         chromaticAberration,
+
+        // Shape state dependencies
+        shapeType,
+        shapeRotationX,
+        shapeRotationY,
+        shapeRotationZ,
+        shapeAutoRotateSpeedX,
+        shapeAutoRotateSpeedY,
+        sphereRadius,
+        torusRadius,
+        torusTube,
+        cylinderRadius,
+        cylinderHeight,
+        planeBend,
+        planeTwist,
     ]);
+
+    // Mouse drag-to-rotate interaction for 3D shapes
+    const isDraggingRotation = React.useRef(false);
+    const dragStartPos = React.useRef({ x: 0, y: 0 });
+    const dragStartRotation = React.useRef({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handleStart = (clientX: number, clientY: number, target: HTMLElement) => {
+            // Check if click target is inside a sidebar or dialog
+            if (target.closest('.neat-sidebar') || target.closest('[role="dialog"]') || target.closest('button') || target.closest('input') || target.closest('select')) {
+                return;
+            }
+            
+            isDraggingRotation.current = true;
+            dragStartPos.current = { x: clientX, y: clientY };
+            dragStartRotation.current = { x: shapeRotationX, y: shapeRotationY };
+        };
+
+        const handleMove = (clientX: number, clientY: number) => {
+            if (!isDraggingRotation.current) return;
+            
+            const dx = clientX - dragStartPos.current.x;
+            const dy = clientY - dragStartPos.current.y;
+            
+            // Adjust rotation sensitivity
+            const sensitivity = 0.007;
+            setShapeRotationY(dragStartRotation.current.y + dx * sensitivity);
+            setShapeRotationX(dragStartRotation.current.x + dy * sensitivity);
+        };
+
+        const handleEnd = () => {
+            isDraggingRotation.current = false;
+        };
+
+        const handleMouseDown = (e: MouseEvent) => {
+            handleStart(e.clientX, e.clientY, e.target as HTMLElement);
+        };
+
+        const handleMouseMove = (e: MouseEvent) => {
+            handleMove(e.clientX, e.clientY);
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                handleStart(e.touches[0].clientX, e.touches[0].clientY, e.target as HTMLElement);
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                handleMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        };
+
+        window.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('touchend', handleEnd);
+
+        return () => {
+            window.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleEnd);
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleEnd);
+        };
+    }, [shapeRotationX, shapeRotationY]);
 
     const handleColorChange = (newValue: NeatColor, index: number) => {
         const newColors = [...colors];
@@ -1166,6 +1319,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
         // Texture generation
         enableProceduralTexture,
+        transparentTextureVoid,
         textureVoidLikelihood,
         textureVoidWidthMin,
         textureVoidWidthMax,
@@ -1196,6 +1350,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         bloomIntensity,
         bloomThreshold,
         chromaticAberration,
+
+        // Shape properties
+        shapeType,
+        shapeRotationX,
+        shapeRotationY,
+        shapeRotationZ,
+        shapeAutoRotateSpeedX,
+        shapeAutoRotateSpeedY,
+        sphereRadius,
+        torusRadius,
+        torusTube,
+        cylinderRadius,
+        cylinderHeight,
+        planeBend,
+        planeTwist,
     };
 
     // Reset FPS min/max whenever config changes
@@ -1606,7 +1775,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 {uiVisible && (
                     <Sheet
                         open={drawerOpen}
-                        className={"w-[380px] bg-neutral-900/75 text-white backdrop-blur-md border border-white/10 h-full"}
+                        className={"w-[380px] bg-neutral-900/75 text-white backdrop-blur-md border border-white/10 h-full neat-sidebar"}
                         onOpenChange={setDrawerOpen}
                         side={"right"}
                     >
@@ -1759,6 +1928,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 </div>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Transparent Void</span>
+                                                <div className="w-full flex">
+                                                    <Checkbox
+                                                        checked={transparentTextureVoid}
+                                                        onChange={(checked: boolean) => setTransparentTextureVoid(checked)}/>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
                                                 <span className="w-28 text-right pr-2 text-xs">Triangles</span>
                                                 <Slider
                                                     value={[textureShapeTriangles]}
@@ -1901,6 +2078,119 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             ℹ️ Wireframe mode: colors, grain, and texture effects are less visible
                                         </div>
                                     )}
+                                </div>
+
+                                {/* 3D Shapes section */}
+                                <div className="space-y-3 bg-white/5 border border-white/10 rounded-xl p-3">
+                                    <div className="font-semibold text-sm flex items-center justify-between">
+                                        <span>3D Shape</span>
+                                    </div>
+                                    <div className="flex flex-row gap-2 items-center">
+                                        <span className="w-28 text-right pr-2 text-xs">Shape Type</span>
+                                        <select
+                                            value={shapeType}
+                                            onChange={(e) => setShapeType(e.target.value as any)}
+                                            className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full"
+                                        >
+                                            <option value="plane">Plane</option>
+                                            <option value="sphere">Sphere</option>
+                                            <option value="torus">Torus</option>
+                                            <option value="cylinder">Cylinder</option>
+                                            <option value="ribbon">Ribbon</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Sphere Specific Controls */}
+                                    {shapeType === 'sphere' && (
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                            <Slider value={[sphereRadius]} min={5} max={30} step={0.5}
+                                                    onValueChange={(v) => setSphereRadius(v[0] as number)}/>
+                                        </div>
+                                    )}
+
+                                    {/* Torus Specific Controls */}
+                                    {shapeType === 'torus' && (
+                                        <>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                                <Slider value={[torusRadius]} min={5} max={30} step={0.5}
+                                                        onValueChange={(v) => setTorusRadius(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Tube Radius</span>
+                                                <Slider value={[torusTube]} min={1} max={15} step={0.2}
+                                                        onValueChange={(v) => setTorusTube(v[0] as number)}/>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Cylinder Specific Controls */}
+                                    {shapeType === 'cylinder' && (
+                                        <>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Radius</span>
+                                                <Slider value={[cylinderRadius]} min={2} max={25} step={0.5}
+                                                        onValueChange={(v) => setCylinderRadius(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Height</span>
+                                                <Slider value={[cylinderHeight]} min={10} max={60} step={1}
+                                                        onValueChange={(v) => setCylinderHeight(v[0] as number)}/>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Ribbon Specific Controls */}
+                                    {shapeType === 'ribbon' && (
+                                        <>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Bend</span>
+                                                <Slider value={[planeBend]} min={-5} max={5} step={0.1}
+                                                        onValueChange={(v) => setPlaneBend(v[0] as number)}/>
+                                            </div>
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <span className="w-28 text-right pr-2 text-xs">Twist</span>
+                                                <Slider value={[planeTwist]} min={-5} max={5} step={0.1}
+                                                        onValueChange={(v) => setPlaneTwist(v[0] as number)}/>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* 3D Rotations */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <div className="text-xs font-semibold mb-1">Rotations</div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Rotate X</span>
+                                            <Slider value={[shapeRotationX]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                    onValueChange={(v) => setShapeRotationX(v[0] as number)}/>
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Rotate Y</span>
+                                            <Slider value={[shapeRotationY]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                    onValueChange={(v) => setShapeRotationY(v[0] as number)}/>
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Rotate Z</span>
+                                            <Slider value={[shapeRotationZ]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                    onValueChange={(v) => setShapeRotationZ(v[0] as number)}/>
+                                        </div>
+                                    </div>
+
+                                    {/* Auto Rotations */}
+                                    <div className="space-y-2 pl-2 border-l-2 border-white/20">
+                                        <div className="text-xs font-semibold mb-1">Auto-Rotate Speed</div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">X Speed</span>
+                                            <Slider value={[shapeAutoRotateSpeedX]} min={-10} max={10} step={0.2}
+                                                    onValueChange={(v) => setShapeAutoRotateSpeedX(v[0] as number)}/>
+                                        </div>
+                                        <div className="flex flex-row gap-2 items-center">
+                                            <span className="w-28 text-right pr-2 text-xs">Y Speed</span>
+                                            <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2}
+                                                    onValueChange={(v) => setShapeAutoRotateSpeedY(v[0] as number)}/>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Waves section - disabled when speed is 0 */}

@@ -61,7 +61,7 @@ export function ImportConfigDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"4xl"}>
+        <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"2xl"}>
             <DialogTitle>Import Configuration</DialogTitle>
 
             <DialogContent>

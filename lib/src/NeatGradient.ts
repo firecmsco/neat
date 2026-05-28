@@ -1,5 +1,5 @@
 import { buildColorFunctions, buildNoise, buildVertUniforms, buildFragUniforms, fragmentShaderSource, vertexShaderSource } from "./shaders";
-import { generatePlaneGeometry, OrthographicCamera, updateCamera, Matrix4 } from "./math";
+import { generatePlaneGeometry, generateSphereGeometry, generateTorusGeometry, generateCylinderGeometry, generateRibbonGeometry, OrthographicCamera, updateCamera, Matrix4 } from "./math";
 
 console.info(
     "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nhttps://neat.firecms.co",
@@ -61,6 +61,7 @@ export class NeatGradient implements NeatController {
     private _grainSpeed: number = -1;
 
     private _colorBlending: number = -1;
+    private _resolution: number = 1;
 
     private _colors: NeatColor[] = [];
     private _wireframe: boolean = false;
@@ -87,6 +88,7 @@ export class NeatGradient implements NeatController {
     private _textureColorBlending: number = 0.01;
     private _textureSeed: number = 333;
     private _textureEase: number = 0.5;
+    private _transparentTextureVoid: boolean = false;
 
     // New effects
     private _domainWarpEnabled: boolean = false;
@@ -109,6 +111,21 @@ export class NeatGradient implements NeatController {
     private _bloomIntensity: number = 0;
     private _bloomThreshold: number = 0.7;
     private _chromaticAberration: number = 0;
+
+    // 3D Shapes config
+    private _shapeType: 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon' = 'plane';
+    private _shapeRotationX: number = 0;
+    private _shapeRotationY: number = 0;
+    private _shapeRotationZ: number = 0;
+    private _shapeAutoRotateSpeedX: number = 0;
+    private _shapeAutoRotateSpeedY: number = 0;
+    private _sphereRadius: number = 15;
+    private _torusRadius: number = 15;
+    private _torusTube: number = 5;
+    private _cylinderRadius: number = 10;
+    private _cylinderHeight: number = 40;
+    private _planeBend: number = 0;
+    private _planeTwist: number = 0;
 
     private _proceduralTexture: WebGLTexture | null = null;
     private _proceduralBackgroundColor: string = "#000000";
@@ -184,6 +201,7 @@ export class NeatGradient implements NeatController {
             textureSeed = 333,
             textureEase = 0.5,
             proceduralBackgroundColor = "#000000",
+            transparentTextureVoid = false,
             textureShapeTriangles = 20,
             textureShapeCircles = 15,
             textureShapeBars = 15,
@@ -204,6 +222,21 @@ export class NeatGradient implements NeatController {
             bloomIntensity = 0.0,
             bloomThreshold = 0.7,
             chromaticAberration = 0.0,
+
+            // 3D shapes default
+            shapeType = 'plane',
+            shapeRotationX = 0,
+            shapeRotationY = 0,
+            shapeRotationZ = 0,
+            shapeAutoRotateSpeedX = 0,
+            shapeAutoRotateSpeedY = 0,
+            sphereRadius = 15,
+            torusRadius = 15,
+            torusTube = 5,
+            cylinderRadius = 10,
+            cylinderHeight = 40,
+            planeBend = 0,
+            planeTwist = 0,
         } = config;
 
 
@@ -219,6 +252,7 @@ export class NeatGradient implements NeatController {
         this.waveFrequencyY = waveFrequencyY;
         this.waveAmplitude = waveAmplitude;
         this.colorBlending = colorBlending;
+        this._resolution = resolution;
         this.grainScale = grainScale;
         this.grainIntensity = grainIntensity;
         this.grainSparsity = grainSparsity;
@@ -255,6 +289,7 @@ export class NeatGradient implements NeatController {
         this.textureSeed = textureSeed;
         this.textureEase = textureEase;
         this._proceduralBackgroundColor = proceduralBackgroundColor;
+        this.transparentTextureVoid = transparentTextureVoid;
 
         this._textureShapeTriangles = textureShapeTriangles;
         this._textureShapeCircles = textureShapeCircles;
@@ -276,6 +311,20 @@ export class NeatGradient implements NeatController {
         this.bloomIntensity = bloomIntensity;
         this.bloomThreshold = bloomThreshold;
         this.chromaticAberration = chromaticAberration;
+
+        this._shapeType = shapeType;
+        this._shapeRotationX = shapeRotationX;
+        this._shapeRotationY = shapeRotationY;
+        this._shapeRotationZ = shapeRotationZ;
+        this._shapeAutoRotateSpeedX = shapeAutoRotateSpeedX;
+        this._shapeAutoRotateSpeedY = shapeAutoRotateSpeedY;
+        this._sphereRadius = sphereRadius;
+        this._torusRadius = torusRadius;
+        this._torusTube = torusTube;
+        this._cylinderRadius = cylinderRadius;
+        this._cylinderHeight = cylinderHeight;
+        this._planeBend = planeBend;
+        this._planeTwist = planeTwist;
 
         this.glState = this._initScene(resolution);
 
@@ -306,6 +355,34 @@ export class NeatGradient implements NeatController {
 
                 gl.uniform1f(locations.uniforms['u_time'], tick);
 
+                // Update modelViewMatrix in every frame to support dynamic rotation and auto-rotation
+                const camera = this.glState.camera;
+                const modelViewMatrix = new Matrix4();
+                modelViewMatrix.translate(-camera.position[0], -camera.position[1], -camera.position[2]);
+                modelViewMatrix.translate(0, 0, -1);
+                
+                let rx = this._shapeRotationX;
+                let ry = this._shapeRotationY;
+                let rz = this._shapeRotationZ;
+                
+                if (this._shapeAutoRotateSpeedX !== 0) {
+                    rx += tick * this._shapeAutoRotateSpeedX * 0.1;
+                }
+                if (this._shapeAutoRotateSpeedY !== 0) {
+                    ry += tick * this._shapeAutoRotateSpeedY * 0.1;
+                }
+                
+                if (this._shapeType === 'plane' || this._shapeType === 'ribbon') {
+                    modelViewMatrix.rotateX(rx - Math.PI / 3.5);
+                } else {
+                    modelViewMatrix.rotateX(rx);
+                }
+                modelViewMatrix.rotateY(ry);
+                modelViewMatrix.rotateZ(rz);
+                
+                const mvLoc = gl.getUniformLocation(program, "modelViewMatrix");
+                gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
+
                 // Only upload static uniforms when they've been modified
                 if (this._uniformsDirty) {
                     gl.uniform2f(locations.uniforms['u_resolution'], this._ref.clientWidth, this._ref.clientHeight);
@@ -333,8 +410,16 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_flow_ease'], this._flowEase);
                     gl.uniform1f(locations.uniforms['u_flow_enabled'], this._flowEnabled ? 1.0 : 0.0);
 
+                    let shapeTypeVal = 0.0;
+                    if (this._shapeType === 'sphere') shapeTypeVal = 1.0;
+                    else if (this._shapeType === 'torus') shapeTypeVal = 2.0;
+                    else if (this._shapeType === 'cylinder') shapeTypeVal = 3.0;
+                    else if (this._shapeType === 'ribbon') shapeTypeVal = 4.0;
+                    gl.uniform1f(locations.uniforms['u_shape_type'], shapeTypeVal);
+
                     gl.uniform1f(locations.uniforms['u_enable_procedural_texture'], this._enableProceduralTexture ? 1.0 : 0.0);
                     gl.uniform1f(locations.uniforms['u_texture_ease'], this._textureEase);
+                    gl.uniform1f(locations.uniforms['u_transparent_texture_void'], this._transparentTextureVoid ? 1.0 : 0.0);
 
                     gl.uniform1f(locations.uniforms['u_domain_warp_enabled'], this._domainWarpEnabled ? 1.0 : 0.0);
                     gl.uniform1f(locations.uniforms['u_domain_warp_intensity'], this._domainWarpIntensity);
@@ -430,7 +515,7 @@ export class NeatGradient implements NeatController {
 
             gl.viewport(0, 0, width, height);
 
-            updateCamera(camera, width, height);
+            updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
 
 
 
@@ -751,7 +836,9 @@ export class NeatGradient implements NeatController {
     }
 
     set resolution(resolution: number) {
+        if (this._resolution === resolution) return;
         this._uniformsDirty = true;
+        this._resolution = resolution;
         if (this.glState) {
             const gl = this.glState.gl;
             gl.deleteProgram(this.glState.program);
@@ -903,6 +990,18 @@ export class NeatGradient implements NeatController {
         this._textureEase = value;
     }
 
+    get transparentTextureVoid(): boolean {
+        return this._transparentTextureVoid;
+    }
+
+    set transparentTextureVoid(value: boolean) {
+        this._uniformsDirty = true;
+        this._transparentTextureVoid = value;
+        if (this._enableProceduralTexture) {
+            this._textureNeedsUpdate = true;
+        }
+    }
+
     set proceduralBackgroundColor(value: string) {
         this._uniformsDirty = true;
         this._proceduralBackgroundColor = value;
@@ -932,6 +1031,60 @@ export class NeatGradient implements NeatController {
         if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
 
+    _updateGeometry() {
+        if (!this.glState) return;
+        const gl = this.glState.gl;
+        const resolution = this._resolution || 1;
+
+        let geometry;
+        if (this._shapeType === 'sphere') {
+            geometry = generateSphereGeometry(this._sphereRadius, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'torus') {
+            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'cylinder') {
+            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'ribbon') {
+            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution, this._planeBend, this._planeTwist);
+        } else {
+            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+        }
+        const { position, normal, uv, index, wireframeIndex } = geometry;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
+        gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
+        gl.bufferData(gl.ARRAY_BUFFER, normal, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
+        gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.wireframeIndex);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, wireframeIndex, gl.STATIC_DRAW);
+
+        // Restore default bound element buffer
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+
+        this.glState.indexCount = index.length;
+        this.glState.wireframeIndexCount = wireframeIndex.length;
+        this.glState.indexType = (index instanceof Uint32Array) ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+
+        // Keep camera updated with the new shapeType and dimensions
+        const width = this._ref.clientWidth;
+        const height = this._ref.clientHeight;
+        updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
+
+        // Recompute projection matrix
+        const projLoc = gl.getUniformLocation(this.glState.program, "projectionMatrix");
+        gl.useProgram(this.glState.program);
+        gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
+
+        this._uniformsDirty = true;
+    }
+
     _hexToRgb(hex: string): [number, number, number] {
         const bigint = parseInt(hex.replace('#', ''), 16);
         return [
@@ -958,8 +1111,20 @@ export class NeatGradient implements NeatController {
 
         gl.viewport(0, 0, width, height);
 
-        // Generate plane geometry with Uint32Array for large meshes
-        const { position, normal, uv, index, wireframeIndex } = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+        // Generate parametric geometry based on shapeType
+        let geometry;
+        if (this._shapeType === 'sphere') {
+            geometry = generateSphereGeometry(this._sphereRadius, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'torus') {
+            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'cylinder') {
+            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, 120 * resolution, 120 * resolution);
+        } else if (this._shapeType === 'ribbon') {
+            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution, this._planeBend, this._planeTwist);
+        } else {
+            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+        }
+        const { position, normal, uv, index, wireframeIndex } = geometry;
 
         const positionBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -1025,7 +1190,7 @@ export class NeatGradient implements NeatController {
 
         const camera = new OrthographicCamera(0, 0, 0, 0, 0, 1000);
         camera.position = [0, 0, 5];
-        updateCamera(camera, width, height);
+        updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType);
 
         // Define attributes
         const aPosition = gl.getAttribLocation(program, "position");
@@ -1046,17 +1211,7 @@ export class NeatGradient implements NeatController {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-        const modelViewMatrix = new Matrix4();
-        // The View Matrix is the inverse of the Camera's position
-        // Camera is at [0, 0, 5], so view matrix translates by [0, 0, -5]
-        modelViewMatrix.translate(-camera.position[0], -camera.position[1], -camera.position[2]);
-
-        // The Model Matrix mimicking: plane.rotation.x = -Math.PI / 3.5; plane.position.z = -1;
-        modelViewMatrix.translate(0, 0, -1);
-        modelViewMatrix.rotateX(-Math.PI / 3.5);
-
-        const mvLoc = gl.getUniformLocation(program, "modelViewMatrix");
-        gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
+        // modelViewMatrix is set dynamically in the render loop
 
         const projLoc = gl.getUniformLocation(program, "projectionMatrix");
         gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
@@ -1077,12 +1232,13 @@ export class NeatGradient implements NeatController {
             "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
             "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
 
-            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_saturation", "u_brightness", "u_color_blending",
+            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_transparent_texture_void", "u_saturation", "u_brightness", "u_color_blending",
             "u_domain_warp_enabled", "u_domain_warp_intensity", "u_domain_warp_scale",
             "u_vignette_intensity", "u_vignette_radius",
             "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
             "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
-            "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration"
+            "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
+            "u_shape_type"
         ];
 
         const locations: WebGLState["locations"] = {
@@ -1263,8 +1419,12 @@ export class NeatGradient implements NeatController {
         if (!ctx) return null;
 
         // Start filled with the chosen void color so gaps show that color
-        ctx.fillStyle = baseColor;
-        ctx.fillRect(0, 0, texSize, texSize);
+        if (this._transparentTextureVoid) {
+            ctx.clearRect(0, 0, texSize, texSize);
+        } else {
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, texSize, texSize);
+        }
 
         // Determine layout segments (matter vs void)
         let layoutHead = 0;
@@ -1413,6 +1573,103 @@ export class NeatGradient implements NeatController {
         if (this._chromaticAberration !== aberration) {
             this._chromaticAberration = aberration;
             this._uniformsDirty = true;
+        }
+    }
+
+    // Getters and Setters for 3D Shapes
+    get shapeType(): 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon' {
+        return this._shapeType;
+    }
+    set shapeType(val: 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon') {
+        if (this._shapeType !== val) {
+            this._shapeType = val;
+            this._updateGeometry();
+        }
+    }
+
+    get shapeRotationX(): number { return this._shapeRotationX; }
+    set shapeRotationX(val: number) {
+        this._shapeRotationX = val;
+        this._uniformsDirty = true;
+    }
+
+    get shapeRotationY(): number { return this._shapeRotationY; }
+    set shapeRotationY(val: number) {
+        this._shapeRotationY = val;
+        this._uniformsDirty = true;
+    }
+
+    get shapeRotationZ(): number { return this._shapeRotationZ; }
+    set shapeRotationZ(val: number) {
+        this._shapeRotationZ = val;
+        this._uniformsDirty = true;
+    }
+
+    get shapeAutoRotateSpeedX(): number { return this._shapeAutoRotateSpeedX; }
+    set shapeAutoRotateSpeedX(val: number) {
+        this._shapeAutoRotateSpeedX = val;
+        this._uniformsDirty = true;
+    }
+
+    get shapeAutoRotateSpeedY(): number { return this._shapeAutoRotateSpeedY; }
+    set shapeAutoRotateSpeedY(val: number) {
+        this._shapeAutoRotateSpeedY = val;
+        this._uniformsDirty = true;
+    }
+
+    get sphereRadius(): number { return this._sphereRadius; }
+    set sphereRadius(val: number) {
+        if (this._sphereRadius !== val) {
+            this._sphereRadius = val;
+            this._updateGeometry();
+        }
+    }
+
+    get torusRadius(): number { return this._torusRadius; }
+    set torusRadius(val: number) {
+        if (this._torusRadius !== val) {
+            this._torusRadius = val;
+            this._updateGeometry();
+        }
+    }
+
+    get torusTube(): number { return this._torusTube; }
+    set torusTube(val: number) {
+        if (this._torusTube !== val) {
+            this._torusTube = val;
+            this._updateGeometry();
+        }
+    }
+
+    get cylinderRadius(): number { return this._cylinderRadius; }
+    set cylinderRadius(val: number) {
+        if (this._cylinderRadius !== val) {
+            this._cylinderRadius = val;
+            this._updateGeometry();
+        }
+    }
+
+    get cylinderHeight(): number { return this._cylinderHeight; }
+    set cylinderHeight(val: number) {
+        if (this._cylinderHeight !== val) {
+            this._cylinderHeight = val;
+            this._updateGeometry();
+        }
+    }
+
+    get planeBend(): number { return this._planeBend; }
+    set planeBend(val: number) {
+        if (this._planeBend !== val) {
+            this._planeBend = val;
+            this._updateGeometry();
+        }
+    }
+
+    get planeTwist(): number { return this._planeTwist; }
+    set planeTwist(val: number) {
+        if (this._planeTwist !== val) {
+            this._planeTwist = val;
+            this._updateGeometry();
         }
     }
 }

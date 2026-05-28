@@ -68,6 +68,22 @@ export type NeatConfig = {
 
     // Chromatic aberration
     chromaticAberration?: number;
+
+    // 3D Shapes config
+    shapeType?: 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon';
+    shapeRotationX?: number;
+    shapeRotationY?: number;
+    shapeRotationZ?: number;
+    shapeAutoRotateSpeedX?: number;
+    shapeAutoRotateSpeedY?: number;
+    sphereRadius?: number;
+    torusRadius?: number;
+    torusTube?: number;
+    cylinderRadius?: number;
+    cylinderHeight?: number;
+    planeBend?: number;
+    planeTwist?: number;
+    transparentTextureVoid?: boolean;
 };
 
 export type NeatColor = {

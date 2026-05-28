@@ -137,7 +137,7 @@ window.addEventListener("scroll", () => {
 });`;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"4xl"}>
+        <Dialog open={open} onOpenChange={onOpenChange} maxWidth={"2xl"}>
 
             <DialogTitle>
                 <div className="flex items-center justify-between w-full">

@@ -77,7 +77,10 @@ export const vertexShaderSource = `void main() {
 
     // 5. VERTEX POSITION
     vec3 newPosition = position + normal * v_displacement_amount * u_wave_amplitude;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+    vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
+    vViewPosition = mvPosition.xyz;
+    vNormal = normalize((modelViewMatrix * vec4(normal, 0.0)).xyz);
+    gl_Position = projectionMatrix * mvPosition;
     v_new_position = gl_Position;
 }
 `;
@@ -108,6 +111,7 @@ void main() {
     vec2 finalUv = vFlowUv;
     
     vec3 baseColor;
+    float texAlpha = 1.0;
 
     if (u_enable_procedural_texture > 0.5) {
         vec2 ppp = -1.0 + 2.0 * finalUv;
@@ -125,8 +129,11 @@ void main() {
         texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
         texUv *= 1.5;
 
-        vec4 texSample = texture2D(u_procedural_texture, texUv);
+        vec4 texSample = texture2D(u_procedural_texture, fract(texUv));
         baseColor = texSample.rgb;
+        if (u_transparent_texture_void > 0.5) {
+            texAlpha = texSample.a;
+        }
     } else {
         baseColor = v_color;
     }
@@ -144,9 +151,34 @@ void main() {
     }
 
     // Post-processing
-    color += v_displacement_amount * u_highlights;
-    float shadowFactor = 1.0 - v_displacement_amount;
-    color -= shadowFactor * shadowFactor * u_shadows;
+    // Compute dynamic pixel-perfect normal using smooth normal
+    vec3 normal = normalize(vNormal);
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    float ndotv = dot(normal, viewDir);
+    
+    // Cull back-faces for closed 3D shapes (Sphere=1, Torus=2, Cylinder=3)
+    if (u_shape_type > 0.5 && u_shape_type < 3.5) {
+        if (ndotv < 0.0) {
+            discard;
+        }
+    } else {
+        // Double-sided shapes (Plane, Ribbon): flip normal if back-facing
+        if (ndotv < 0.0) {
+            normal = -normal;
+            ndotv = -ndotv;
+        }
+    }
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    float diffuse = max(dot(normal, lightDir), 0.0);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float specular = pow(max(dot(normal, halfDir), 0.0), 32.0);
+
+    // Blend smooth 3D shading with smooth height-based wave shading
+    color += specular * u_highlights;
+    color += v_displacement_amount * u_highlights * 0.5;
+    float heightShadow = 1.0 - v_displacement_amount;
+    color -= heightShadow * heightShadow * u_shadows * 0.5;
+    color -= (1.0 - diffuse) * u_shadows * 0.5;
     color = saturation(color, 1.0 + u_saturation);
     color = color * u_brightness;
 
@@ -205,9 +237,25 @@ void main() {
         grain *= u_grain_intensity;
     }
 
-    color += vec3(grain);
+    float edgeAlpha = 1.0;
+    
+    // Silhouette falloff for 3D shapes
+    if (u_shape_type > 0.5) {
+        edgeAlpha = smoothstep(0.0, 0.25, ndotv);
+    }
+    
+    // UV boundary falloff for open shapes
+    if (u_shape_type == 3.0) { // Cylinder: fade top/bottom ends
+        float vFade = smoothstep(0.0, 0.08, vUv.y) * smoothstep(1.0, 0.92, vUv.y);
+        edgeAlpha *= vFade;
+    } else if (u_shape_type == 4.0) { // Ribbon: fade all 4 borders
+        float uFade = smoothstep(0.0, 0.05, vUv.x) * smoothstep(1.0, 0.95, vUv.x);
+        float vFade = smoothstep(0.0, 0.05, vUv.y) * smoothstep(1.0, 0.95, vUv.y);
+        edgeAlpha *= uFade * vFade;
+    }
 
-    gl_FragColor = vec4(color, 1.0);
+    edgeAlpha *= texAlpha;
+    gl_FragColor = vec4(color, edgeAlpha);
 }
 `;
 
@@ -226,6 +274,8 @@ varying vec2 vFlowUv;
 varying vec4 v_new_position;
 varying vec3 v_color;
 varying float v_displacement_amount;
+varying vec3 vViewPosition;
+varying vec3 vNormal;
 
 uniform float u_time;
 uniform vec2 u_resolution;
@@ -270,8 +320,11 @@ export function buildFragUniforms(): string {
 
 varying vec2 vUv;
 varying vec2 vFlowUv;
+varying vec4 v_new_position;
 varying vec3 v_color;
 varying float v_displacement_amount;
+varying vec3 vViewPosition;
+varying vec3 vNormal;
 
 uniform float u_time;
 uniform vec2 u_resolution;
@@ -327,6 +380,8 @@ uniform float u_bloom_threshold;
 
 // Chromatic aberration
 uniform float u_chromatic_aberration;
+uniform float u_shape_type;
+uniform float u_transparent_texture_void;
 `;
 }
 
