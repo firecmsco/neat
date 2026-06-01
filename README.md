@@ -138,9 +138,9 @@ function BackgroundGradient() {
 | Property | Type | Default | Range | Description |
 |----------|------|---------|-------|-------------|
 | `speed` | `number` | `4` | `0-10` | Animation speed (0 = static) |
-| `waveAmplitude` | `number` | `5` | `0-10` | Wave height intensity |
-| `waveFrequencyX` | `number` | `2` | `0-10` | Horizontal wave frequency |
-| `waveFrequencyY` | `number` | `3` | `0-10` | Vertical wave frequency |
+| `waveAmplitude` | `number` | `3` | `0-10` | Wave height intensity |
+| `waveFrequencyX` | `number` | `5` | `0-10` | Horizontal wave frequency |
+| `waveFrequencyY` | `number` | `5` | `0-10` | Vertical wave frequency |
 
 ### Colors
 
@@ -166,12 +166,94 @@ function BackgroundGradient() {
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `shadows` | `number` | `0` | Shadow intensity (0-10) |
-| `highlights` | `number` | `5` | Highlight intensity (0-10) |
-| `grainIntensity` | `number` | `0` | Film grain amount (0-1) |
+| `shadows` | `number` | `4` | Shadow intensity (0-10) |
+| `highlights` | `number` | `4` | Highlight intensity (0-10) |
+| `grainIntensity` | `number` | `0.55` | Film grain amount (0-1) |
 | `grainScale` | `number` | `2` | Grain size |
-| `grainSpeed` | `number` | `1` | Grain animation speed |
+| `grainSparsity` | `number` | `0.0` | Grain distribution sparsity (0-1) |
+| `grainSpeed` | `number` | `0.1` | Grain animation speed |
 | `wireframe` | `boolean` | `false` | Show wireframe mesh |
+
+### Advanced Shaders & Post-Processing
+
+#### Domain Warping
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `domainWarpEnabled` | `boolean` | `false` | Enable domain warping distortion |
+| `domainWarpIntensity` | `number` | `0.5` | Strength of domain warping |
+| `domainWarpScale` | `number` | `1.0` | Spatial frequency scale of warping |
+
+#### Vignette
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `vignetteIntensity` | `number` | `0.0` | Darkness intensity at corners (0-1) |
+| `vignetteRadius` | `number` | `0.8` | Radial falloff start distance |
+
+#### Fresnel (Rim Glow)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `fresnelEnabled` | `boolean` | `false` | Enable glowing outer edge shader effect |
+| `fresnelPower` | `number` | `2.0` | Falloff exponent of the rim glow |
+| `fresnelIntensity` | `number` | `0.5` | Brightness of the glow effect |
+| `fresnelColor` | `string` | `"#FFFFFF"` | Color of the rim glow (hex) |
+
+#### Iridescence
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `iridescenceEnabled` | `boolean` | `false` | Enable soap-bubble style color shifting |
+| `iridescenceIntensity` | `number` | `0.5` | Strength of the color shift effect |
+| `iridescenceSpeed` | `number` | `1.0` | Color cycle speed |
+
+#### Bloom (Fake Glow)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `bloomIntensity` | `number` | `0.0` | Intensity of the glow bleeding from highlights |
+| `bloomThreshold` | `number` | `0.7` | Brightness threshold for bloom candidate pixels |
+
+#### Chromatic Aberration
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chromaticAberration` | `number` | `0.0` | Lens color channel splitting distance |
+
+### 3D Geometries & Shapes
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `shapeType` | `'plane' \| 'sphere' \| 'torus' \| 'cylinder' \| 'ribbon'` | `'plane'` | 3D shape geometry to render the gradient on |
+| `shapeRotationX` | `number` | `0` | Manual X rotation (radians) |
+| `shapeRotationY` | `number` | `0` | Manual Y rotation (radians) |
+| `shapeRotationZ` | `number` | `0` | Manual Z rotation (radians) |
+| `shapeAutoRotateSpeedX` | `number` | `0` | Auto-rotation speed on X-axis |
+| `shapeAutoRotateSpeedY` | `number` | `0` | Auto-rotation speed on Y-axis |
+| `sphereRadius` | `number` | `15` | Radius of the sphere shape |
+| `torusRadius` | `number` | `15` | Torus primary ring radius |
+| `torusTube` | `number` | `5` | Torus inner tube thickness |
+| `cylinderRadius` | `number` | `10` | Radius of the cylinder shape |
+| `cylinderHeight` | `number` | `40` | Height of the cylinder shape |
+| `planeBend` | `number` | `0` | Bending distortion applied to the plane geometry |
+| `planeTwist` | `number` | `0` | Twisting distortion applied to the plane geometry |
+| `silhouetteFade` | `number` | `0.25` | Edge transparency fade for sphere/torus |
+| `cylinderFade` | `number` | `0.08` | Transparency fade towards the ends of the cylinder |
+| `ribbonFade` | `number` | `0.05` | Transparency fade towards the ends of the ribbon |
+
+### Camera Settings
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `cameraLock` | `boolean` | `false` | Lock camera controls and prevent drag rotation |
+| `cameraX` | `number` | `0` | Camera offset along X-axis |
+| `cameraY` | `number` | `0` | Camera offset along Y-axis |
+| `cameraZ` | `number` | `0` | Camera offset along Z-axis |
+| `cameraRotationX` | `number` | `0` | Camera pitch rotation (radians) |
+| `cameraRotationY` | `number` | `0` | Camera yaw rotation (radians) |
+| `cameraRotationZ` | `number` | `0` | Camera roll rotation (radians) |
+| `cameraZoom` | `number` | `1.0` | Camera zoom factor |
 
 ### Background
 
@@ -226,11 +308,63 @@ window.addEventListener("scroll", () => {
 | `textureColorBlending` | `number` | `0.01` | Color mixing in texture (0-1) |
 | `textureSeed` | `number` | `333` | Random seed for texture |
 | `textureEase` | `number` | `0.5` | Flow/Image blend (0=flow, 1=image) |
+| `transparentTextureVoid` | `boolean` | `false` | Render voids as transparent instead of using proceduralBackgroundColor |
 | `proceduralBackgroundColor` | `string` | `"#000000"` | Texture void color |
 | `textureShapeTriangles` | `number` | `20` | Number of triangle shapes |
 | `textureShapeCircles` | `number` | `15` | Number of circle shapes |
 | `textureShapeBars` | `number` | `15` | Number of bar shapes |
 | `textureShapeSquiggles` | `number` | `10` | Number of squiggle shapes |
+
+---
+
+## 🛠️ API Methods
+
+### `destroy()`
+
+Cleans up the WebGL context, event listeners, and removes any injected DOM elements. Call this when the component unmounts to prevent memory leaks (essential for React, Vue, etc.).
+
+```typescript
+gradient.destroy();
+```
+
+### `downloadAsPNG(filename?)`
+
+Triggers a browser download of the current frame as a PNG image.
+
+- **`filename`**: Optional string for the output file (defaults to `"neat.png"`).
+
+```typescript
+gradient.downloadAsPNG("my-custom-gradient.png");
+```
+
+### `recordVideo(options?)`
+
+Records the canvas animation and saves it as a high-quality video file (MP4 or WebM depending on browser codec support) with a subtle watermark. Returns a `stop` function to end recording early.
+
+- **`durationMs`**: Duration of the recording in milliseconds (default: `5000`).
+- **`filename`**: Output file name (without extension, default: `"neat.firecms.co"`).
+- **`width`**: Output video width in pixels (default: current canvas width).
+- **`height`**: Output video height in pixels (default: current canvas height).
+- **`format`**: Preferred format `'mp4'` or `'webm'` (default: `'mp4'`).
+- **`onProgress`**: Callback triggered with progress value between `0` and `1`.
+- **`onComplete`**: Callback triggered when recording successfully finishes.
+
+```typescript
+const stopRecording = gradient.recordVideo({
+    durationMs: 8000,
+    filename: "neat-gradient-animation",
+    format: "mp4",
+    onProgress: (progress) => {
+        console.log(`Recording progress: ${Math.round(progress * 100)}%`);
+    },
+    onComplete: () => {
+        console.log("Recording complete!");
+    }
+});
+
+// To stop recording early:
+// stopRecording();
+```
 
 ---
 
@@ -248,6 +382,15 @@ gradient.colors = [
     { color: "#FF0000", enabled: true },
     { color: "#00FF00", enabled: true }
 ];
+
+// 3D Shape Geometries & Auto-Rotation
+gradient.shapeType = "sphere";
+gradient.shapeAutoRotateSpeedY = 1.5;
+
+// Advanced Post-Processing Effects
+gradient.iridescenceEnabled = true;
+gradient.fresnelEnabled = true;
+gradient.fresnelColor = "#FF0055";
 
 // Effects
 gradient.grainIntensity = 0.5;

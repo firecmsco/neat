@@ -443,12 +443,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         return base as Record<string, NeatConfig>;
     }, [randomPresetConfig]);
 
-    const isPlanePreset = React.useCallback((presetName: string) => {
-        const config = allPresets[presetName];
-        if (!config) return false;
-        return config.shapeType === 'plane' || config.shapeType === undefined;
-    }, [allPresets]);
-
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
 
@@ -1491,6 +1485,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             const timer = setTimeout(() => setToast(null), 3500);
             return () => clearTimeout(timer);
         }
+        return;
     }, [toast]);
 
     const handleDrag = (e: React.DragEvent) => {
@@ -1982,7 +1977,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                                         <Select
                                             value={selectedPreset}
-                                            className={fontClass + " text-xl bg-white/10 border border-white/20 rounded-lg px-2 py-1"}
+                                            className={fontClass + " text-xl bg-white/10 border border-white/20 rounded-lg px-2 py-1 w-full"}
                                             onValueChange={(preset) => {
                                                 logEvent(analytics, 'select_preset', { preset });
                                                 setPreset(preset);
@@ -2049,21 +2044,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             <select
                                                 value={shapeType}
                                                 onChange={(e) => setShapeType(e.target.value as any)}
-                                                disabled={isPlanePreset(selectedPreset)}
-                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-full"
                                             >
-                                                <option value="plane">Plane {isPlanePreset(selectedPreset) ? "(Locked)" : ""}</option>
+                                                <option value="plane">Plane</option>
                                                 <option value="sphere">Sphere</option>
                                                 <option value="torus">Torus</option>
                                                 <option value="cylinder">Cylinder</option>
                                                 <option value="ribbon">Ribbon</option>
                                             </select>
                                         </div>
-                                        {isPlanePreset(selectedPreset) && (
-                                            <div className="text-[10px] text-amber-400 pl-28 leading-normal mt-0.5">
-                                                ℹ️ This preset is locked to a Plane shape.
-                                            </div>
-                                        )}
 
                                         {/* Sphere Specific Controls */}
                                         {shapeType === 'sphere' && (
@@ -2141,12 +2130,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             <>
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Bend</span>
-                                                    <Slider value={[planeBend]} min={-5} max={5} step={0.1}
+                                                    <Slider value={[planeBend]} min={-5} max={5} step={0.1} resetValue={0}
                                                             onValueChange={(v) => setPlaneBend(v[0] as number)}/>
                                                 </div>
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Twist</span>
-                                                    <Slider value={[planeTwist]} min={-5} max={5} step={0.1}
+                                                    <Slider value={[planeTwist]} min={-5} max={5} step={0.1} resetValue={0}
                                                             onValueChange={(v) => setPlaneTwist(v[0] as number)}/>
                                                 </div>
                                                 <div className="flex flex-row gap-2 items-center">
@@ -2204,6 +2193,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     step={1}
                                                     min={0}
                                                     max={100000}
+                                                    resetValue={0}
                                                     onValueChange={(v) => setYOffset(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
@@ -2261,21 +2251,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around X axis. Double-click label or slider to reset to 0.">
                                                     Rotate X
                                                 </Tooltip>
-                                                <Slider value={[shapeRotationX]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                <Slider value={[shapeRotationX]} min={-Math.PI} max={Math.PI} step={0.05} resetValue={0}
                                                         onValueChange={(v) => setShapeRotationX(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeRotationY(0)}>
                                                 <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around Y axis. Double-click label or slider to reset to 0.">
                                                     Rotate Y
                                                 </Tooltip>
-                                                <Slider value={[shapeRotationY]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                <Slider value={[shapeRotationY]} min={-Math.PI} max={Math.PI} step={0.05} resetValue={0}
                                                         onValueChange={(v) => setShapeRotationY(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeRotationZ(0)}>
                                                 <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Manual rotation around Z axis. Double-click label or slider to reset to 0.">
                                                     Rotate Z
                                                 </Tooltip>
-                                                <Slider value={[shapeRotationZ]} min={-Math.PI} max={Math.PI} step={0.05}
+                                                <Slider value={[shapeRotationZ]} min={-Math.PI} max={Math.PI} step={0.05} resetValue={0}
                                                         onValueChange={(v) => setShapeRotationZ(v[0] as number)}/>
                                             </div>
                                         </div>
@@ -2299,14 +2289,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Continuous auto-rotation speed around X axis. Double-click label or slider to reset to 0.">
                                                     X Speed
                                                 </Tooltip>
-                                                <Slider value={[shapeAutoRotateSpeedX]} min={-10} max={10} step={0.2}
+                                                <Slider value={[shapeAutoRotateSpeedX]} min={-10} max={10} step={0.2} resetValue={0}
                                                         onValueChange={(v) => setShapeAutoRotateSpeedX(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setShapeAutoRotateSpeedY(0)}>
                                                 <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Continuous auto-rotation speed around Y axis. Double-click label or slider to reset to 0.">
                                                     Y Speed
                                                 </Tooltip>
-                                                <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2}
+                                                <Slider value={[shapeAutoRotateSpeedY]} min={-10} max={10} step={0.2} resetValue={0}
                                                         onValueChange={(v) => setShapeAutoRotateSpeedY(v[0] as number)}/>
                                             </div>
                                         </div>
@@ -2356,17 +2346,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraX(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace X</span>
-                                                <Slider value={[cameraX]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                <Slider value={[cameraX]} min={-50} max={50} step={0.5} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraX(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraY(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace Y</span>
-                                                <Slider value={[cameraY]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                <Slider value={[cameraY]} min={-50} max={50} step={0.5} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraY(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraZ(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Displace Z</span>
-                                                <Slider value={[cameraZ]} min={-50} max={50} step={0.5} disabled={cameraLock}
+                                                <Slider value={[cameraZ]} min={-50} max={50} step={0.5} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraZ(v[0] as number)}/>
                                             </div>
                                         </div>
@@ -2377,17 +2367,17 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationX(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Pitch</span>
-                                                <Slider value={[cameraRotationX]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                <Slider value={[cameraRotationX]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraRotationX(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationY(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Yaw</span>
-                                                <Slider value={[cameraRotationY]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                <Slider value={[cameraRotationY]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraRotationY(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center" onDoubleClick={() => setCameraRotationZ(0)}>
                                                 <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Rotate Roll</span>
-                                                <Slider value={[cameraRotationZ]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock}
+                                                <Slider value={[cameraRotationZ]} min={-Math.PI} max={Math.PI} step={0.05} disabled={cameraLock} resetValue={0}
                                                         onValueChange={(v) => setCameraRotationZ(v[0] as number)}/>
                                             </div>
                                         </div>
@@ -2479,14 +2469,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Wave Amplitude</span>
                                                     <Slider value={[flowDistortionA]} step={0.1}
-                                                            min={0} max={5}
+                                                            min={0} max={5} resetValue={0}
                                                             disabled={!flowEnabled || speed === 0}
                                                             onValueChange={(v) => setFlowDistortionA(v[0] as number)}/>
                                                 </div>
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Wave Frequency</span>
                                                     <Slider value={[flowDistortionB]} step={0.1}
-                                                            min={0} max={10}
+                                                            min={0} max={10} resetValue={0}
                                                             disabled={!flowEnabled || speed === 0}
                                                             onValueChange={(v) => setFlowDistortionB(v[0] as number)}/>
                                                 </div>
@@ -2500,7 +2490,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Ease (Blend)</span>
                                                     <Slider value={[flowEase]} step={0.01}
-                                                            min={0} max={1}
+                                                            min={0} max={1} resetValue={0}
                                                             disabled={!flowEnabled || speed === 0}
                                                             onValueChange={(v) => setFlowEase(v[0] as number)}/>
                                                 </div>
@@ -2523,7 +2513,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Intensity</span>
                                                     <Slider value={[domainWarpIntensity]} step={0.05}
-                                                            min={0} max={1.5}
+                                                            min={0} max={1.5} resetValue={0}
                                                             disabled={!domainWarpEnabled}
                                                             onValueChange={(v) => setDomainWarpIntensity(v[0] as number)}/>
                                                 </div>
@@ -2740,7 +2730,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Saturation</span>
                                                 </Tooltip>
                                                 <Slider value={[saturation]} min={-10}
-                                                        max={10}
+                                                        max={10} resetValue={0}
                                                         onValueChange={(v) => setSaturation(v[0] as number)}/>
                                             </div>
                                             <div className="flex flex-row gap-2 items-center">
@@ -2763,7 +2753,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             <div className="flex flex-row gap-2 items-center">
                                                 <span className="w-28 text-right pr-2 text-xs">Intensity</span>
                                                 <Slider value={[vignetteIntensity]} step={0.05}
-                                                        min={0} max={1}
+                                                        min={0} max={1} resetValue={0}
                                                         onValueChange={(v) => setVignetteIntensity(v[0] as number)}/>
                                             </div>
                                             <div className={`space-y-2 transition-opacity ${vignetteIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -2787,7 +2777,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             <div className="flex flex-row gap-2 items-center">
                                                 <span className="w-28 text-right pr-2 text-xs">Intensity</span>
                                                 <Slider value={[bloomIntensity]} step={0.1}
-                                                        min={0} max={3}
+                                                        min={0} max={3} resetValue={0}
                                                         onValueChange={(v) => setBloomIntensity(v[0] as number)}/>
                                             </div>
                                             <div className={`space-y-2 transition-opacity ${bloomIntensity === 0 ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -2808,7 +2798,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 text-left">Chromatic Aberration</span>
                                                 </Tooltip>
                                                 <Slider value={[chromaticAberration]} step={0.5}
-                                                        min={0} max={20}
+                                                        min={0} max={20} resetValue={0}
                                                         onValueChange={(v) => setChromaticAberration(v[0] as number)}/>
                                             </div>
                                         </div>
@@ -2907,7 +2897,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <div className="flex flex-row gap-2 items-center">
                                                     <span className="w-28 text-right pr-2 text-xs">Sparsity</span>
                                                     <Slider value={[grainSparsity]} step={0.02}
-                                                            min={0} max={1}
+                                                            min={0} max={1} resetValue={0}
                                                             disabled={grainIntensity === 0}
                                                             onValueChange={(v) => setGrainSparsity(v[0] as number)}/>
                                                 </div>

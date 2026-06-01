@@ -237,11 +237,19 @@ void main() {
     float specular = pow(max(dot(normal, halfDir), 0.0), 32.0);
 
     // Blend smooth 3D shading with smooth height-based wave shading
-    color += specular * u_highlights;
-    color += v_displacement_amount * u_highlights * 0.5;
-    float heightShadow = 1.0 - v_displacement_amount;
-    color -= heightShadow * heightShadow * u_shadows * 0.5;
-    color -= (1.0 - diffuse) * u_shadows * 0.5;
+    if (u_shape_type <= 0.5) {
+        // Original height-based wave shading
+        color += v_displacement_amount * u_highlights;
+        float heightShadow = 1.0 - v_displacement_amount;
+        color -= heightShadow * heightShadow * u_shadows;
+    } else {
+        // 3D shading
+        color += specular * u_highlights;
+        color += v_displacement_amount * u_highlights * 0.5;
+        float heightShadow = 1.0 - v_displacement_amount;
+        color -= heightShadow * heightShadow * u_shadows * 0.5;
+        color -= (1.0 - diffuse) * u_shadows * 0.5;
+    }
     color = saturation(color, 1.0 + u_saturation);
     color = color * u_brightness;
 
@@ -295,7 +303,7 @@ void main() {
     float grain = 0.0;
     if (u_grain_intensity > 0.0) {
         vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
-        if (u_grain_speed != 0.0) {
+        if (u_grain_speed != 0.0 || u_shape_type <= 0.5) {
             grain = fbm(vec3(noiseCoords, u_time * u_grain_speed));
         } else {
             // Static grain: use cheap hash instead of fbm

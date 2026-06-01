@@ -229,7 +229,7 @@ export class NeatGradient implements NeatController {
             domainWarpEnabled = false,
             domainWarpIntensity = 0.5,
             domainWarpScale = 1.0,
-            vignetteIntensity = 0.5,
+            vignetteIntensity = 0.0,
             vignetteRadius = 0.8,
             fresnelEnabled = false,
             fresnelPower = 2.0,
@@ -1478,6 +1478,10 @@ export class NeatGradient implements NeatController {
         const colors = this._colors.filter(c => c.enabled).map(c => c.color);
         if (colors.length === 0) return null;
 
+        const shouldTile = this._shapeType !== 'plane';
+        const dxs = shouldTile ? [-1, 0, 1] : [0];
+        const dys = shouldTile ? [-1, 0, 1] : [0];
+
         // Helper functions
         function hexToRgb(hex: string) {
             const bigint = parseInt(hex.replace('#', ''), 16);
@@ -1528,8 +1532,8 @@ export class NeatGradient implements NeatController {
             const x2 = (random() - 0.5) * s;
             const y2 = (random() - 0.5) * s;
 
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
+            for (const dx of dxs) {
+                for (const dy of dys) {
                     sCtx.fillStyle = fillStyle;
                     sCtx.beginPath();
                     const tx = x + dx * texSize;
@@ -1550,8 +1554,8 @@ export class NeatGradient implements NeatController {
             const y = random() * texSize;
             const r = 50 + random() * 150;
 
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
+            for (const dx of dxs) {
+                for (const dy of dys) {
                     sCtx.strokeStyle = strokeStyle;
                     sCtx.lineWidth = lineWidth;
                     sCtx.beginPath();
@@ -1568,8 +1572,8 @@ export class NeatGradient implements NeatController {
             const y = random() * texSize;
             const rot = random() * Math.PI;
 
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
+            for (const dx of dxs) {
+                for (const dy of dys) {
                     sCtx.fillStyle = fillStyle;
                     sCtx.save();
                     sCtx.translate(x + dx * texSize, y + dy * texSize);
@@ -1606,8 +1610,8 @@ export class NeatGradient implements NeatController {
                 cy = ey;
             }
 
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
+            for (const dx of dxs) {
+                for (const dy of dys) {
                     sCtx.strokeStyle = strokeStyle;
                     sCtx.beginPath();
                     const tx = x + dx * texSize;
