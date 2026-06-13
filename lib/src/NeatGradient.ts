@@ -174,6 +174,11 @@ export class NeatGradient implements NeatController {
     private _colorsChanged: boolean = true;
     private _uniformsDirty: boolean = true;
     private _textureDirty: boolean = true;
+    private _yOffsetDirty: boolean = false;
+    private _modelViewMatrix: Matrix4 = new Matrix4();
+    private _isVisible: boolean = true;
+    private _visibilityObserver: IntersectionObserver | null = null;
+    private _visibilityHandler: (() => void) | null = null;
 
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
@@ -404,7 +409,8 @@ export class NeatGradient implements NeatController {
 
                 // Update modelViewMatrix in every frame to support dynamic rotation and auto-rotation
                 const camera = this.glState.camera;
-                const modelViewMatrix = new Matrix4();
+                const modelViewMatrix = this._modelViewMatrix;
+                modelViewMatrix.identity();
                 
                 // 1. Camera translation (default camera distance + displacement)
                 modelViewMatrix.translate(
@@ -440,6 +446,12 @@ export class NeatGradient implements NeatController {
                 
                 const mvLoc = locations.uniforms["modelViewMatrix"];
                 if (mvLoc) gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
+
+                // Fast path: only upload yOffset when it changed (scroll)
+                if (this._yOffsetDirty && !this._uniformsDirty) {
+                    gl.uniform1f(locations.uniforms['u_y_offset'], this._yOffset);
+                    this._yOffsetDirty = false;
+                }
 
                 // Only upload static uniforms when they've been modified
                 if (this._uniformsDirty) {
@@ -504,6 +516,7 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_flat_shading'], this._flatShading ? 1.0 : 0.0);
 
                     this._uniformsDirty = false;
+                    this._yOffsetDirty = false;
                 }
 
                 // Only regenerate procedural texture when needed
@@ -562,8 +575,35 @@ export class NeatGradient implements NeatController {
                 gl.drawElements(gl.TRIANGLES, indexCount, indexType, 0);
             }
 
-            this.requestRef = requestAnimationFrame(render);
+            if (this._isVisible) {
+                this.requestRef = requestAnimationFrame(render);
+            }
         };
+
+        // Visibility optimization: pause rendering when off-screen or tab hidden
+        this._visibilityObserver = new IntersectionObserver((entries) => {
+            const wasVisible = this._isVisible;
+            this._isVisible = entries[0].isIntersecting && document.visibilityState !== 'hidden';
+            if (this._isVisible && !wasVisible) {
+                lastTime = performance.now(); // Avoid time jump after resume
+                this.requestRef = requestAnimationFrame(render);
+            }
+        }, { threshold: 0 });
+        this._visibilityObserver.observe(ref);
+
+        this._visibilityHandler = () => {
+            const wasVisible = this._isVisible;
+            if (document.visibilityState === 'hidden') {
+                this._isVisible = false;
+            } else {
+                this._isVisible = true;
+                if (!wasVisible) {
+                    lastTime = performance.now();
+                    this.requestRef = requestAnimationFrame(render);
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
 
         const setSize = () => {
 
@@ -607,6 +647,16 @@ export class NeatGradient implements NeatController {
     destroy() {
         cancelAnimationFrame(this.requestRef);
         this.sizeObserver.disconnect();
+
+        // Cleanup visibility observers
+        if (this._visibilityObserver) {
+            this._visibilityObserver.disconnect();
+            this._visibilityObserver = null;
+        }
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+        }
 
         // Clear resize timeout
         if (this._resizeTimeoutId !== null) {
@@ -977,8 +1027,10 @@ export class NeatGradient implements NeatController {
         return this._yOffset;
     }
     set yOffset(yOffset: number) {
-        this._uniformsDirty = true;
-        this._yOffset = yOffset;
+        if (this._yOffset !== yOffset) {
+            this._yOffsetDirty = true;
+            this._yOffset = yOffset;
+        }
     }
 
     get yOffsetWaveMultiplier(): number {

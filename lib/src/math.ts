@@ -8,6 +8,14 @@ export class Matrix4 {
             0, 0, 0, 1
         ]);
     }
+    identity() {
+        const e = this.elements;
+        e[0] = 1; e[1] = 0; e[2] = 0; e[3] = 0;
+        e[4] = 0; e[5] = 1; e[6] = 0; e[7] = 0;
+        e[8] = 0; e[9] = 0; e[10] = 1; e[11] = 0;
+        e[12] = 0; e[13] = 0; e[14] = 0; e[15] = 1;
+        return this;
+    }
     translate(tx: number, ty: number, tz: number) {
         this.elements[12] += this.elements[0] * tx + this.elements[4] * ty + this.elements[8] * tz;
         this.elements[13] += this.elements[1] * tx + this.elements[5] * ty + this.elements[9] * tz;
