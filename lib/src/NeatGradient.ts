@@ -114,6 +114,7 @@ export class NeatGradient implements NeatController {
     private _silhouetteFade: number = 0.25;
     private _cylinderFade: number = 0.08;
     private _ribbonFade: number = 0.05;
+    private _flatShading: boolean = true;
 
     // 3D Shapes config
     private _shapeType: 'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon' = 'plane';
@@ -244,6 +245,7 @@ export class NeatGradient implements NeatController {
             silhouetteFade = 0.25,
             cylinderFade = 0.08,
             ribbonFade = 0.05,
+            flatShading = true,
 
             // Camera configuration
             cameraLock = false,
@@ -346,6 +348,7 @@ export class NeatGradient implements NeatController {
         this.silhouetteFade = silhouetteFade;
         this.cylinderFade = cylinderFade;
         this.ribbonFade = ribbonFade;
+        this._flatShading = flatShading;
 
         this._cameraLock = cameraLock;
         this._cameraX = cameraX;
@@ -498,6 +501,7 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_silhouette_fade'], this._silhouetteFade);
                     gl.uniform1f(locations.uniforms['u_cylinder_fade'], this._cylinderFade);
                     gl.uniform1f(locations.uniforms['u_ribbon_fade'], this._ribbonFade);
+                    gl.uniform1f(locations.uniforms['u_flat_shading'], this._flatShading ? 1.0 : 0.0);
 
                     this._uniformsDirty = false;
                 }
@@ -1397,7 +1401,7 @@ export class NeatGradient implements NeatController {
             "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
             "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
             "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
-            "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade"
+            "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade", "u_flat_shading"
         ];
 
         const locations: WebGLState["locations"] = {
@@ -1735,6 +1739,16 @@ export class NeatGradient implements NeatController {
     set ribbonFade(value: number) {
         if (this._ribbonFade !== value) {
             this._ribbonFade = value;
+            this._uniformsDirty = true;
+        }
+    }
+
+    get flatShading(): boolean {
+        return this._flatShading;
+    }
+    set flatShading(value: boolean) {
+        if (this._flatShading !== value) {
+            this._flatShading = value;
             this._uniformsDirty = true;
         }
     }

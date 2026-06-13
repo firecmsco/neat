@@ -561,6 +561,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setSilhouetteFade(config.silhouetteFade ?? 0.25);
         setCylinderFade(config.cylinderFade ?? 0.08);
         setRibbonFade(config.ribbonFade ?? 0.05);
+        setFlatShading(config.flatShading ?? true);
 
         // 3D Shapes config setters
         setShapeType(config.shapeType ?? 'plane');
@@ -662,6 +663,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [silhouetteFade, setSilhouetteFade] = React.useState<number>(defaultConfig.silhouetteFade ?? 0.25);
     const [cylinderFade, setCylinderFade] = React.useState<number>(defaultConfig.cylinderFade ?? 0.08);
     const [ribbonFade, setRibbonFade] = React.useState<number>(defaultConfig.ribbonFade ?? 0.05);
+    const [flatShading, setFlatShading] = React.useState<boolean>(defaultConfig.flatShading ?? true);
 
     // === Shape state ===
     const [shapeType, setShapeType] = React.useState<'plane' | 'sphere' | 'torus' | 'cylinder' | 'ribbon'>(defaultConfig.shapeType ?? 'plane');
@@ -951,6 +953,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             silhouetteFade,
             cylinderFade,
             ribbonFade,
+            flatShading,
 
             // Shapes parameters
             shapeType,
@@ -1050,6 +1053,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.silhouetteFade = silhouetteFade;
         gradientRef.current.cylinderFade = cylinderFade;
         gradientRef.current.ribbonFade = ribbonFade;
+        gradientRef.current.flatShading = flatShading;
 
         // Shape properties
         gradientRef.current.shapeType = shapeType;
@@ -1130,6 +1134,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         silhouetteFade,
         cylinderFade,
         ribbonFade,
+        flatShading,
 
         cameraLock,
         cameraX,
@@ -1456,6 +1461,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         silhouetteFade,
         cylinderFade,
         ribbonFade,
+        flatShading,
 
         // Camera settings
         cameraLock,
@@ -2069,6 +2075,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
                                                             onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
                                                 </div>
+                                                <Label className="cursor-pointer flex items-center gap-2">
+                                                    <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Use the same flat wave-based shading as the plane, removing 3D lighting and silhouette transparency.">
+                                                        Flat Shading
+                                                    </Tooltip>
+                                                    <div className={"w-full flex"}>
+                                                        <Checkbox checked={flatShading}
+                                                                  onChange={(checked: boolean) => setFlatShading(checked)}/>
+                                                    </div>
+                                                </Label>
                                             </>
                                         )}
 
@@ -2092,6 +2107,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <Slider value={[silhouetteFade]} min={0} max={1} step={0.01}
                                                             onValueChange={(v) => setSilhouetteFade(v[0] as number)}/>
                                                 </div>
+                                                <Label className="cursor-pointer flex items-center gap-2">
+                                                    <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Use the same flat wave-based shading as the plane, removing 3D lighting and silhouette transparency.">
+                                                        Flat Shading
+                                                    </Tooltip>
+                                                    <div className={"w-full flex"}>
+                                                        <Checkbox checked={flatShading}
+                                                                  onChange={(checked: boolean) => setFlatShading(checked)}/>
+                                                    </div>
+                                                </Label>
                                             </>
                                         )}
 
@@ -2122,6 +2146,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <Slider value={[cylinderFade]} min={0} max={0.5} step={0.01}
                                                             onValueChange={(v) => setCylinderFade(v[0] as number)}/>
                                                 </div>
+                                                <Label className="cursor-pointer flex items-center gap-2">
+                                                    <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Use the same flat wave-based shading as the plane, removing 3D lighting and silhouette transparency.">
+                                                        Flat Shading
+                                                    </Tooltip>
+                                                    <div className={"w-full flex"}>
+                                                        <Checkbox checked={flatShading}
+                                                                  onChange={(checked: boolean) => setFlatShading(checked)}/>
+                                                    </div>
+                                                </Label>
                                             </>
                                         )}
 
@@ -2152,6 +2185,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                     <Slider value={[ribbonFade]} min={0} max={0.5} step={0.01}
                                                             onValueChange={(v) => setRibbonFade(v[0] as number)}/>
                                                 </div>
+                                                <Label className="cursor-pointer flex items-center gap-2">
+                                                    <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Use the same flat wave-based shading as the plane, removing 3D lighting and silhouette transparency.">
+                                                        Flat Shading
+                                                    </Tooltip>
+                                                    <div className={"w-full flex"}>
+                                                        <Checkbox checked={flatShading}
+                                                                  onChange={(checked: boolean) => setFlatShading(checked)}/>
+                                                    </div>
+                                                </Label>
                                             </>
                                         )}
 

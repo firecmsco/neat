@@ -84,6 +84,7 @@ export type NeatConfig = {
     planeBend?: number;
     planeTwist?: number;
     transparentTextureVoid?: boolean;
+    flatShading?: boolean;
     silhouetteFade?: number;
     cylinderFade?: number;
     ribbonFade?: number;

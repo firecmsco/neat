@@ -57,7 +57,8 @@ export const NEAT_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,} satisfies NeatConfig;
+    cameraLock: true,
+} satisfies NeatConfig;
 
 export const STRIPE_PRESET = {
     colors: [
@@ -116,7 +117,8 @@ export const STRIPE_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,} satisfies NeatConfig;
+    cameraLock: true,
+} satisfies NeatConfig;
 
 export const FIRECMS_PRESET = {
     "colors": [
@@ -175,7 +177,8 @@ export const FIRECMS_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 export const FUNKY_PRESET = {
     colors: [
         {
@@ -221,8 +224,8 @@ export const FUNKY_PRESET = {
     grainSparsity: 0,
     grainIntensity: 0,
     grainSpeed: 2.4,
-    resolution: 0.1,
-    yOffset: 10333,
+    resolution: 0.05,
+    yOffset: 18063.63558959961,
     yOffsetWaveMultiplier: 7.2,
     yOffsetColorMultiplier: 6.8,
     yOffsetFlowMultiplier: 7.7,
@@ -232,6 +235,7 @@ export const FUNKY_PRESET = {
     flowEase: 0.94,
     flowEnabled: true,
     enableProceduralTexture: true,
+    transparentTextureVoid: false,
     textureVoidLikelihood: 0.59,
     textureVoidWidthMin: 120,
     textureVoidWidthMax: 330,
@@ -240,16 +244,51 @@ export const FUNKY_PRESET = {
     textureSeed: 478,
     textureEase: 0.86,
     proceduralBackgroundColor: '#003FFF',
-    textureShapeTriangles: 20,
-    textureShapeCircles: 15,
+    textureShapeTriangles: 51,
+    textureShapeCircles: 0,
     textureShapeBars: 15,
-    textureShapeSquiggles: 10,
-
-    silhouetteFade: 0.25,
+    textureShapeSquiggles: 0,
+    domainWarpEnabled: false,
+    domainWarpIntensity: 0,
+    domainWarpScale: 3,
+    vignetteIntensity: 0,
+    vignetteRadius: 0.8,
+    fresnelEnabled: false,
+    fresnelPower: 2,
+    fresnelIntensity: 0.5,
+    fresnelColor: '#FFFFFF',
+    iridescenceEnabled: false,
+    iridescenceIntensity: 0.5,
+    iridescenceSpeed: 1,
+    bloomIntensity: 0,
+    bloomThreshold: 0.7,
+    chromaticAberration: 0,
+    shapeType: 'ribbon',
+    shapeRotationX: 0,
+    shapeRotationY: 0,
+    shapeRotationZ: 0,
+    shapeAutoRotateSpeedX: 0,
+    shapeAutoRotateSpeedY: 0,
+    sphereRadius: 30,
+    torusRadius: 15,
+    torusTube: 5,
+    cylinderRadius: 10,
+    cylinderHeight: 40,
+    planeBend: -0.7,
+    planeTwist: 1,
+    silhouetteFade: 0,
     cylinderFade: 0.08,
-    ribbonFade: 0.05,
-    shapeType: 'plane',
-    cameraLock: true,};
+    ribbonFade: 0,
+    flatShading: true,
+    cameraLock: false,
+    cameraX: 0,
+    cameraY: -9.5,
+    cameraZ: 0,
+    cameraRotationX: 0.8310000000000001,
+    cameraRotationY: 0.483,
+    cameraRotationZ: 0,
+    cameraZoom: 2.05,
+};
 
 export const FLUID_PRESET = {
     colors: [
@@ -324,7 +363,8 @@ export const FLUID_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const VIRUS_PRESET = {
     colors: [
@@ -399,7 +439,8 @@ export const VIRUS_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,}
+    cameraLock: true,
+}
 
 export const FLAME_PRESET = {
     "colors": [
@@ -454,7 +495,8 @@ export const FLAME_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const BLOOM_PRESET = {
     colors: [
@@ -540,7 +582,8 @@ export const BLOOM_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const SANDS_PRESET = {
     colors: [
@@ -595,7 +638,8 @@ export const SANDS_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const MONTEREY_PRESET = {
     colors: [
@@ -697,6 +741,7 @@ export const MONTEREY_PRESET = {
     silhouetteFade: 0.2,
     cylinderFade: 0.08,
     ribbonFade: 0.23,
+    flatShading: false,
     cameraLock: false,
     cameraX: 15,
     cameraY: 0.5,
@@ -776,7 +821,8 @@ export const ALEJANDRA_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const LEMON_PRESET = {
     "colors": [
@@ -831,7 +877,8 @@ export const LEMON_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,}
+    cameraLock: true,
+}
 
 export const PASTEL_PRESET = {
     colors: [
@@ -917,7 +964,8 @@ export const PASTEL_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const CLOUDS_PRESET = {
     colors: [
@@ -1079,7 +1127,8 @@ export const DARK_MODE = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 export const NIGHT_DUNES = {
     colors: [
@@ -1138,7 +1187,8 @@ export const NIGHT_DUNES = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 
 export const PRUSSIAN_BLUE_PRESET = {
@@ -1198,7 +1248,8 @@ export const PRUSSIAN_BLUE_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 export const NIGHTTIME = {
     colors: [
         {
@@ -1268,7 +1319,8 @@ export const NIGHTTIME = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
+    cameraLock: true,
+};
 
 
 export const FOREST_PRESET = {
@@ -1319,8 +1371,8 @@ export const FOREST_PRESET = {
     cylinderFade: 0.08,
     ribbonFade: 0.05,
     shapeType: 'plane',
-    cameraLock: true,};
-
+    cameraLock: true,
+};
 
 
 const OCEANS_ELEVEN_PRESET = {
@@ -1419,6 +1471,7 @@ const OCEANS_ELEVEN_PRESET = {
     silhouetteFade: 0.29,
     cylinderFade: 0.08,
     ribbonFade: 0.05,
+    flatShading: false,
     cameraLock: true,
     cameraX: 0,
     cameraY: 0,
@@ -1529,6 +1582,7 @@ export const BUBBLE_GUM = {
     silhouetteFade: 0.25,
     cylinderFade: 0.08,
     ribbonFade: 0.05,
+    flatShading: false,
     cameraLock: false,
     cameraX: 0,
     cameraY: -12,
@@ -1639,6 +1693,7 @@ export const BLOB_PRESET = {
     silhouetteFade: 0.55,
     cylinderFade: 0.08,
     ribbonFade: 0.05,
+    flatShading: false,
     cameraLock: false,
     cameraX: 22.5,
     cameraY: 0,
@@ -1750,6 +1805,7 @@ export const COSMIC_VORTEX_PRESET = {
     silhouetteFade: 1,
     cylinderFade: 0.08,
     ribbonFade: 0.05,
+    flatShading: false,
     cameraLock: false,
     cameraX: 0,
     cameraY: 0,
@@ -1860,6 +1916,7 @@ export const TIME_PRESET = {
     silhouetteFade: 0.83,
     cylinderFade: 0.08,
     ribbonFade: 0.31,
+    flatShading: false,
     cameraLock: false,
     cameraX: 0,
     cameraY: 0,

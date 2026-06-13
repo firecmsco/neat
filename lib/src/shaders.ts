@@ -44,7 +44,7 @@ export const vertexShaderSource = `void main() {
     vec3 color = u_colors[0].color;
 
     vec3 distortedPos = position;
-    if (u_shape_type > 0.5) {
+    if (u_flat_shading < 0.5) {
         if (u_flow_enabled > 0.5) {
             if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
                 vec3 ppp = position / 25.0;
@@ -64,7 +64,7 @@ export const vertexShaderSource = `void main() {
     }
 
     vec3 noise_cord;
-    if (u_shape_type > 0.5) {
+    if (u_flat_shading < 0.5) {
         noise_cord = vec3(distortedPos.x / 50.0, (distortedPos.y + colorOffset) / 50.0, distortedPos.z / 50.0);
     } else {
         vec2 adjustedUv = flowUv;
@@ -83,7 +83,7 @@ export const vertexShaderSource = `void main() {
                 float noiseSeed = 13. + float(i) * 7.;
 
                 float noise_z = u_time * noiseSpeed;
-                if (u_shape_type > 0.5) {
+                if (u_flat_shading < 0.5) {
                     noise_z = noise_cord.z * u_color_pressure.x * u_color_pressure.x + u_time * noiseSpeed;
                 }
 
@@ -145,7 +145,7 @@ void main() {
     float texAlpha = 1.0;
 
     if (u_enable_procedural_texture > 0.5) {
-        if (u_shape_type > 0.5) {
+        if (u_flat_shading < 0.5) {
             float parallaxFactor = 0.25;
             float scrollOffset = (u_y_offset * u_y_offset_color_multiplier) * parallaxFactor;
             vec3 scrolledPos = vPosition;
@@ -156,9 +156,9 @@ void main() {
             vec2 uvY = p.zx + vec2(0.5);
             vec2 uvZ = p.xy + vec2(0.5);
             
-            vec4 colX = texture2D(u_procedural_texture, fract(uvX));
-            vec4 colY = texture2D(u_procedural_texture, fract(uvY));
-            vec4 colZ = texture2D(u_procedural_texture, fract(uvZ));
+            vec4 colX = texture2D(u_procedural_texture, uvX);
+            vec4 colY = texture2D(u_procedural_texture, uvY);
+            vec4 colZ = texture2D(u_procedural_texture, uvZ);
             
             vec3 n = normalize(vNormal);
             vec3 blendWeights = abs(n);
@@ -185,7 +185,7 @@ void main() {
             texUv.y -= (u_y_offset * u_y_offset_color_multiplier / u_plane_height) * parallaxFactor;
             texUv *= 1.5;
 
-            vec4 texSample = texture2D(u_procedural_texture, fract(texUv));
+            vec4 texSample = texture2D(u_procedural_texture, texUv);
             baseColor = texSample.rgb;
             if (u_transparent_texture_void > 0.5) {
                 texAlpha = texSample.a;
@@ -200,7 +200,7 @@ void main() {
     // === DOMAIN WARPING (simplified: 3 fbm calls instead of 5) ===
     if (u_domain_warp_enabled > 0.5) {
         vec3 p;
-        if (u_shape_type > 0.5) {
+        if (u_flat_shading < 0.5) {
             p = vec3((vPosition / 50.0 + vec3(0.5)) * u_domain_warp_scale);
             p.z += u_time * 0.15;
         } else {
@@ -237,8 +237,8 @@ void main() {
     float specular = pow(max(dot(normal, halfDir), 0.0), 32.0);
 
     // Blend smooth 3D shading with smooth height-based wave shading
-    if (u_shape_type <= 0.5) {
-        // Original height-based wave shading
+    if (u_flat_shading > 0.5) {
+        // Flat / height-based wave shading (plane style)
         color += v_displacement_amount * u_highlights;
         float heightShadow = 1.0 - v_displacement_amount;
         color -= heightShadow * heightShadow * u_shadows;
@@ -270,7 +270,7 @@ void main() {
     // === VIGNETTE ===
     if (u_vignette_intensity > 0.0) {
         vec2 vigUv = vUv;
-        if (u_shape_type > 0.5) {
+        if (u_flat_shading < 0.5) {
             vigUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
         }
         float dist = length(vigUv - vec2(0.5));
@@ -289,7 +289,7 @@ void main() {
     if (u_chromatic_aberration > 0.0) {
         float caAmount = u_chromatic_aberration * 0.008;
         vec2 caUv = vUv;
-        if (u_shape_type > 0.5) {
+        if (u_flat_shading < 0.5) {
             caUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
         }
         float dist = length(caUv - vec2(0.5));
@@ -303,7 +303,7 @@ void main() {
     float grain = 0.0;
     if (u_grain_intensity > 0.0) {
         vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
-        if (u_grain_speed != 0.0 || u_shape_type <= 0.5) {
+        if (u_grain_speed != 0.0 || u_flat_shading > 0.5) {
             grain = fbm(vec3(noiseCoords, u_time * u_grain_speed));
         } else {
             // Static grain: use cheap hash instead of fbm
@@ -320,8 +320,8 @@ void main() {
 
     float edgeAlpha = 1.0;
     
-    // Silhouette falloff for 3D shapes
-    if (u_shape_type > 0.5) {
+    // Silhouette falloff for 3D shapes (skip when flat shading or fade is zero)
+    if (u_silhouette_fade > 0.0 && u_flat_shading < 0.5) {
         edgeAlpha = smoothstep(0.0, u_silhouette_fade, ndotv);
     }
     
@@ -396,6 +396,7 @@ uniform float u_fresnel_intensity;
 uniform vec3 u_fresnel_color;
 
 uniform float u_shape_type;
+uniform float u_flat_shading;
 `;
 }
 
@@ -470,6 +471,7 @@ uniform float u_transparent_texture_void;
 uniform float u_silhouette_fade;
 uniform float u_cylinder_fade;
 uniform float u_ribbon_fade;
+uniform float u_flat_shading;
 `;
 }
 
