@@ -1,0 +1,12 @@
+{
+  "name": "neat-keygen",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate-keypair": "tsx generate-keypair.ts",
+    "sign": "tsx sign-license.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

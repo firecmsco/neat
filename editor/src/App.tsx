@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import NeatEditor from "./components/NeatEditor";
+import { LicenseSuccessPage } from "./components/LicenseSuccessPage";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { Analytics } from "@firebase/analytics";
@@ -21,6 +22,13 @@ function App() {
         const analytics = getAnalytics(app);
         setAnalytics(analytics);
     }, []);
+
+    // Simple path-based routing (no react-router needed)
+    const path = window.location.pathname;
+
+    if (path.startsWith("/license/success")) {
+        return <LicenseSuccessPage />;
+    }
 
     return (
         <>

@@ -18,6 +18,7 @@ import { Analytics } from "@firebase/analytics";
 import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
 import { ImportConfigDialog } from "./ImportConfigDialog";
+import { LicenseDialog } from "./LicenseDialog";
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -427,6 +428,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [recordResolution, setRecordResolution] = React.useState<string>("current");
     const [recordFormat, setRecordFormat] = React.useState<'mp4' | 'webm'>('mp4');
     const stopRecordingRef = React.useRef<(() => void) | null>(null);
+    const [licenseDialogOpen, setLicenseDialogOpen] = React.useState(false);
 
     // Custom states for smart randomize and image drop color extractor
     const [randomPresetConfig, setRandomPresetConfig] = React.useState<NeatConfig | null>(null);
@@ -462,22 +464,23 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     useEffect(() => {
         const handlePopState = () => {
             // Check if any dialog/drawer is open and close it
-            if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen) {
+            if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen || licenseDialogOpen) {
                 closingViaBackButton.current = true;
                 if (drawerOpen) setDrawerOpen(false);
                 if (dialogOpen) setDialogOpen(false);
                 if (importDialogOpen) setImportDialogOpen(false);
                 if (recordDialogOpen && !isRecording) setRecordDialogOpen(false);
+                if (licenseDialogOpen) setLicenseDialogOpen(false);
             }
         };
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen, isRecording]);
+    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen, licenseDialogOpen, isRecording]);
 
     // Push history state when opening dialogs/drawer
     useEffect(() => {
-        if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen) {
+        if (drawerOpen || dialogOpen || importDialogOpen || recordDialogOpen || licenseDialogOpen) {
             // Push a new history state when opening
             window.history.pushState({ modal: true }, '');
         } else if (!closingViaBackButton.current) {
@@ -489,7 +492,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
         // Reset flag
         closingViaBackButton.current = false;
-    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen]);
+    }, [drawerOpen, dialogOpen, importDialogOpen, recordDialogOpen, licenseDialogOpen]);
 
     const updatePresetConfig = (config: NeatConfig) => {
         setColors(config.colors);
@@ -1854,6 +1857,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         <Import className="w-5 h-5"/>
                                     </IconButton>
                                 </Tooltip>
+                                <Tooltip title="Remove NEAT watermark — €12">
+                                    <Button variant="text" size="sm" className="px-2 py-1 text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10"
+                                            onClick={() => {
+                                                setLicenseDialogOpen(true);
+                                                logEvent(analytics, 'open_license_dialog');
+                                            }}>
+                                        PRO
+                                    </Button>
+                                </Tooltip>
                                 <div className="w-px h-7 bg-white/20"/>
                                 <Tooltip title="Hide UI (H)">
                                     <IconButton className="text-inherit"
@@ -3017,6 +3029,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 <ImportConfigDialog open={importDialogOpen}
                                     onOpenChange={setImportDialogOpen}
                                     onConfigImport={handleConfigImport}/>
+                <LicenseDialog open={licenseDialogOpen}
+                               onOpenChange={setLicenseDialogOpen}/>
 
                 {/* Record Video Dialog */}
                 <Dialog open={recordDialogOpen} maxWidth="24rem" onOpenChange={(open) => {

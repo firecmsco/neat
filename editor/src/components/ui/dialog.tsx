@@ -49,7 +49,7 @@ export function DialogTitle({ children, className }: { children: React.ReactNode
   );
 }
 export function DialogContent({ children }: { children: React.ReactNode }) {
-  return <div className="mt-2 overflow-auto pr-1 max-h-[60vh]">{children}</div>;
+  return <div className="mt-2 overflow-auto max-h-[60vh] -m-1 p-1">{children}</div>;
 }
 export function DialogActions({ children }: { children: React.ReactNode }) {
   return <div className="mt-2 -mx-6 px-6 pt-3 border-t border-white/10 sticky bottom-0 bg-neutral-900/90 backdrop-blur flex items-center justify-end gap-2">{children}</div>;

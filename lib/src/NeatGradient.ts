@@ -1,10 +1,13 @@
 import { buildColorFunctions, buildNoise, buildVertUniforms, buildFragUniforms, fragmentShaderSource, vertexShaderSource } from "./shaders";
 import { generatePlaneGeometry, generateSphereGeometry, generateTorusGeometry, generateCylinderGeometry, generateRibbonGeometry, OrthographicCamera, updateCamera, Matrix4 } from "./math";
+import { verifyLicenseKey } from "./license";
 
-console.info(
-    "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nhttps://neat.firecms.co",
-    "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
-);
+function _logBranding() {
+    console.info(
+        "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nhttps://neat.firecms.co",
+        "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
+    );
+}
 
 const PLANE_WIDTH = 50;
 const PLANE_HEIGHT = 80;
@@ -40,6 +43,7 @@ import { NeatConfig, NeatColor, NeatController } from "./types";
 export class NeatGradient implements NeatController {
 
     private _ref: HTMLCanvasElement;
+    private _licensed: boolean = false;
 
     private _speed: number = -1;
 
@@ -285,6 +289,7 @@ export class NeatGradient implements NeatController {
             cylinderHeight = 40,
             planeBend = 0,
             planeTwist = 0,
+            licenseKey,
         } = config;
 
 
@@ -391,6 +396,15 @@ export class NeatGradient implements NeatController {
         this._initWatermark();
 
         injectMetaGenerator();
+
+        // License verification — async, watermark renders until verified
+        if (licenseKey) {
+            verifyLicenseKey(licenseKey).then((result) => {
+                this._licensed = result.valid;
+            });
+        } else {
+            _logBranding();
+        }
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
         let lastTime = performance.now();
@@ -2274,6 +2288,9 @@ export class NeatGradient implements NeatController {
      * uploads target the correct program.
      */
     private _renderWatermark(gl: WebGLRenderingContext | WebGL2RenderingContext): void {
+        // Skip watermark for licensed users
+        if (this._licensed) return;
+
         const prog = this._watermarkProgram;
         const tex = this._watermarkTexture;
         const posBuf = this._watermarkBuffer;

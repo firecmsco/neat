@@ -537,9 +537,23 @@ Neat is released under the **MIT License + The Commons Clause**.
 - ❌ Include it in a paid template or theme builder that you sell
 - ❌ Offer the software as a paid service
 
-### Remove the NEAT Attribution Link
+### Remove the NEAT Watermark
 
-For commercial projects without attribution, [become a sponsor](https://github.com/sponsors/firecmsco) and contact us at [hello@firecms.co](mailto:hello@firecms.co) for a license key.
+Purchase a license key for **€12 one-time** (per domain) to remove the NEAT watermark and console branding.
+
+**[Buy a license →](https://neat.firecms.co)**
+
+Then pass the key in your config:
+
+```typescript
+const gradient = new NeatGradient({
+    ref: canvas,
+    colors: [...],
+    licenseKey: "NEAT-eyJ0eXBlI..."  // Your license key
+});
+```
+
+Each key is locked to the domain you specify at checkout (subdomains included). Development on `localhost` always works without a key.
 
 ---
 
