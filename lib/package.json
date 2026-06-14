@@ -2,7 +2,7 @@
   "name": "@firecms/neat",
   "description": "Beautiful 3D gradients for your website",
   "access": "public",
-  "version": "0.9.2",
+  "version": "0.9.3-canary.20260615000629",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "dist/index.d.ts",
@@ -48,7 +48,9 @@
   },
   "homepage": "https://github.com/FireCMSco/neat#readme",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "publishConfig": {
     "access": "public"
