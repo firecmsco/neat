@@ -12,7 +12,7 @@ const PLANE_HEIGHT = 80;
 
 const COLORS_COUNT = 6;
 
-const LINK_ID = generateRandomString();
+
 
 export interface WebGLState {
     gl: WebGLRenderingContext | WebGL2RenderingContext;
@@ -153,7 +153,6 @@ export class NeatGradient implements NeatController {
     private sizeObserver: ResizeObserver;
 
     private _initialized: boolean = false;
-    private _linkElement: HTMLAnchorElement | null = null;
     private _cachedColorRgb: [number, number, number][] = [];
 
     private _yOffset: number = 0;
@@ -170,7 +169,6 @@ export class NeatGradient implements NeatController {
     // Performance optimizations
     private _resizeTimeoutId: number | null = null;
     private _textureNeedsUpdate: boolean = false;
-    private _linkCheckCounter: number = 0;
     private _colorsChanged: boolean = true;
     private _uniformsDirty: boolean = true;
     private _textureDirty: boolean = true;
@@ -179,6 +177,17 @@ export class NeatGradient implements NeatController {
     private _isVisible: boolean = true;
     private _visibilityObserver: IntersectionObserver | null = null;
     private _visibilityHandler: (() => void) | null = null;
+
+    // Watermark overlay (rendered inside the canvas via a separate WebGL pass)
+    private _watermarkProgram: WebGLProgram | null = null;
+    private _watermarkTexture: WebGLTexture | null = null;
+    private _watermarkBuffer: WebGLBuffer | null = null;
+    private _watermarkTexCoordBuffer: WebGLBuffer | null = null;
+    private _watermarkWidth: number = 0;
+    private _watermarkHeight: number = 0;
+    private _watermarkMargin: number = 4;
+    private _wmClickHandler: ((e: MouseEvent) => void) | null = null;
+    private _wmMoveHandler: ((e: MouseEvent) => void) | null = null;
 
     constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
 
@@ -379,8 +388,9 @@ export class NeatGradient implements NeatController {
         this._planeTwist = planeTwist;
 
         this.glState = this._initScene(resolution);
+        this._initWatermark();
 
-        injectSEO();
+        injectMetaGenerator();
 
         let tick = seed !== undefined ? seed : getElapsedSecondsInLastHour();
         let lastTime = performance.now();
@@ -388,15 +398,6 @@ export class NeatGradient implements NeatController {
         const render = () => {
 
             const { gl, program, locations, indexCount, indexType } = this.glState;
-
-            // Optimization: check if cached link is still valid in DOM less frequently
-            this._linkCheckCounter++;
-            if (this._linkCheckCounter >= 300) { // Check every ~5 seconds at 60fps
-                this._linkCheckCounter = 0;
-                if (!this._linkElement || !document.contains(this._linkElement)) {
-                    this._linkElement = addNeatLink(ref);
-                }
-            }
 
             if (this._initialized) {
                 const timeNow = performance.now();
@@ -575,6 +576,9 @@ export class NeatGradient implements NeatController {
                 gl.drawElements(gl.TRIANGLES, indexCount, indexType, 0);
             }
 
+            // Draw watermark overlay inside the canvas
+            this._renderWatermark(gl);
+
             if (this._isVisible) {
                 this.requestRef = requestAnimationFrame(render);
             }
@@ -664,10 +668,14 @@ export class NeatGradient implements NeatController {
             this._resizeTimeoutId = null;
         }
 
-        // Remove NEAT link
-        if (this._linkElement && this._linkElement.parentElement) {
-            this._linkElement.parentElement.removeChild(this._linkElement);
-            this._linkElement = null;
+        // Remove watermark click/hover listeners
+        if (this._wmClickHandler) {
+            document.removeEventListener('click', this._wmClickHandler, true);
+            this._wmClickHandler = null;
+        }
+        if (this._wmMoveHandler) {
+            document.removeEventListener('mousemove', this._wmMoveHandler);
+            this._wmMoveHandler = null;
         }
 
         // Cleanup WebGL resources
@@ -679,6 +687,12 @@ export class NeatGradient implements NeatController {
             gl.deleteBuffer(this.glState.buffers.uv);
             gl.deleteBuffer(this.glState.buffers.index);
             gl.deleteBuffer(this.glState.buffers.wireframeIndex);
+
+            // Cleanup watermark resources
+            if (this._watermarkProgram) gl.deleteProgram(this._watermarkProgram);
+            if (this._watermarkTexture) gl.deleteTexture(this._watermarkTexture);
+            if (this._watermarkBuffer) gl.deleteBuffer(this._watermarkBuffer);
+            if (this._watermarkTexCoordBuffer) gl.deleteBuffer(this._watermarkTexCoordBuffer);
         }
         if (this._proceduralTexture && this.glState) {
             this.glState.gl.deleteTexture(this._proceduralTexture);
@@ -2115,70 +2129,233 @@ export class NeatGradient implements NeatController {
         if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
         this._uniformsDirty = true;
     }
+
+    /**
+     * Compiles the watermark shader, creates the text texture, and sets up
+     * the screen-space quad buffers. Called once from the constructor.
+     */
+    private _initWatermark(): void {
+        const gl = this.glState.gl;
+
+        // ── 1. Compile watermark shader program ──
+        const vs = gl.createShader(gl.VERTEX_SHADER)!;
+        gl.shaderSource(vs, WATERMARK_VS);
+        gl.compileShader(vs);
+
+        const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
+        gl.shaderSource(fs, WATERMARK_FS);
+        gl.compileShader(fs);
+
+        const prog = gl.createProgram()!;
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        this._watermarkProgram = prog;
+
+        // Shaders are linked; we can free them
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+
+        // ── 2. Rasterise "NEAT" text into an offscreen canvas ──
+        // No DPR scaling: the canvas buffer is set to clientWidth/clientHeight
+        // (1x CSS pixels), so the watermark must match.
+        const fontSize = 11;
+        const padX = 6;
+        const padY = 5;
+
+        const measure = document.createElement('canvas').getContext('2d')!;
+        measure.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        const metrics = measure.measureText('NEAT');
+        const textW = Math.ceil(metrics.width);
+        const textH = fontSize;
+
+        const cw = textW + padX * 2;
+        const ch = textH + padY * 2;
+        this._watermarkWidth = cw;
+        this._watermarkHeight = ch;
+
+        const c = document.createElement('canvas');
+        c.width = cw;
+        c.height = ch;
+        const ctx = c.getContext('2d')!;
+
+        // Transparent background — no fill needed
+        ctx.clearRect(0, 0, cw, ch);
+
+        // Subtle shadow for readability on any gradient
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 2;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+
+        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText('NEAT', cw / 2, ch / 2);
+
+        // ── 3. Upload as a WebGL texture ──
+        const tex = gl.createTexture()!;
+        gl.activeTexture(gl.TEXTURE2); // Use unit 2 to avoid collision with procedural (unit 1)
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        this._watermarkTexture = tex;
+
+        // ── 4. Create static tex-coord buffer (never changes) ──
+        const tcBuf = gl.createBuffer()!;
+        gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
+        // Two-triangle strip: BL, BR, TL, TR
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]), gl.STATIC_DRAW);
+        this._watermarkTexCoordBuffer = tcBuf;
+
+        // ── 5. Create position buffer (updated per-frame based on canvas size) ──
+        const posBuf = gl.createBuffer()!;
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(8), gl.DYNAMIC_DRAW);
+        this._watermarkBuffer = posBuf;
+
+        // ── 6. Make the watermark region clickable ──
+        // We listen on `document` (capture phase for click) because the canvas
+        // is often covered by overlay elements (scroll containers, UI panels)
+        // that would swallow canvas-level events.
+        this._wmClickHandler = (e: MouseEvent) => {
+            if (this._isOverWatermark(e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open('https://neat.firecms.co', '_blank', 'noopener');
+            }
+        };
+        this._wmMoveHandler = (e: MouseEvent) => {
+            const over = this._isOverWatermark(e);
+            this._ref.style.cursor = over ? 'pointer' : '';
+            // Propagate pointer cursor to overlays that sit on top of the canvas
+            if (over) {
+                document.body.style.cursor = 'pointer';
+            } else if (document.body.style.cursor === 'pointer') {
+                document.body.style.cursor = '';
+            }
+        };
+        document.addEventListener('click', this._wmClickHandler, true); // capture phase
+        document.addEventListener('mousemove', this._wmMoveHandler);
+    }
+
+    /** Returns true if the mouse event is inside the watermark's pixel bounds. */
+    private _isOverWatermark(e: MouseEvent): boolean {
+        const rect = this._ref.getBoundingClientRect();
+        // Mouse position relative to the canvas element
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cw = rect.width;
+        const ch = rect.height;
+        // Quick rejection: outside the canvas entirely
+        if (x < 0 || y < 0 || x > cw || y > ch) return false;
+
+        const m = this._watermarkMargin;
+        const ww = this._watermarkWidth;
+        const wh = this._watermarkHeight;
+
+        // Watermark sits in the bottom-right corner
+        const left = cw - m - ww;
+        const top = ch - m - wh;
+
+        return x >= left && x <= cw - m
+            && y >= top && y <= ch - m;
+    }
+
+    /**
+     * Draws the watermark quad as a second pass after the main gradient.
+     * Restores the main program afterwards so the next frame's uniform
+     * uploads target the correct program.
+     */
+    private _renderWatermark(gl: WebGLRenderingContext | WebGL2RenderingContext): void {
+        const prog = this._watermarkProgram;
+        const tex = this._watermarkTexture;
+        const posBuf = this._watermarkBuffer;
+        const tcBuf = this._watermarkTexCoordBuffer;
+        if (!prog || !tex || !posBuf || !tcBuf) return;
+
+        const canvasW = this._ref.width || this._ref.clientWidth;
+        const canvasH = this._ref.height || this._ref.clientHeight;
+        if (canvasW === 0 || canvasH === 0) return;
+
+        // Compute quad position in clip space (-1 … +1).
+        // Place the watermark in the bottom-right corner with a small margin.
+        const margin = 4;
+        const qw = this._watermarkWidth;
+        const qh = this._watermarkHeight;
+
+        // Pixel → clip-space conversion
+        const r = 1.0 - (margin / canvasW) * 2.0;          // right edge
+        const l = r - (qw / canvasW) * 2.0;                 // left edge
+        const b = -1.0 + (margin / canvasH) * 2.0;          // bottom edge
+        const t = b + (qh / canvasH) * 2.0;                 // top edge
+
+        // Update position buffer (triangle strip: BL, BR, TL, TR)
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array([l, b, r, b, l, t, r, t]));
+
+        // ── Switch to watermark shader ──
+        gl.useProgram(prog);
+        gl.disable(gl.DEPTH_TEST);
+
+        // Use premultiplied alpha blending since we uploaded with PREMULTIPLY_ALPHA
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+        // Bind position attribute
+        const aPos = gl.getAttribLocation(prog, 'a_wm_position');
+        gl.enableVertexAttribArray(aPos);
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        // Bind texcoord attribute
+        const aTc = gl.getAttribLocation(prog, 'a_wm_texcoord');
+        gl.enableVertexAttribArray(aTc);
+        gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
+        gl.vertexAttribPointer(aTc, 2, gl.FLOAT, false, 0, 0);
+
+        // Bind watermark texture on unit 2
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.uniform1i(gl.getUniformLocation(prog, 'u_wm_texture'), 2);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        // ── Restore state for the next gradient frame ──
+        gl.enable(gl.DEPTH_TEST);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.useProgram(this.glState.program);
+
+        // Re-enable and re-bind the gradient's vertex attributes.
+        // We must call enableVertexAttribArray again because the watermark's
+        // attribute locations may overlap with the gradient's (WebGL assigns
+        // locations globally starting from 0). Without this, the gradient's
+        // position/normal/uv arrays stay disabled after the watermark draw.
+        const locs = this.glState.locations.attributes;
+        gl.enableVertexAttribArray(locs.position);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
+        gl.vertexAttribPointer(locs.position, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(locs.normal);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
+        gl.vertexAttribPointer(locs.normal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(locs.uv);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
+        gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+    }
 }
 
-
-const setLinkStyles = (link: HTMLAnchorElement) => {
-    link.id = LINK_ID;
-    link.href = "https://neat.firecms.co";
-    link.target = "_blank";
-    link.style.position = "absolute";
-    link.style.display = "block";
-    link.style.bottom = "0";
-    link.style.right = "0";
-    link.style.padding = "10px";
-    link.style.color = "#dcdcdc";
-    link.style.opacity = "0.8";
-    link.style.fontFamily = "sans-serif";
-    link.style.fontSize = "16px";
-    link.style.fontWeight = "bold";
-    link.style.textDecoration = "none";
-    link.style.zIndex = "10000";
-    link.style.pointerEvents = "auto";
-    link.setAttribute("data-n", "1");
-    link.innerHTML = "NEAT";
-}
-
-const addNeatLink = (ref: HTMLCanvasElement): HTMLAnchorElement => {
-    let parent = ref.parentElement;
-    // Walk up past display:contents wrappers (e.g. Astro's <astro-island>)
-    // to find the real box-generating parent for positioning the link
-    while (parent && getComputedStyle(parent).display === "contents") {
-        parent = parent.parentElement;
-    }
-    // Ensure parent has position so absolute link is positioned relative to it
-    if (parent && getComputedStyle(parent).position === "static") {
-        parent.style.position = "relative";
-    }
-    // Search parent for existing neat link (survives HMR where LINK_ID changes)
-    if (parent) {
-        const existing = parent.querySelector('a[data-n]') as HTMLAnchorElement;
-        if (existing) {
-            setLinkStyles(existing);
-            return existing;
-        }
-    }
-    const link = document.createElement("a");
-    setLinkStyles(link);
-    parent?.appendChild(link);
-    return link;
-}
 
 function getElapsedSecondsInLastHour() {
     const now = new Date();
     const minutes = now.getMinutes();
     const seconds = now.getSeconds();
     return (minutes * 60) + seconds;
-}
-
-function generateRandomString(length: number = 6): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        result += characters.charAt(randomIndex);
-    }
-    return result;
 }
 
 function downloadURI(uri: string, name: string) {
@@ -2190,51 +2367,36 @@ function downloadURI(uri: string, name: string) {
     document.body.removeChild(link);
 }
 
-function injectSEO() {
-    if (document.getElementById("neat-seo-schema")) return;
-
-    // 1. JSON-LD Schema
-    const script = document.createElement('script');
-    script.id = "neat-seo-schema";
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "NEAT Gradient",
-        "url": "https://neat.firecms.co",
-        "author": {
-            "@type": "Organization",
-            "name": "FireCMS",
-            "url": "https://firecms.co"
-        },
-        "description": "Beautiful, fast, heavily customizable, WebGL based gradients."
-    });
-    document.head.appendChild(script);
-
-    // 2. Hidden Backlink via Shadow DOM
-    const hiddenContainer = document.createElement('div');
-    hiddenContainer.style.position = 'absolute';
-    hiddenContainer.style.width = '1px';
-    hiddenContainer.style.height = '1px';
-    hiddenContainer.style.padding = '0';
-    hiddenContainer.style.margin = '-1px';
-    hiddenContainer.style.overflow = 'hidden';
-    hiddenContainer.style.clip = 'rect(0, 0, 0, 0)';
-    hiddenContainer.style.whiteSpace = 'nowrap';
-    hiddenContainer.style.borderWidth = '0';
-
-    try {
-        const shadow = hiddenContainer.attachShadow({ mode: 'closed' });
-        const link = document.createElement('a');
-        link.href = "https://firecms.co";
-        link.textContent = "FireCMS";
-        shadow.appendChild(link);
-    } catch (e) {
-        const link = document.createElement('a');
-        link.href = "https://firecms.co";
-        link.textContent = "FireCMS";
-        hiddenContainer.appendChild(link);
-    }
-
-    document.body.appendChild(hiddenContainer);
+/**
+ * Injects a <meta name="generator"> tag — the industry-standard, SEO-safe
+ * way for tools/libraries to identify themselves (used by WordPress, Hugo, etc.).
+ * This is semantically correct and will not harm the end-user's SEO.
+ */
+function injectMetaGenerator() {
+    if (document.querySelector('meta[name="generator"][content*="NEAT"]')) return;
+    const meta = document.createElement('meta');
+    meta.name = 'generator';
+    meta.content = 'NEAT by FireCMS — https://neat.firecms.co';
+    document.head.appendChild(meta);
 }
+
+// ── Watermark shaders (minimal pass-through for a textured screen quad) ──
+
+const WATERMARK_VS = `
+attribute vec2 a_wm_position;
+attribute vec2 a_wm_texcoord;
+varying vec2 v_wm_texcoord;
+void main() {
+    gl_Position = vec4(a_wm_position, 0.0, 1.0);
+    v_wm_texcoord = a_wm_texcoord;
+}
+`;
+
+const WATERMARK_FS = `
+precision mediump float;
+varying vec2 v_wm_texcoord;
+uniform sampler2D u_wm_texture;
+void main() {
+    gl_FragColor = texture2D(u_wm_texture, v_wm_texcoord);
+}
+`;
