@@ -2140,7 +2140,12 @@ const setLinkStyles = (link: HTMLAnchorElement) => {
 }
 
 const addNeatLink = (ref: HTMLCanvasElement): HTMLAnchorElement => {
-    const parent = ref.parentElement;
+    let parent = ref.parentElement;
+    // Walk up past display:contents wrappers (e.g. Astro's <astro-island>)
+    // to find the real box-generating parent for positioning the link
+    while (parent && getComputedStyle(parent).display === "contents") {
+        parent = parent.parentElement;
+    }
     // Ensure parent has position so absolute link is positioned relative to it
     if (parent && getComputedStyle(parent).position === "static") {
         parent.style.position = "relative";
