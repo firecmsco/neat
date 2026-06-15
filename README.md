@@ -24,9 +24,9 @@ If you're upgrading from a previous version that used three.js, here's what chan
 
 | | **v0.6.x (Three.js)** | **v0.7+ (Pure WebGL)** |
 |---|---|---|
-| Library bundle | ~42 KB | ~66 KB (standalone) |
+| Library bundle | ~42 KB | ~59 KB (standalone) |
 | Three.js peer dep | 616 KB (122 KB gzip) | **0** |
-| **Total** | **~653 KB (~133 KB gzip)** | **~66 KB (~17 KB gzip)** |
+| **Total** | **~653 KB (~133 KB gzip)** | **~59 KB (~17 KB gzip)** |
 
 ### 1. Remove the `three` dependency
 

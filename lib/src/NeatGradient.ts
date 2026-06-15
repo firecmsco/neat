@@ -40,6 +40,171 @@ export interface WebGLState {
 
 import { NeatConfig, NeatColor, NeatController } from "./types";
 
+// Property descriptor table for data-driven getter/setter generation.
+// [publicName, privateField, getFactor, setFactor, mode]
+// mode: 'u' = uniform, 't' = texture, 'g' = geometry
+type PropDesc = [string, string, number, number, 'u' | 't' | 'g'];
+
+const PROP_DESCRIPTORS: PropDesc[] = [
+    // Category A: scaled uniforms (getFactor != 1 means get = _field * getFactor, set = _field = v * setFactor)
+    ['speed', '_speed', 20, 1/20, 'u'],
+    ['horizontalPressure', '_horizontalPressure', 4, 1/4, 'u'],
+    ['verticalPressure', '_verticalPressure', 4, 1/4, 'u'],
+    ['waveFrequencyX', '_waveFrequencyX', 1/0.04, 0.04, 'u'],
+    ['waveFrequencyY', '_waveFrequencyY', 1/0.04, 0.04, 'u'],
+    ['waveAmplitude', '_waveAmplitude', 1/0.75, 0.75, 'u'],
+    ['highlights', '_highlights', 100, 1/100, 'u'],
+    ['shadows', '_shadows', 100, 1/100, 'u'],
+    ['colorSaturation', '_saturation', 10, 1/10, 'u'],
+    ['colorBlending', '_colorBlending', 10, 1/10, 'u'],
+    ['yOffsetWaveMultiplier', '_yOffsetWaveMultiplier', 1000, 1/1000, 'u'],
+    ['yOffsetColorMultiplier', '_yOffsetColorMultiplier', 1000, 1/1000, 'u'],
+    ['yOffsetFlowMultiplier', '_yOffsetFlowMultiplier', 1000, 1/1000, 'u'],
+
+    // Category B+C: simple uniforms (factor = 1)
+    ['colorBrightness', '_brightness', 1, 1, 'u'],
+    ['grainIntensity', '_grainIntensity', 1, 1, 'u'],
+    ['grainSparsity', '_grainSparsity', 1, 1, 'u'],
+    ['grainSpeed', '_grainSpeed', 1, 1, 'u'],
+    ['wireframe', '_wireframe', 1, 1, 'u'],
+    ['backgroundAlpha', '_backgroundAlpha', 1, 1, 'u'],
+    ['flowDistortionA', '_flowDistortionA', 1, 1, 'u'],
+    ['flowDistortionB', '_flowDistortionB', 1, 1, 'u'],
+    ['flowScale', '_flowScale', 1, 1, 'u'],
+    ['flowEase', '_flowEase', 1, 1, 'u'],
+    ['flowEnabled', '_flowEnabled', 1, 1, 'u'],
+    ['textureEase', '_textureEase', 1, 1, 'u'],
+    ['silhouetteFade', '_silhouetteFade', 1, 1, 'u'],
+    ['cylinderFade', '_cylinderFade', 1, 1, 'u'],
+    ['ribbonFade', '_ribbonFade', 1, 1, 'u'],
+    ['flatShading', '_flatShading', 1, 1, 'u'],
+    ['domainWarpEnabled', '_domainWarpEnabled', 1, 1, 'u'],
+    ['domainWarpIntensity', '_domainWarpIntensity', 1, 1, 'u'],
+    ['domainWarpScale', '_domainWarpScale', 1, 1, 'u'],
+    ['vignetteIntensity', '_vignetteIntensity', 1, 1, 'u'],
+    ['vignetteRadius', '_vignetteRadius', 1, 1, 'u'],
+    ['fresnelEnabled', '_fresnelEnabled', 1, 1, 'u'],
+    ['fresnelPower', '_fresnelPower', 1, 1, 'u'],
+    ['fresnelIntensity', '_fresnelIntensity', 1, 1, 'u'],
+    ['iridescenceEnabled', '_iridescenceEnabled', 1, 1, 'u'],
+    ['iridescenceIntensity', '_iridescenceIntensity', 1, 1, 'u'],
+    ['iridescenceSpeed', '_iridescenceSpeed', 1, 1, 'u'],
+    ['bloomIntensity', '_bloomIntensity', 1, 1, 'u'],
+    ['bloomThreshold', '_bloomThreshold', 1, 1, 'u'],
+    ['chromaticAberration', '_chromaticAberration', 1, 1, 'u'],
+    ['shapeRotationX', '_shapeRotationX', 1, 1, 'u'],
+    ['shapeRotationY', '_shapeRotationY', 1, 1, 'u'],
+    ['shapeRotationZ', '_shapeRotationZ', 1, 1, 'u'],
+    ['shapeAutoRotateSpeedX', '_shapeAutoRotateSpeedX', 1, 1, 'u'],
+    ['shapeAutoRotateSpeedY', '_shapeAutoRotateSpeedY', 1, 1, 'u'],
+    ['cameraX', '_cameraX', 1, 1, 'u'],
+    ['cameraY', '_cameraY', 1, 1, 'u'],
+    ['cameraZ', '_cameraZ', 1, 1, 'u'],
+    ['cameraRotationX', '_cameraRotationX', 1, 1, 'u'],
+    ['cameraRotationY', '_cameraRotationY', 1, 1, 'u'],
+    ['cameraRotationZ', '_cameraRotationZ', 1, 1, 'u'],
+
+    // Category D: texture uniforms (also set _textureNeedsUpdate when texture is enabled)
+    ['textureVoidLikelihood', '_textureVoidLikelihood', 1, 1, 't'],
+    ['textureVoidWidthMin', '_textureVoidWidthMin', 1, 1, 't'],
+    ['textureVoidWidthMax', '_textureVoidWidthMax', 1, 1, 't'],
+    ['textureBandDensity', '_textureBandDensity', 1, 1, 't'],
+    ['textureColorBlending', '_textureColorBlending', 1, 1, 't'],
+    ['textureSeed', '_textureSeed', 1, 1, 't'],
+    ['transparentTextureVoid', '_transparentTextureVoid', 1, 1, 't'],
+    ['proceduralBackgroundColor', '_proceduralBackgroundColor', 1, 1, 't'],
+    ['textureShapeTriangles', '_textureShapeTriangles', 1, 1, 't'],
+    ['textureShapeCircles', '_textureShapeCircles', 1, 1, 't'],
+    ['textureShapeBars', '_textureShapeBars', 1, 1, 't'],
+    ['textureShapeSquiggles', '_textureShapeSquiggles', 1, 1, 't'],
+
+    // Category E: geometry (setter calls _updateGeometry)
+    ['sphereRadius', '_sphereRadius', 1, 1, 'g'],
+    ['torusRadius', '_torusRadius', 1, 1, 'g'],
+    ['torusTube', '_torusTube', 1, 1, 'g'],
+    ['cylinderRadius', '_cylinderRadius', 1, 1, 'g'],
+    ['cylinderHeight', '_cylinderHeight', 1, 1, 'g'],
+    ['planeBend', '_planeBend', 1, 1, 'g'],
+    ['planeTwist', '_planeTwist', 1, 1, 'g'],
+];
+
+// Declaration merging: expose dynamically-defined properties to TypeScript
+export interface NeatGradient {
+    speed: number;
+    horizontalPressure: number;
+    verticalPressure: number;
+    waveFrequencyX: number;
+    waveFrequencyY: number;
+    waveAmplitude: number;
+    highlights: number;
+    shadows: number;
+    colorSaturation: number;
+    colorBlending: number;
+    yOffsetWaveMultiplier: number;
+    yOffsetColorMultiplier: number;
+    yOffsetFlowMultiplier: number;
+    colorBrightness: number;
+    grainIntensity: number;
+    grainSparsity: number;
+    grainSpeed: number;
+    wireframe: boolean;
+    backgroundAlpha: number;
+    flowDistortionA: number;
+    flowDistortionB: number;
+    flowScale: number;
+    flowEase: number;
+    flowEnabled: boolean;
+    textureEase: number;
+    silhouetteFade: number;
+    cylinderFade: number;
+    ribbonFade: number;
+    flatShading: boolean;
+    domainWarpEnabled: boolean;
+    domainWarpIntensity: number;
+    domainWarpScale: number;
+    vignetteIntensity: number;
+    vignetteRadius: number;
+    fresnelEnabled: boolean;
+    fresnelPower: number;
+    fresnelIntensity: number;
+    iridescenceEnabled: boolean;
+    iridescenceIntensity: number;
+    iridescenceSpeed: number;
+    bloomIntensity: number;
+    bloomThreshold: number;
+    chromaticAberration: number;
+    shapeRotationX: number;
+    shapeRotationY: number;
+    shapeRotationZ: number;
+    shapeAutoRotateSpeedX: number;
+    shapeAutoRotateSpeedY: number;
+    cameraX: number;
+    cameraY: number;
+    cameraZ: number;
+    cameraRotationX: number;
+    cameraRotationY: number;
+    cameraRotationZ: number;
+    textureVoidLikelihood: number;
+    textureVoidWidthMin: number;
+    textureVoidWidthMax: number;
+    textureBandDensity: number;
+    textureColorBlending: number;
+    textureSeed: number;
+    transparentTextureVoid: boolean;
+    proceduralBackgroundColor: string;
+    textureShapeTriangles: number;
+    textureShapeCircles: number;
+    textureShapeBars: number;
+    textureShapeSquiggles: number;
+    sphereRadius: number;
+    torusRadius: number;
+    torusTube: number;
+    cylinderRadius: number;
+    cylinderHeight: number;
+    planeBend: number;
+    planeTwist: number;
+}
+
 export class NeatGradient implements NeatController {
 
     private _ref: HTMLCanvasElement;
@@ -197,8 +362,14 @@ export class NeatGradient implements NeatController {
     private _wmPosData: Float32Array = new Float32Array(8);
     private _wmClickHandler: ((e: MouseEvent) => void) | null = null;
     private _wmMoveHandler: ((e: MouseEvent) => void) | null = null;
+    private _wmMoveRafPending: boolean = false;
+    private _wmCachedRect: DOMRect | null = null;
+    private _wmRectCacheTime: number = 0;
+    // VAOs for fast state switching (WebGL2 only)
+    private _gradientVAO: WebGLVertexArrayObject | null = null;
+    private _watermarkVAO: WebGLVertexArrayObject | null = null;
 
-    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number }) {
+    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number, preserveDrawingBuffer?: boolean }) {
 
         const {
             ref,
@@ -295,6 +466,7 @@ export class NeatGradient implements NeatController {
             planeBend = 0,
             planeTwist = 0,
             licenseKey,
+            preserveDrawingBuffer = false,
         } = config;
 
 
@@ -397,7 +569,7 @@ export class NeatGradient implements NeatController {
         this._planeBend = planeBend;
         this._planeTwist = planeTwist;
 
-        this.glState = this._initScene(resolution);
+        this.glState = this._initScene(resolution, preserveDrawingBuffer);
         this._initWatermark();
 
         injectMetaGenerator();
@@ -595,8 +767,8 @@ export class NeatGradient implements NeatController {
                 gl.drawElements(gl.TRIANGLES, indexCount, indexType, 0);
             }
 
-            // Draw watermark overlay inside the canvas
-            this._renderWatermark(gl);
+            // Draw watermark overlay inside the canvas (skipped for licensed users)
+            if (!this._licensed) this._renderWatermark(gl);
 
             if (this._isVisible) {
                 this.requestRef = requestAnimationFrame(render);
@@ -712,59 +884,20 @@ export class NeatGradient implements NeatController {
             if (this._watermarkTexture) gl.deleteTexture(this._watermarkTexture);
             if (this._watermarkBuffer) gl.deleteBuffer(this._watermarkBuffer);
             if (this._watermarkTexCoordBuffer) gl.deleteBuffer(this._watermarkTexCoordBuffer);
+            // Cleanup VAOs
+            const gl2 = gl as WebGL2RenderingContext;
+            if (gl2.deleteVertexArray) {
+                if (this._gradientVAO) gl2.deleteVertexArray(this._gradientVAO);
+                if (this._watermarkVAO) gl2.deleteVertexArray(this._watermarkVAO);
+            }
+
         }
         if (this._proceduralTexture && this.glState) {
             this.glState.gl.deleteTexture(this._proceduralTexture);
         }
     }
 
-    get speed(): number {
-        return this._speed * 20;
-    }
-    set speed(speed: number) {
-        this._uniformsDirty = true;
-        this._speed = speed / 20;
-    }
-
-    get horizontalPressure(): number {
-        return this._horizontalPressure * 4;
-    }
-    set horizontalPressure(horizontalPressure: number) {
-        this._uniformsDirty = true;
-        this._horizontalPressure = horizontalPressure / 4;
-    }
-
-    get verticalPressure(): number {
-        return this._verticalPressure * 4;
-    }
-    set verticalPressure(verticalPressure: number) {
-        this._uniformsDirty = true;
-        this._verticalPressure = verticalPressure / 4;
-    }
-
-    get waveFrequencyX(): number {
-        return this._waveFrequencyX / 0.04;
-    }
-    set waveFrequencyX(waveFrequencyX: number) {
-        this._uniformsDirty = true;
-        this._waveFrequencyX = waveFrequencyX * 0.04;
-    }
-
-    get waveFrequencyY(): number {
-        return this._waveFrequencyY / 0.04;
-    }
-    set waveFrequencyY(waveFrequencyY: number) {
-        this._uniformsDirty = true;
-        this._waveFrequencyY = waveFrequencyY * 0.04;
-    }
-
-    get waveAmplitude(): number {
-        return this._waveAmplitude / 0.75;
-    }
-    set waveAmplitude(waveAmplitude: number) {
-        this._uniformsDirty = true;
-        this._waveAmplitude = waveAmplitude * .75;
-    }
+    // ── Manual getters/setters (special logic) ──
 
     get colors(): NeatColor[] {
         return this._colors;
@@ -776,84 +909,12 @@ export class NeatGradient implements NeatController {
         this._colorsChanged = true;
     }
 
-    get highlights(): number {
-        return this._highlights * 100;
-    }
-    set highlights(highlights: number) {
-        this._uniformsDirty = true;
-        this._highlights = highlights / 100;
-    }
-
-    get shadows(): number {
-        return this._shadows * 100;
-    }
-    set shadows(shadows: number) {
-        this._uniformsDirty = true;
-        this._shadows = shadows / 100;
-    }
-
-    get colorSaturation(): number {
-        return this._saturation * 10;
-    }
-    set colorSaturation(colorSaturation: number) {
-        this._uniformsDirty = true;
-        this._saturation = colorSaturation / 10;
-    }
-
-    get colorBrightness(): number {
-        return this._brightness;
-    }
-    set colorBrightness(colorBrightness: number) {
-        this._uniformsDirty = true;
-        this._brightness = colorBrightness;
-    }
-
-    get colorBlending(): number {
-        return this._colorBlending * 10;
-    }
-    set colorBlending(colorBlending: number) {
-        this._uniformsDirty = true;
-        this._colorBlending = colorBlending / 10;
-    }
-
     get grainScale(): number {
         return this._grainScale;
     }
     set grainScale(grainScale: number) {
         this._uniformsDirty = true;
         this._grainScale = grainScale == 0 ? 1 : grainScale;
-    }
-
-    get grainIntensity(): number {
-        return this._grainIntensity;
-    }
-    set grainIntensity(grainIntensity: number) {
-        this._uniformsDirty = true;
-        this._grainIntensity = grainIntensity;
-    }
-
-    get grainSparsity(): number {
-        return this._grainSparsity;
-    }
-    set grainSparsity(grainSparsity: number) {
-        this._uniformsDirty = true;
-        this._grainSparsity = grainSparsity;
-    }
-
-    get grainSpeed(): number {
-        return this._grainSpeed;
-    }
-    set grainSpeed(grainSpeed: number) {
-        this._uniformsDirty = true;
-        this._grainSpeed = grainSpeed;
-    }
-
-    get wireframe(): boolean {
-        return this._wireframe;
-    }
-    set wireframe(wireframe: boolean) {
-        this._uniformsDirty = true;
-        this._wireframe = wireframe;
     }
 
     get resolution(): number {
@@ -874,14 +935,6 @@ export class NeatGradient implements NeatController {
         this._backgroundColorRgb = this._hexToRgb(backgroundColor);
     }
 
-    get backgroundAlpha(): number {
-        return this._backgroundAlpha;
-    }
-    set backgroundAlpha(backgroundAlpha: number) {
-        this._uniformsDirty = true;
-        this._backgroundAlpha = backgroundAlpha;
-    }
-
     get yOffset(): number {
         return this._yOffset;
     }
@@ -892,76 +945,6 @@ export class NeatGradient implements NeatController {
         }
     }
 
-    get yOffsetWaveMultiplier(): number {
-        return this._yOffsetWaveMultiplier * 1000;
-    }
-
-    set yOffsetWaveMultiplier(value: number) {
-        this._uniformsDirty = true;
-        this._yOffsetWaveMultiplier = value / 1000;
-    }
-
-    get yOffsetColorMultiplier(): number {
-        return this._yOffsetColorMultiplier * 1000;
-    }
-
-    set yOffsetColorMultiplier(value: number) {
-        this._uniformsDirty = true;
-        this._yOffsetColorMultiplier = value / 1000;
-    }
-
-    get yOffsetFlowMultiplier(): number {
-        return this._yOffsetFlowMultiplier * 1000;
-    }
-
-    set yOffsetFlowMultiplier(value: number) {
-        this._uniformsDirty = true;
-        this._yOffsetFlowMultiplier = value / 1000;
-    }
-
-    get flowDistortionA(): number {
-        return this._flowDistortionA;
-    }
-    set flowDistortionA(value: number) {
-        this._uniformsDirty = true;
-        this._flowDistortionA = value;
-    }
-
-    get flowDistortionB(): number {
-        return this._flowDistortionB;
-    }
-    set flowDistortionB(value: number) {
-        this._uniformsDirty = true;
-        this._flowDistortionB = value;
-    }
-
-    get flowScale(): number {
-        return this._flowScale;
-    }
-    set flowScale(value: number) {
-        this._uniformsDirty = true;
-        this._flowScale = value;
-    }
-
-    get flowEase(): number {
-        return this._flowEase;
-    }
-    set flowEase(value: number) {
-        this._uniformsDirty = true;
-        this._flowEase = value;
-    }
-
-    set flowEnabled(value: boolean) {
-        this._uniformsDirty = true;
-        this._flowEnabled = value;
-    }
-
-    get flowEnabled(): boolean {
-        return this._flowEnabled;
-    }
-
-
-
     get enableProceduralTexture(): boolean {
         return this._enableProceduralTexture;
     }
@@ -971,137 +954,6 @@ export class NeatGradient implements NeatController {
         if (value && !this._proceduralTexture) {
             this._textureNeedsUpdate = true;
         }
-    }
-
-    get textureVoidLikelihood(): number {
-        return this._textureVoidLikelihood;
-    }
-    set textureVoidLikelihood(value: number) {
-        this._uniformsDirty = true;
-        this._textureVoidLikelihood = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureVoidWidthMin(): number {
-        return this._textureVoidWidthMin;
-    }
-    set textureVoidWidthMin(value: number) {
-        this._uniformsDirty = true;
-        this._textureVoidWidthMin = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureVoidWidthMax(): number {
-        return this._textureVoidWidthMax;
-    }
-    set textureVoidWidthMax(value: number) {
-        this._uniformsDirty = true;
-        this._textureVoidWidthMax = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureBandDensity(): number {
-        return this._textureBandDensity;
-    }
-    set textureBandDensity(value: number) {
-        this._uniformsDirty = true;
-        this._textureBandDensity = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureColorBlending(): number {
-        return this._textureColorBlending;
-    }
-    set textureColorBlending(value: number) {
-        this._uniformsDirty = true;
-        this._textureColorBlending = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureSeed(): number {
-        return this._textureSeed;
-    }
-    set textureSeed(value: number) {
-        this._uniformsDirty = true;
-        this._textureSeed = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureEase(): number {
-        return this._textureEase;
-    }
-
-    set textureEase(value: number) {
-        this._uniformsDirty = true;
-        this._textureEase = value;
-    }
-
-    get transparentTextureVoid(): boolean {
-        return this._transparentTextureVoid;
-    }
-
-    set transparentTextureVoid(value: boolean) {
-        this._uniformsDirty = true;
-        this._transparentTextureVoid = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get proceduralBackgroundColor(): string {
-        return this._proceduralBackgroundColor;
-    }
-    set proceduralBackgroundColor(value: string) {
-        this._uniformsDirty = true;
-        this._proceduralBackgroundColor = value;
-        if (this._enableProceduralTexture) {
-            this._textureNeedsUpdate = true;
-        }
-    }
-
-    get textureShapeTriangles(): number {
-        return this._textureShapeTriangles;
-    }
-    set textureShapeTriangles(value: number) {
-        this._uniformsDirty = true;
-        this._textureShapeTriangles = value;
-        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
-    }
-    get textureShapeCircles(): number {
-        return this._textureShapeCircles;
-    }
-    set textureShapeCircles(value: number) {
-        this._uniformsDirty = true;
-        this._textureShapeCircles = value;
-        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
-    }
-    get textureShapeBars(): number {
-        return this._textureShapeBars;
-    }
-    set textureShapeBars(value: number) {
-        this._uniformsDirty = true;
-        this._textureShapeBars = value;
-        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
-    }
-    get textureShapeSquiggles(): number {
-        return this._textureShapeSquiggles;
-    }
-    set textureShapeSquiggles(value: number) {
-        this._uniformsDirty = true;
-        this._textureShapeSquiggles = value;
-        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
     }
 
     _updateGeometry() {
@@ -1167,13 +1019,13 @@ export class NeatGradient implements NeatController {
         ];
     }
 
-    _initScene(resolution: number): WebGLState {
+    _initScene(resolution: number, preserveDrawingBuffer: boolean = false): WebGLState {
 
         const width = this._ref.clientWidth;
         const height = this._ref.clientHeight;
 
-        const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer: true, antialias: true }) ||
-            this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer: true, antialias: true });
+        const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: true }) ||
+            this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: true });
 
         if (!gl) {
             throw new Error("WebGL not supported");
@@ -1624,125 +1476,7 @@ export class NeatGradient implements NeatController {
         return tex;
     }
 
-    get silhouetteFade(): number {
-        return this._silhouetteFade;
-    }
-    set silhouetteFade(value: number) {
-        if (this._silhouetteFade !== value) {
-            this._silhouetteFade = value;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get cylinderFade(): number {
-        return this._cylinderFade;
-    }
-    set cylinderFade(value: number) {
-        if (this._cylinderFade !== value) {
-            this._cylinderFade = value;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get ribbonFade(): number {
-        return this._ribbonFade;
-    }
-    set ribbonFade(value: number) {
-        if (this._ribbonFade !== value) {
-            this._ribbonFade = value;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get flatShading(): boolean {
-        return this._flatShading;
-    }
-    set flatShading(value: boolean) {
-        if (this._flatShading !== value) {
-            this._flatShading = value;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get domainWarpEnabled(): boolean {
-        return this._domainWarpEnabled;
-    }
-    set domainWarpEnabled(enabled: boolean) {
-        if (this._domainWarpEnabled !== enabled) {
-            this._domainWarpEnabled = enabled;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get domainWarpIntensity(): number {
-        return this._domainWarpIntensity;
-    }
-    set domainWarpIntensity(intensity: number) {
-        if (this._domainWarpIntensity !== intensity) {
-            this._domainWarpIntensity = intensity;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get domainWarpScale(): number {
-        return this._domainWarpScale;
-    }
-    set domainWarpScale(scale: number) {
-        if (this._domainWarpScale !== scale) {
-            this._domainWarpScale = scale;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get vignetteIntensity(): number {
-        return this._vignetteIntensity;
-    }
-    set vignetteIntensity(intensity: number) {
-        if (this._vignetteIntensity !== intensity) {
-            this._vignetteIntensity = intensity;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get vignetteRadius(): number {
-        return this._vignetteRadius;
-    }
-    set vignetteRadius(radius: number) {
-        if (this._vignetteRadius !== radius) {
-            this._vignetteRadius = radius;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get fresnelEnabled(): boolean {
-        return this._fresnelEnabled;
-    }
-    set fresnelEnabled(enabled: boolean) {
-        if (this._fresnelEnabled !== enabled) {
-            this._fresnelEnabled = enabled;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get fresnelPower(): number {
-        return this._fresnelPower;
-    }
-    set fresnelPower(power: number) {
-        if (this._fresnelPower !== power) {
-            this._fresnelPower = power;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get fresnelIntensity(): number {
-        return this._fresnelIntensity;
-    }
-    set fresnelIntensity(intensity: number) {
-        if (this._fresnelIntensity !== intensity) {
-            this._fresnelIntensity = intensity;
-            this._uniformsDirty = true;
-        }
-    }
+    // ── Manual getters/setters (special logic) ──
 
     get fresnelColor(): string {
         return this._fresnelColor;
@@ -1751,66 +1485,6 @@ export class NeatGradient implements NeatController {
         if (this._fresnelColor !== fresnelColor) {
             this._fresnelColor = fresnelColor;
             this._fresnelColorRgb = this._hexToRgb(fresnelColor);
-            this._uniformsDirty = true;
-        }
-    }
-
-    get iridescenceEnabled(): boolean {
-        return this._iridescenceEnabled;
-    }
-    set iridescenceEnabled(enabled: boolean) {
-        if (this._iridescenceEnabled !== enabled) {
-            this._iridescenceEnabled = enabled;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get iridescenceIntensity(): number {
-        return this._iridescenceIntensity;
-    }
-    set iridescenceIntensity(intensity: number) {
-        if (this._iridescenceIntensity !== intensity) {
-            this._iridescenceIntensity = intensity;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get iridescenceSpeed(): number {
-        return this._iridescenceSpeed;
-    }
-    set iridescenceSpeed(speed: number) {
-        if (this._iridescenceSpeed !== speed) {
-            this._iridescenceSpeed = speed;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get bloomIntensity(): number {
-        return this._bloomIntensity;
-    }
-    set bloomIntensity(intensity: number) {
-        if (this._bloomIntensity !== intensity) {
-            this._bloomIntensity = intensity;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get bloomThreshold(): number {
-        return this._bloomThreshold;
-    }
-    set bloomThreshold(threshold: number) {
-        if (this._bloomThreshold !== threshold) {
-            this._bloomThreshold = threshold;
-            this._uniformsDirty = true;
-        }
-    }
-
-    get chromaticAberration(): number {
-        return this._chromaticAberration;
-    }
-    set chromaticAberration(aberration: number) {
-        if (this._chromaticAberration !== aberration) {
-            this._chromaticAberration = aberration;
             this._uniformsDirty = true;
         }
     }
@@ -1826,132 +1500,10 @@ export class NeatGradient implements NeatController {
         }
     }
 
-    get shapeRotationX(): number { return this._shapeRotationX; }
-    set shapeRotationX(val: number) {
-        this._shapeRotationX = val;
-        this._uniformsDirty = true;
-    }
-
-    get shapeRotationY(): number { return this._shapeRotationY; }
-    set shapeRotationY(val: number) {
-        this._shapeRotationY = val;
-        this._uniformsDirty = true;
-    }
-
-    get shapeRotationZ(): number { return this._shapeRotationZ; }
-    set shapeRotationZ(val: number) {
-        this._shapeRotationZ = val;
-        this._uniformsDirty = true;
-    }
-
-    get shapeAutoRotateSpeedX(): number { return this._shapeAutoRotateSpeedX; }
-    set shapeAutoRotateSpeedX(val: number) {
-        this._shapeAutoRotateSpeedX = val;
-        this._uniformsDirty = true;
-    }
-
-    get shapeAutoRotateSpeedY(): number { return this._shapeAutoRotateSpeedY; }
-    set shapeAutoRotateSpeedY(val: number) {
-        this._shapeAutoRotateSpeedY = val;
-        this._uniformsDirty = true;
-    }
-
-    get sphereRadius(): number { return this._sphereRadius; }
-    set sphereRadius(val: number) {
-        if (this._sphereRadius !== val) {
-            this._sphereRadius = val;
-            this._updateGeometry();
-        }
-    }
-
-    get torusRadius(): number { return this._torusRadius; }
-    set torusRadius(val: number) {
-        if (this._torusRadius !== val) {
-            this._torusRadius = val;
-            this._updateGeometry();
-        }
-    }
-
-    get torusTube(): number { return this._torusTube; }
-    set torusTube(val: number) {
-        if (this._torusTube !== val) {
-            this._torusTube = val;
-            this._updateGeometry();
-        }
-    }
-
-    get cylinderRadius(): number { return this._cylinderRadius; }
-    set cylinderRadius(val: number) {
-        if (this._cylinderRadius !== val) {
-            this._cylinderRadius = val;
-            this._updateGeometry();
-        }
-    }
-
-    get cylinderHeight(): number { return this._cylinderHeight; }
-    set cylinderHeight(val: number) {
-        if (this._cylinderHeight !== val) {
-            this._cylinderHeight = val;
-            this._updateGeometry();
-        }
-    }
-
-    get planeBend(): number { return this._planeBend; }
-    set planeBend(val: number) {
-        if (this._planeBend !== val) {
-            this._planeBend = val;
-            this._updateGeometry();
-        }
-    }
-
-    get planeTwist(): number { return this._planeTwist; }
-    set planeTwist(val: number) {
-        if (this._planeTwist !== val) {
-            this._planeTwist = val;
-            this._updateGeometry();
-        }
-    }
-
     // Camera Getters and Setters
     get cameraLock(): boolean { return this._cameraLock; }
     set cameraLock(val: boolean) {
         this._cameraLock = val;
-    }
-
-    get cameraX(): number { return this._cameraX; }
-    set cameraX(val: number) {
-        this._cameraX = val;
-        this._uniformsDirty = true;
-    }
-
-    get cameraY(): number { return this._cameraY; }
-    set cameraY(val: number) {
-        this._cameraY = val;
-        this._uniformsDirty = true;
-    }
-
-    get cameraZ(): number { return this._cameraZ; }
-    set cameraZ(val: number) {
-        this._cameraZ = val;
-        this._uniformsDirty = true;
-    }
-
-    get cameraRotationX(): number { return this._cameraRotationX; }
-    set cameraRotationX(val: number) {
-        this._cameraRotationX = val;
-        this._uniformsDirty = true;
-    }
-
-    get cameraRotationY(): number { return this._cameraRotationY; }
-    set cameraRotationY(val: number) {
-        this._cameraRotationY = val;
-        this._uniformsDirty = true;
-    }
-
-    get cameraRotationZ(): number { return this._cameraRotationZ; }
-    set cameraRotationZ(val: number) {
-        this._cameraRotationZ = val;
-        this._uniformsDirty = true;
     }
 
     get cameraZoom(): number { return this._cameraZoom; }
@@ -1977,10 +1529,13 @@ export class NeatGradient implements NeatController {
 
     /**
      * Compiles the watermark shader, creates the text texture, and sets up
-     * the screen-space quad buffers. Called once from the constructor.
+     * the screen-space quad buffers. Uses VAOs on WebGL2 to minimise
+     * per-frame state switching (~2 calls instead of ~20).
      */
     private _initWatermark(): void {
         const gl = this.glState.gl;
+        const gl2 = gl as WebGL2RenderingContext;
+        const hasVAO = typeof gl2.createVertexArray === 'function';
 
         // ── 1. Compile watermark shader program ──
         const vs = gl.createShader(gl.VERTEX_SHADER)!;
@@ -1997,14 +1552,11 @@ export class NeatGradient implements NeatController {
         gl.linkProgram(prog);
         this._watermarkProgram = prog;
 
-        // Shaders are linked; we can free them
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
         // ── 2. Rasterise "NEAT" text into an offscreen canvas ──
-        // No DPR scaling: the canvas buffer is set to clientWidth/clientHeight
-        // (1x CSS pixels), so the watermark must match.
-        const fontSize = 11;
+        const fontSize = 13;
         const padX = 6;
         const padY = 5;
 
@@ -2024,10 +1576,7 @@ export class NeatGradient implements NeatController {
         c.height = ch;
         const ctx = c.getContext('2d')!;
 
-        // Transparent background — no fill needed
         ctx.clearRect(0, 0, cw, ch);
-
-        // Subtle shadow for readability on any gradient
         ctx.shadowColor = 'rgba(0,0,0,0.4)';
         ctx.shadowBlur = 2;
         ctx.shadowOffsetX = 1;
@@ -2041,7 +1590,7 @@ export class NeatGradient implements NeatController {
 
         // ── 3. Upload as a WebGL texture ──
         const tex = gl.createTexture()!;
-        gl.activeTexture(gl.TEXTURE2); // Use unit 2 to avoid collision with procedural (unit 1)
+        gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -2052,28 +1601,56 @@ export class NeatGradient implements NeatController {
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         this._watermarkTexture = tex;
 
-        // ── 4. Create static tex-coord buffer (never changes) ──
+        // ── 4. Create buffers ──
         const tcBuf = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
-        // Two-triangle strip: BL, BR, TL, TR
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]), gl.STATIC_DRAW);
         this._watermarkTexCoordBuffer = tcBuf;
 
-        // ── 5. Create position buffer (updated per-frame based on canvas size) ──
         const posBuf = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(8), gl.DYNAMIC_DRAW);
         this._watermarkBuffer = posBuf;
 
-        // ── Cache attribute/uniform locations (avoids GL lookups per frame) ──
+        // Cache attribute/uniform locations
         this._wmLocPos = gl.getAttribLocation(prog, 'a_wm_position');
         this._wmLocTc = gl.getAttribLocation(prog, 'a_wm_texcoord');
         this._wmLocTex = gl.getUniformLocation(prog, 'u_wm_texture');
 
-        // ── 6. Make the watermark region clickable ──
-        // We listen on `document` (capture phase for click) because the canvas
-        // is often covered by overlay elements (scroll containers, UI panels)
-        // that would swallow canvas-level events.
+        // ── 5. Set up VAOs (WebGL2 only) for fast state switching ──
+        if (hasVAO) {
+            // Watermark VAO
+            this._watermarkVAO = gl2.createVertexArray();
+            gl2.bindVertexArray(this._watermarkVAO);
+            gl.enableVertexAttribArray(this._wmLocPos);
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+            gl.vertexAttribPointer(this._wmLocPos, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this._wmLocTc);
+            gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
+            gl.vertexAttribPointer(this._wmLocTc, 2, gl.FLOAT, false, 0, 0);
+
+            // Gradient VAO — capture current gradient attribute state
+            this._gradientVAO = gl2.createVertexArray();
+            gl2.bindVertexArray(this._gradientVAO);
+            const locs = this.glState.locations.attributes;
+            gl.enableVertexAttribArray(locs.position);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
+            gl.vertexAttribPointer(locs.position, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(locs.normal);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
+            gl.vertexAttribPointer(locs.normal, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(locs.uv);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
+            gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+
+            // Leave gradient VAO bound as default
+            gl2.bindVertexArray(this._gradientVAO);
+        } else {
+            // WebGL1: re-bind gradient buffers (already done in _initScene)
+        }
+
+        // ── 6. Make the watermark region clickable (throttled) ──
         this._wmClickHandler = (e: MouseEvent) => {
             if (this._isOverWatermark(e)) {
                 e.preventDefault();
@@ -2082,74 +1659,89 @@ export class NeatGradient implements NeatController {
             }
         };
         this._wmMoveHandler = (e: MouseEvent) => {
-            const over = this._isOverWatermark(e);
-            this._ref.style.cursor = over ? 'pointer' : '';
-            // Propagate pointer cursor to overlays that sit on top of the canvas
-            if (over) {
-                document.body.style.cursor = 'pointer';
-            } else if (document.body.style.cursor === 'pointer') {
-                document.body.style.cursor = '';
-            }
+            if (this._wmMoveRafPending) return;
+            this._wmMoveRafPending = true;
+            requestAnimationFrame(() => {
+                this._wmMoveRafPending = false;
+                const now = performance.now();
+                if (!this._wmCachedRect || now - this._wmRectCacheTime > 100) {
+                    this._wmCachedRect = this._ref.getBoundingClientRect();
+                    this._wmRectCacheTime = now;
+                }
+                const rect = this._wmCachedRect;
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const cw = rect.width;
+                const ch = rect.height;
+                if (x < 0 || y < 0 || x > cw || y > ch) {
+                    if (this._ref.style.cursor === 'pointer') this._ref.style.cursor = '';
+                    if (document.body.style.cursor === 'pointer') document.body.style.cursor = '';
+                    return;
+                }
+                const m = this._watermarkMargin;
+                const ww = this._watermarkWidth;
+                const wh = this._watermarkHeight;
+                const left = cw - m - ww;
+                const top = ch - m - wh;
+                const over = x >= left && x <= cw - m && y >= top && y <= ch - m;
+                this._ref.style.cursor = over ? 'pointer' : '';
+                if (over) {
+                    document.body.style.cursor = 'pointer';
+                } else if (document.body.style.cursor === 'pointer') {
+                    document.body.style.cursor = '';
+                }
+            });
         };
-        document.addEventListener('click', this._wmClickHandler, true); // capture phase
+        document.addEventListener('click', this._wmClickHandler, true);
         document.addEventListener('mousemove', this._wmMoveHandler);
     }
 
     /** Returns true if the mouse event is inside the watermark's pixel bounds. */
     private _isOverWatermark(e: MouseEvent): boolean {
-        const rect = this._ref.getBoundingClientRect();
-        // Mouse position relative to the canvas element
+        const now = performance.now();
+        if (!this._wmCachedRect || now - this._wmRectCacheTime > 100) {
+            this._wmCachedRect = this._ref.getBoundingClientRect();
+            this._wmRectCacheTime = now;
+        }
+        const rect = this._wmCachedRect;
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const cw = rect.width;
         const ch = rect.height;
-        // Quick rejection: outside the canvas entirely
         if (x < 0 || y < 0 || x > cw || y > ch) return false;
 
         const m = this._watermarkMargin;
         const ww = this._watermarkWidth;
         const wh = this._watermarkHeight;
-
-        // Watermark sits in the bottom-right corner
         const left = cw - m - ww;
         const top = ch - m - wh;
 
-        return x >= left && x <= cw - m
-            && y >= top && y <= ch - m;
+        return x >= left && x <= cw - m && y >= top && y <= ch - m;
     }
 
     /**
      * Draws the watermark quad as a second pass after the main gradient.
-     * Restores the main program afterwards so the next frame's uniform
-     * uploads target the correct program.
+     * Uses VAO switching on WebGL2 (~2 GL calls) or manual restore on WebGL1.
      */
     private _renderWatermark(gl: WebGLRenderingContext | WebGL2RenderingContext): void {
-        // Skip watermark for licensed users
-        if (this._licensed) return;
-
         const prog = this._watermarkProgram;
         const tex = this._watermarkTexture;
         const posBuf = this._watermarkBuffer;
-        const tcBuf = this._watermarkTexCoordBuffer;
-        if (!prog || !tex || !posBuf || !tcBuf) return;
+        if (!prog || !tex || !posBuf) return;
 
         const canvasW = this._ref.width || this._ref.clientWidth;
         const canvasH = this._ref.height || this._ref.clientHeight;
         if (canvasW === 0 || canvasH === 0) return;
 
-        // Compute quad position in clip space (-1 … +1).
-        // Place the watermark in the bottom-right corner with a small margin.
         const margin = 4;
         const qw = this._watermarkWidth;
         const qh = this._watermarkHeight;
 
-        // Pixel → clip-space conversion
-        const r = 1.0 - (margin / canvasW) * 2.0;          // right edge
-        const l = r - (qw / canvasW) * 2.0;                 // left edge
-        const b = -1.0 + (margin / canvasH) * 2.0;          // bottom edge
-        const t = b + (qh / canvasH) * 2.0;                 // top edge
+        const r = 1.0 - (margin / canvasW) * 2.0;
+        const l = r - (qw / canvasW) * 2.0;
+        const b = -1.0 + (margin / canvasH) * 2.0;
+        const t = b + (qh / canvasH) * 2.0;
 
-        // Update position buffer (triangle strip: BL, BR, TL, TR)
         const posData = this._wmPosData;
         posData[0] = l; posData[1] = b;
         posData[2] = r; posData[3] = b;
@@ -2158,54 +1750,82 @@ export class NeatGradient implements NeatController {
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, posData);
 
-        // ── Switch to watermark shader ──
+        const gl2 = gl as WebGL2RenderingContext;
+        const hasVAO = this._watermarkVAO !== null;
+
+        // Switch to watermark state
         gl.useProgram(prog);
         gl.disable(gl.DEPTH_TEST);
-
-        // Use premultiplied alpha blending since we uploaded with PREMULTIPLY_ALPHA
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-        // Bind position attribute (cached location)
-        const aPos = this._wmLocPos;
-        gl.enableVertexAttribArray(aPos);
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        if (hasVAO) {
+            // WebGL2 fast path: single VAO bind sets all attributes
+            gl2.bindVertexArray(this._watermarkVAO);
+            // Re-bind position buffer since it's DYNAMIC_DRAW and was just updated
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+            gl.vertexAttribPointer(this._wmLocPos, 2, gl.FLOAT, false, 0, 0);
+        } else {
+            // WebGL1 fallback: manual attribute setup
+            gl.enableVertexAttribArray(this._wmLocPos);
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+            gl.vertexAttribPointer(this._wmLocPos, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this._wmLocTc);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this._watermarkTexCoordBuffer!);
+            gl.vertexAttribPointer(this._wmLocTc, 2, gl.FLOAT, false, 0, 0);
+        }
 
-        // Bind texcoord attribute (cached location)
-        const aTc = this._wmLocTc;
-        gl.enableVertexAttribArray(aTc);
-        gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
-        gl.vertexAttribPointer(aTc, 2, gl.FLOAT, false, 0, 0);
-
-        // Bind watermark texture on unit 2 (cached location)
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.uniform1i(this._wmLocTex, 2);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-        // ── Restore state for the next gradient frame ──
+        // Restore gradient state
         gl.enable(gl.DEPTH_TEST);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.useProgram(this.glState.program);
 
-        // Re-enable and re-bind the gradient's vertex attributes.
-        // We must call enableVertexAttribArray again because the watermark's
-        // attribute locations may overlap with the gradient's (WebGL assigns
-        // locations globally starting from 0). Without this, the gradient's
-        // position/normal/uv arrays stay disabled after the watermark draw.
-        const locs = this.glState.locations.attributes;
-        gl.enableVertexAttribArray(locs.position);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
-        gl.vertexAttribPointer(locs.position, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(locs.normal);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
-        gl.vertexAttribPointer(locs.normal, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(locs.uv);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
-        gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+        if (hasVAO) {
+            // WebGL2 fast path: single VAO bind restores all gradient attributes
+            gl2.bindVertexArray(this._gradientVAO);
+        } else {
+            // WebGL1 fallback: manual attribute restore
+            const locs = this.glState.locations.attributes;
+            gl.enableVertexAttribArray(locs.position);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
+            gl.vertexAttribPointer(locs.position, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(locs.normal);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
+            gl.vertexAttribPointer(locs.normal, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(locs.uv);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
+            gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
+        }
     }
+}
+
+// Generate getters/setters from the descriptor table
+for (const [pub, priv, gf, sf, mode] of PROP_DESCRIPTORS) {
+    Object.defineProperty(NeatGradient.prototype, pub, {
+        get(this: NeatGradient) {
+            return gf === 1 ? (this as any)[priv] : (this as any)[priv] * gf;
+        },
+        set(this: NeatGradient, v: any) {
+            const stored = sf === 1 ? v : v * sf;
+            // Skip update if value hasn't changed (avoids unnecessary uniform uploads)
+            if ((this as any)[priv] === stored) return;
+            (this as any)[priv] = stored;
+            (this as any)._uniformsDirty = true;
+            if (mode === 't' && (this as any)._enableProceduralTexture) {
+                (this as any)._textureNeedsUpdate = true;
+            } else if (mode === 'g') {
+                (this as any)._updateGeometry();
+            }
+        },
+        enumerable: true,
+        configurable: true,
+    });
 }
 
 
