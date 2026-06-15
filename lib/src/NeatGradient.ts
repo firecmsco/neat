@@ -190,6 +190,11 @@ export class NeatGradient implements NeatController {
     private _watermarkWidth: number = 0;
     private _watermarkHeight: number = 0;
     private _watermarkMargin: number = 4;
+    // Cached GL locations & reusable buffer to avoid per-frame allocations
+    private _wmLocPos: number = -1;
+    private _wmLocTc: number = -1;
+    private _wmLocTex: WebGLUniformLocation | null = null;
+    private _wmPosData: Float32Array = new Float32Array(8);
     private _wmClickHandler: ((e: MouseEvent) => void) | null = null;
     private _wmMoveHandler: ((e: MouseEvent) => void) | null = null;
 
@@ -2234,6 +2239,11 @@ export class NeatGradient implements NeatController {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(8), gl.DYNAMIC_DRAW);
         this._watermarkBuffer = posBuf;
 
+        // ── Cache attribute/uniform locations (avoids GL lookups per frame) ──
+        this._wmLocPos = gl.getAttribLocation(prog, 'a_wm_position');
+        this._wmLocTc = gl.getAttribLocation(prog, 'a_wm_texcoord');
+        this._wmLocTex = gl.getUniformLocation(prog, 'u_wm_texture');
+
         // ── 6. Make the watermark region clickable ──
         // We listen on `document` (capture phase for click) because the canvas
         // is often covered by overlay elements (scroll containers, UI panels)
@@ -2314,8 +2324,13 @@ export class NeatGradient implements NeatController {
         const t = b + (qh / canvasH) * 2.0;                 // top edge
 
         // Update position buffer (triangle strip: BL, BR, TL, TR)
+        const posData = this._wmPosData;
+        posData[0] = l; posData[1] = b;
+        posData[2] = r; posData[3] = b;
+        posData[4] = l; posData[5] = t;
+        posData[6] = r; posData[7] = t;
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array([l, b, r, b, l, t, r, t]));
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, posData);
 
         // ── Switch to watermark shader ──
         gl.useProgram(prog);
@@ -2324,22 +2339,22 @@ export class NeatGradient implements NeatController {
         // Use premultiplied alpha blending since we uploaded with PREMULTIPLY_ALPHA
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-        // Bind position attribute
-        const aPos = gl.getAttribLocation(prog, 'a_wm_position');
+        // Bind position attribute (cached location)
+        const aPos = this._wmLocPos;
         gl.enableVertexAttribArray(aPos);
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
         gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-        // Bind texcoord attribute
-        const aTc = gl.getAttribLocation(prog, 'a_wm_texcoord');
+        // Bind texcoord attribute (cached location)
+        const aTc = this._wmLocTc;
         gl.enableVertexAttribArray(aTc);
         gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
         gl.vertexAttribPointer(aTc, 2, gl.FLOAT, false, 0, 0);
 
-        // Bind watermark texture on unit 2
+        // Bind watermark texture on unit 2 (cached location)
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.uniform1i(gl.getUniformLocation(prog, 'u_wm_texture'), 2);
+        gl.uniform1i(this._wmLocTex, 2);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
