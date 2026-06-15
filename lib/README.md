@@ -1,441 +1,400 @@
-# Neat gradients
+# 🌈 Neat Gradients
 
-Create awesome 3D gradients with this WebGL-based library.
+Create stunning, animated 3D gradients with hardware-accelerated WebGL performance.
 
-> **⚠️ Breaking change (v0.7):** Neat no longer depends on three.js. The rendering engine has been rewritten to use raw WebGL. You can safely `npm uninstall three @types/three`. The mouse interaction properties (`mouseDistortionStrength`, `mouseDistortionRadius`, `mouseDecayRate`, `mouseDarken`) have also been removed. All other config properties remain unchanged.
+[![npm version](https://badge.fury.io/js/@firecms%2Fneat.svg)](https://www.npmjs.com/package/@firecms/neat)
+[![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-lightgrey.svg)](https://github.com/FireCMSco/neat/blob/main/LICENSE)
 
-Check the demo and gradients editor to find your perfect config here:
-[https://neat.firecms.co/](https://neat.firecms.co/)
+**✨ [Try the Interactive Editor](https://neat.firecms.co/) ✨**
 
-Neat is released under the CC license, so you can use it for free in your projects,
-commercial or not. You can also modify it and redistribute it, but you must keep
-the license and the credits.
+Design your perfect gradient with our visual editor, featuring 20+ presets and real-time preview. Export the config and use it in your project instantly.
 
+![Neat Gradient Examples](https://neat.firecms.co/og_image.png)
 
-## Installation
+---
 
-```bash
-yarn add @firecms/neat
-```
-
-or
+## 📦 Installation
 
 ```bash
 npm install @firecms/neat
 ```
 
-## Usage
+or
 
-You can use the library to create a gradient in your website or application. You need to define a config and then 
-create a new `NeatGradient` instance. You are encouraged to use the [gradients editor](https://neat.firecms.co/) to 
-find your perfect config.
-
-
-### Simple example
-
-```typescript
-import { NeatConfig, NeatGradient } from "@firecms/neat";
-
-// Define your config
-export const config: NeatConfig = {
-    colors: [
-        {
-            color: "#FF5373",
-            enabled: true
-        },
-        {
-            color: "#FFC858",
-            enabled: true
-        },
-        {
-            color: "#17E7FF",
-            enabled: true
-        },
-        {
-            color: "#6D3BFF",
-            enabled: true
-        },
-        {
-            color: "#f5e1e5",
-            enabled: false
-        }
-    ],
-    speed: 4,
-    horizontalPressure: 4,
-    verticalPressure: 5,
-    waveFrequencyX: 2,
-    waveFrequencyY: 3,
-    waveAmplitude: 5,
-    shadows: 0,
-    highlights: 2,
-    colorSaturation: 7,
-    colorBrightness: 1,
-    wireframe: false,
-    colorBlending: 6,
-    backgroundColor: "#003FFF",
-    backgroundAlpha: 1
-};
-
-
-// define an element with id="gradient" in your html
-const neat = new NeatGradient({
-    ref: document.getElementById("gradient"),
-    ...config
-});
-
-// you can change the config at any time
-neat.speed = 6;
-
-// you can also destroy the gradient for cleanup
-// e.g. returning from a useEffect hook in React
-neat.destroy();
+```bash
+yarn add @firecms/neat
 ```
 
-### React example
+---
 
-```tsx
-import React, { useEffect, useRef } from "react";
+## 🚀 Quick Start
+
+### Basic Usage
+
+```typescript
 import { NeatGradient } from "@firecms/neat";
 
-export const MyComponent: React.FC = () => {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+const gradient = new NeatGradient({
+    ref: document.getElementById("canvas"),
+    colors: [
+        { color: "#FF5772", enabled: true },
+        { color: "#4CB4BB", enabled: true },
+        { color: "#FFC600", enabled: true },
+        { color: "#8B6AE6", enabled: true },
+        { color: "#2E0EC7", enabled: true }
+    ],
+    speed: 4,
+    waveAmplitude: 5,
+    backgroundColor: "#003FFF",
+    backgroundAlpha: 1
+});
+
+// Clean up when done (important for React, Vue, etc.)
+gradient.destroy();
+```
+
+### React Example
+
+```tsx
+import { useEffect, useRef } from "react";
+import { NeatGradient, NeatConfig } from "@firecms/neat";
+
+function BackgroundGradient() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const gradientRef = useRef<NeatGradient | null>(null);
 
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        const gradient = new NeatGradient({
+        gradientRef.current = new NeatGradient({
             ref: canvasRef.current,
             colors: [
-                { color: "#FF5373", enabled: true },
-                { color: "#FFC858", enabled: true },
-                { color: "#05d5ef", enabled: true },
-                { color: "#6D3BFF", enabled: true },
-                { color: "#f5e1e5", enabled: false }
+                { color: "#FF5772", enabled: true },
+                { color: "#4CB4BB", enabled: true },
+                { color: "#FFC600", enabled: true }
             ],
-            speed: 4,
-            horizontalPressure: 4,
-            verticalPressure: 5,
-            waveFrequencyX: 2,
-            waveFrequencyY: 3,
-            waveAmplitude: 5,
-            shadows: 0,
-            highlights: 1,
-            colorSaturation: 0,
-            colorBrightness: 1,
-            wireframe: false,
-            colorBlending: 6,
-            backgroundColor: "#003FFF",
-            backgroundAlpha: 1,
-            resolution: 0.5
+            speed: 3,
+            waveAmplitude: 5
         });
 
-        return gradient.destroy;
+        return () => gradientRef.current?.destroy();
     }, []);
 
     return (
         <canvas
-            style={{
-                isolation: "isolate",
-                height: "100%",
-                width: "100%",
-            }}
             ref={canvasRef}
+            style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: -1
+            }}
         />
     );
-};
+}
 ```
 
-## Configuration Parameters
+---
 
-### Required Parameters
+## ⚙️ Configuration API
 
-#### `ref`
-- **Type:** `HTMLCanvasElement`
-- **Description:** The canvas element where the gradient will be rendered
-- **Required:** Yes
+### Core Animation
 
-#### `colors`
-- **Type:** `NeatColor[]`
-- **Description:** Array of color objects that define the gradient palette
-- **Required:** Yes
-- **Color Object Properties:**
-  - `color` (string): Hex color value (e.g., "#FF5373")
-  - `enabled` (boolean): Whether the color is active in the gradient
-  - `influence` (number, optional): Value from 0 to 1 controlling color strength
+| Property | Type | Default | Range | Description |
+|----------|------|---------|-------|-------------|
+| `speed` | `number` | `4` | `0-10` | Animation speed (0 = static) |
+| `waveAmplitude` | `number` | `3` | `0-10` | Wave height intensity |
+| `waveFrequencyX` | `number` | `5` | `0-10` | Horizontal wave frequency |
+| `waveFrequencyY` | `number` | `5` | `0-10` | Vertical wave frequency |
 
-### Animation Parameters
+### Colors
 
-#### `speed`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 4
-- **Description:** Animation speed. Set to 0 to pause all animations (waves and flow).
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `colors` | `NeatColor[]` | Required | Array of color objects (up to 6) |
+| `colorBlending` | `number` | `5` | How colors mix together (0-10) |
+| `colorBrightness` | `number` | `1` | Overall brightness multiplier |
+| `colorSaturation` | `number` | `0` | Color saturation adjustment (-10 to 10) |
+| `horizontalPressure` | `number` | `3` | Horizontal color distribution (0-10) |
+| `verticalPressure` | `number` | `3` | Vertical color distribution (0-10) |
 
-### Color Pressure Parameters
-*Note: These are disabled when `enableProceduralTexture` is true*
+**Color Object:**
+```typescript
+{
+    color: string;      // Hex color (e.g., "#FF5772")
+    enabled: boolean;   // Toggle color on/off
+    influence?: number; // Color strength (0-1, optional)
+}
+```
 
-#### `horizontalPressure`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 3
-- **Description:** Horizontal color distribution intensity
+### Visual Effects
 
-#### `verticalPressure`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 3
-- **Description:** Vertical color distribution intensity
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `shadows` | `number` | `4` | Shadow intensity (0-10) |
+| `highlights` | `number` | `4` | Highlight intensity (0-10) |
+| `grainIntensity` | `number` | `0.55` | Film grain amount (0-1) |
+| `grainScale` | `number` | `2` | Grain size |
+| `grainSparsity` | `number` | `0.0` | Grain distribution sparsity (0-1) |
+| `grainSpeed` | `number` | `0.1` | Grain animation speed |
+| `wireframe` | `boolean` | `false` | Show wireframe mesh |
 
-#### `colorBlending`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 5
-- **Description:** How smoothly colors blend together
+### Advanced Shaders & Post-Processing
 
-### Wave Parameters
-*Note: Requires `speed > 0` to be visible*
+#### Domain Warping
 
-#### `waveFrequencyX`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 5
-- **Description:** Horizontal wave frequency
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `domainWarpEnabled` | `boolean` | `false` | Enable domain warping distortion |
+| `domainWarpIntensity` | `number` | `0.5` | Strength of domain warping |
+| `domainWarpScale` | `number` | `1.0` | Spatial frequency scale of warping |
 
-#### `waveFrequencyY`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 5
-- **Description:** Vertical wave frequency
+#### Vignette
 
-#### `waveAmplitude`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 3
-- **Description:** Wave height/intensity
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `vignetteIntensity` | `number` | `0.0` | Darkness intensity at corners (0-1) |
+| `vignetteRadius` | `number` | `0.8` | Radial falloff start distance |
 
-### Visual Effects Parameters
+#### Fresnel (Rim Glow)
 
-#### `shadows`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 4
-- **Description:** Intensity of shadow effects
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `fresnelEnabled` | `boolean` | `false` | Enable glowing outer edge shader effect |
+| `fresnelPower` | `number` | `2.0` | Falloff exponent of the rim glow |
+| `fresnelIntensity` | `number` | `0.5` | Brightness of the glow effect |
+| `fresnelColor` | `string` | `"#FFFFFF"` | Color of the rim glow (hex) |
 
-#### `highlights`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 4
-- **Description:** Intensity of highlight effects
+#### Iridescence
 
-#### `colorSaturation`
-- **Type:** `number`
-- **Range:** -10 to 10
-- **Default:** 0
-- **Description:** Color saturation adjustment (negative values desaturate)
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `iridescenceEnabled` | `boolean` | `false` | Enable soap-bubble style color shifting |
+| `iridescenceIntensity` | `number` | `0.5` | Strength of the color shift effect |
+| `iridescenceSpeed` | `number` | `1.0` | Color cycle speed |
 
-#### `colorBrightness`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 1
-- **Description:** Overall brightness multiplier
+#### Bloom (Fake Glow)
 
-### Grain Parameters
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `bloomIntensity` | `number` | `0.0` | Intensity of the glow bleeding from highlights |
+| `bloomThreshold` | `number` | `0.7` | Brightness threshold for bloom candidate pixels |
 
-#### `grainIntensity`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.55
-- **Description:** Strength of film grain effect. Set to 0 to disable grain.
+#### Chromatic Aberration
 
-#### `grainScale`
-- **Type:** `number`
-- **Range:** 0 to 100
-- **Default:** 2
-- **Description:** Size of grain particles
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chromaticAberration` | `number` | `0.0` | Lens color channel splitting distance |
 
-#### `grainSparsity`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.0
-- **Description:** How sparse/scattered the grain appears
+### 3D Geometries & Shapes
 
-#### `grainSpeed`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 0.1
-- **Description:** Animation speed of grain particles
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `shapeType` | `'plane' \| 'sphere' \| 'torus' \| 'cylinder' \| 'ribbon'` | `'plane'` | 3D shape geometry to render the gradient on |
+| `shapeRotationX` | `number` | `0` | Manual X rotation (radians) |
+| `shapeRotationY` | `number` | `0` | Manual Y rotation (radians) |
+| `shapeRotationZ` | `number` | `0` | Manual Z rotation (radians) |
+| `shapeAutoRotateSpeedX` | `number` | `0` | Auto-rotation speed on X-axis |
+| `shapeAutoRotateSpeedY` | `number` | `0` | Auto-rotation speed on Y-axis |
+| `sphereRadius` | `number` | `15` | Radius of the sphere shape |
+| `torusRadius` | `number` | `15` | Torus primary ring radius |
+| `torusTube` | `number` | `5` | Torus inner tube thickness |
+| `cylinderRadius` | `number` | `10` | Radius of the cylinder shape |
+| `cylinderHeight` | `number` | `40` | Height of the cylinder shape |
+| `planeBend` | `number` | `0` | Bending distortion applied to the plane geometry |
+| `planeTwist` | `number` | `0` | Twisting distortion applied to the plane geometry |
+| `silhouetteFade` | `number` | `0.25` | Edge transparency fade for sphere/torus |
+| `cylinderFade` | `number` | `0.08` | Transparency fade towards the ends of the cylinder |
+| `ribbonFade` | `number` | `0.05` | Transparency fade towards the ends of the ribbon |
+| `flatShading` | `boolean` | `true` | Use flat shading for geometry normals |
 
-### Shape Parameters
+### Camera Settings
 
-#### `resolution`
-- **Type:** `number`
-- **Range:** 0.05 to 2
-- **Default:** 1
-- **Description:** Mesh density/quality. Lower values improve performance but reduce visual quality.
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `cameraLock` | `boolean` | `false` | Lock camera controls and prevent drag rotation |
+| `cameraX` | `number` | `0` | Camera offset along X-axis |
+| `cameraY` | `number` | `0` | Camera offset along Y-axis |
+| `cameraZ` | `number` | `0` | Camera offset along Z-axis |
+| `cameraRotationX` | `number` | `0` | Camera pitch rotation (radians) |
+| `cameraRotationY` | `number` | `0` | Camera yaw rotation (radians) |
+| `cameraRotationZ` | `number` | `0` | Camera roll rotation (radians) |
+| `cameraZoom` | `number` | `1.0` | Camera zoom factor |
 
-#### `wireframe`
-- **Type:** `boolean`
-- **Default:** false
-- **Description:** Show the 3D mesh structure. When enabled, colors, grain, and texture effects are less visible.
+### Background
 
-#### `yOffset`
-- **Type:** `number`
-- **Range:** 0 to 100000
-- **Default:** 0
-- **Description:** Vertical offset for scroll-based effects
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `backgroundColor` | `string` | `"#FFFFFF"` | Background color (hex) |
+| `backgroundAlpha` | `number` | `1` | Background opacity (0-1) |
 
-#### `yOffsetWaveMultiplier`
-- **Type:** `number`
-- **Range:** 0 to 20
-- **Default:** 4
-- **Description:** How much vertical offset affects wave animation
+### Performance
 
-#### `yOffsetColorMultiplier`
-- **Type:** `number`
-- **Range:** 0 to 20
-- **Default:** 4
-- **Description:** How much vertical offset affects color distribution
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `resolution` | `number` | `1` | Mesh resolution (0.1-2, lower = better performance) |
 
-#### `yOffsetFlowMultiplier`
-- **Type:** `number`
-- **Range:** 0 to 20
-- **Default:** 4
-- **Description:** How much vertical offset affects flow field
+### Scroll Integration
 
-### Background Parameters
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `yOffset` | `number` | `0` | Vertical scroll offset |
+| `yOffsetWaveMultiplier` | `number` | `4` | How much scroll affects waves (0-20) |
+| `yOffsetColorMultiplier` | `number` | `4` | How much scroll affects colors (0-20) |
+| `yOffsetFlowMultiplier` | `number` | `4` | How much scroll affects flow field (0-20) |
 
-#### `backgroundColor`
-- **Type:** `string`
-- **Default:** "#FFFFFF"
-- **Description:** Hex color for the background
+### Flow Field (Distortion)
 
-#### `backgroundAlpha`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 1.0
-- **Description:** Background opacity (0 = transparent, 1 = opaque)
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `flowEnabled` | `boolean` | `true` | Enable flow field distortion |
+| `flowDistortionA` | `number` | `0` | Primary distortion amplitude |
+| `flowDistortionB` | `number` | `0` | Secondary distortion frequency |
+| `flowScale` | `number` | `1` | Overall flow field scale |
+| `flowEase` | `number` | `0` | Flow field smoothing (0-1) |
 
-### Flow Field Parameters
-*Note: Requires `speed > 0` and `flowEnabled: true`*
+### Procedural Texture Overlay
 
-#### `flowEnabled`
-- **Type:** `boolean`
-- **Default:** true
-- **Description:** Enable/disable flow field distortion
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enableProceduralTexture` | `boolean` | `false` | Enable texture overlay |
+| `textureVoidLikelihood` | `number` | `0.45` | Gap frequency in texture (0-1) |
+| `textureVoidWidthMin` | `number` | `200` | Minimum gap width |
+| `textureVoidWidthMax` | `number` | `486` | Maximum gap width |
+| `textureBandDensity` | `number` | `2.15` | Texture band density |
+| `textureColorBlending` | `number` | `0.01` | Color mixing in texture (0-1) |
+| `textureSeed` | `number` | `333` | Random seed for texture |
+| `textureEase` | `number` | `0.5` | Flow/Image blend (0=flow, 1=image) |
+| `transparentTextureVoid` | `boolean` | `false` | Render voids as transparent instead of using proceduralBackgroundColor |
+| `proceduralBackgroundColor` | `string` | `"#000000"` | Texture void color |
+| `textureShapeTriangles` | `number` | `20` | Number of triangle shapes |
+| `textureShapeCircles` | `number` | `15` | Number of circle shapes |
+| `textureShapeBars` | `number` | `15` | Number of bar shapes |
+| `textureShapeSquiggles` | `number` | `10` | Number of squiggle shapes |
 
-#### `flowDistortionA`
-- **Type:** `number`
-- **Range:** 0 to 5
-- **Default:** 0
-- **Description:** Wave amplitude for flow distortion
+---
 
-#### `flowDistortionB`
-- **Type:** `number`
-- **Range:** 0 to 10
-- **Default:** 0
-- **Description:** Wave frequency for flow distortion
+## 🛠️ API Methods
 
-#### `flowScale`
-- **Type:** `number`
-- **Range:** 0 to 5
-- **Default:** 1.0
-- **Description:** Scale of the flow field waves
+### `destroy()`
 
-#### `flowEase`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.0
-- **Description:** Blend between original and flow-distorted state
+Cleans up the WebGL context, event listeners, and removes any injected DOM elements. Call this when the component unmounts to prevent memory leaks (essential for React, Vue, etc.).
 
+```typescript
+gradient.destroy();
+```
 
-### Procedural Texture Parameters
-*Note: When enabled, replaces color pressure controls*
+---
 
-#### `enableProceduralTexture`
-- **Type:** `boolean`
-- **Default:** false
-- **Description:** Enable procedurally generated texture overlay
+## 🎨 Dynamic Property Updates
 
-#### `textureVoidLikelihood`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.45
-- **Description:** Frequency of gaps/voids in texture bands
+All properties can be updated in real-time:
 
-#### `textureVoidWidthMin`
-- **Type:** `number`
-- **Range:** 10 to 200
-- **Default:** 200
-- **Description:** Minimum width of texture gaps in pixels
+```typescript
+// Animation
+gradient.speed = 6;
+gradient.waveAmplitude = 8;
 
-#### `textureVoidWidthMax`
-- **Type:** `number`
-- **Range:** 50 to 600
-- **Default:** 486
-- **Description:** Maximum width of texture gaps in pixels
+// Colors
+gradient.colors = [
+    { color: "#FF0000", enabled: true },
+    { color: "#00FF00", enabled: true }
+];
 
-#### `textureBandDensity`
-- **Type:** `number`
-- **Range:** 0.1 to 3
-- **Default:** 2.15
-- **Description:** Density of texture bands
+// 3D Shape Geometries & Auto-Rotation
+gradient.shapeType = "sphere";
+gradient.shapeAutoRotateSpeedY = 1.5;
 
-#### `textureColorBlending`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.01
-- **Description:** Color blending within texture
+// Advanced Post-Processing Effects
+gradient.iridescenceEnabled = true;
+gradient.fresnelEnabled = true;
+gradient.fresnelColor = "#FF0055";
 
-#### `textureSeed`
-- **Type:** `number`
-- **Range:** 0 to 1000
-- **Default:** 333
-- **Description:** Random seed for texture generation (change for different patterns)
+// Effects
+gradient.grainIntensity = 0.5;
 
-#### `textureEase`
-- **Type:** `number`
-- **Range:** 0 to 1
-- **Default:** 0.5
-- **Description:** Blend between flow field and procedural texture (0 = flow, 1 = texture)
+// Texture
+gradient.enableProceduralTexture = true;
+gradient.textureEase = 0.7;
+```
 
-#### `proceduralBackgroundColor`
-- **Type:** `string`
-- **Default:** "#000000"
-- **Description:** Hex color for texture void/gap areas
+---
 
-#### `textureShapeTriangles`
-- **Type:** `number`
-- **Range:** 0 to 100
-- **Default:** 20
-- **Description:** Number of triangle shapes in texture
+## 📖 TypeScript Support
 
-#### `textureShapeCircles`
-- **Type:** `number`
-- **Range:** 0 to 100
-- **Default:** 15
-- **Description:** Number of circle shapes in texture
+Full TypeScript definitions included:
 
-#### `textureShapeBars`
-- **Type:** `number`
-- **Range:** 0 to 100
-- **Default:** 15
-- **Description:** Number of bar shapes in texture
+```typescript
+import { NeatGradient, NeatConfig, NeatColor, NeatController } from "@firecms/neat";
 
-#### `textureShapeSquiggles`
-- **Type:** `number`
-- **Range:** 0 to 100
-- **Default:** 10
-- **Description:** Number of squiggle/wavy shapes in texture
+const config: NeatConfig = {
+    // ... fully typed config
+};
 
-## Tips
+const gradient: NeatController = new NeatGradient(config);
+```
 
-- Use the [online editor](https://neat.firecms.co/) to visually design your gradient and export the configuration
-- Start with lower `resolution` values (0.5-1.0) for better performance, especially on mobile devices
-- Set `speed: 0` to create static gradients without animation
-- Combine `yOffset` with scroll position for scroll-based gradient effects
-- Enable `wireframe: true` during development to understand the 3D mesh structure
-- Procedural textures work best with `textureEase` values between 0.3 and 0.7
+---
 
-## NEAT Link
+## 📄 License
 
-If you want to remove the NEAT link, you can reach us at hello@firecms.co
+Neat is released under the **MIT License + The Commons Clause**.
+
+**You can:**
+- ✅ Use freely in personal projects
+- ✅ Use freely in commercial projects (e.g. SaaS landing pages, company websites)
+- ✅ Modify and redistribute (with attribution)
+- ✅ Use in open-source projects
+
+**You CANNOT:**
+- ❌ Sell the software
+- ❌ Include it in a paid template or theme builder that you sell
+- ❌ Offer the software as a paid service
+
+### Remove the NEAT Watermark
+
+Purchase a license key for **€12 one-time** (per domain) to remove the NEAT watermark and console branding.
+
+**[Buy a license →](https://neat.firecms.co)**
+
+Then pass the key in your config:
+
+```typescript
+const gradient = new NeatGradient({
+    ref: canvas,
+    colors: [...],
+    licenseKey: "NEAT-eyJ0eXBlI..."  // Your license key
+});
+```
+
+Each key is locked to the domain you specify at checkout (subdomains included). Development on `localhost` always works without a key.
+
+---
+
+## 🙏 Credits
+
+Created by [FireCMS](https://firecms.co) with ❤️
+
+---
+
+## 🐛 Issues & Contributing
+
+Found a bug or have a feature request?
+
+- **Issues:** [GitHub Issues](https://github.com/FireCMSco/neat/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/FireCMSco/neat/discussions)
+
+---
+
+## 🔗 Links
+
+- 🌐 [Website & Editor](https://neat.firecms.co)
+- 📦 [npm Package](https://www.npmjs.com/package/@firecms/neat)
+- 💻 [GitHub Repository](https://github.com/FireCMSco/neat)
+- 💬 [Discord Community](https://discord.gg/fxy7xsQm3m)
+
+---
+
+**Made with ✨ by the FireCMS team**

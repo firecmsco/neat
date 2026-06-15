@@ -3,7 +3,7 @@
 Create stunning, animated 3D gradients with hardware-accelerated WebGL performance.
 
 > [!IMPORTANT]
-> **As of v0.7, Neat no longer depends on three.js.** The rendering engine has been rewritten to use raw WebGL, reducing the total install footprint from **~653 KB (133 KB gzip) to just 42 KB (12 KB gzip)** — an **~93% reduction**. Zero external dependencies. If you are upgrading from a previous version, see the [Migration Guide](#-migrating-from-v06x) below.
+> **As of v0.7, Neat no longer depends on three.js.** The rendering engine has been rewritten to use raw WebGL, drastically reducing the total install footprint. Zero external dependencies. If you are upgrading from a previous version, see the [Migration Guide](#-migrating-from-v06x) below.
 
 [![npm version](https://badge.fury.io/js/@firecms%2Fneat.svg)](https://www.npmjs.com/package/@firecms/neat)
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-lightgrey.svg)](https://github.com/FireCMSco/neat/blob/main/LICENSE)
@@ -22,11 +22,11 @@ If you're upgrading from a previous version that used three.js, here's what chan
 
 ### Bundle size
 
-| | **v0.6.x (Three.js)** | **v0.7 (Pure WebGL)** |
+| | **v0.6.x (Three.js)** | **v0.7+ (Pure WebGL)** |
 |---|---|---|
-| Library bundle | ~42 KB | 42 KB (standalone) |
+| Library bundle | ~42 KB | ~66 KB (standalone) |
 | Three.js peer dep | 616 KB (122 KB gzip) | **0** |
-| **Total** | **~653 KB (~133 KB gzip)** | **42 KB (~12 KB gzip)** |
+| **Total** | **~653 KB (~133 KB gzip)** | **~66 KB (~17 KB gzip)** |
 
 ### 1. Remove the `three` dependency
 
@@ -241,6 +241,7 @@ function BackgroundGradient() {
 | `silhouetteFade` | `number` | `0.25` | Edge transparency fade for sphere/torus |
 | `cylinderFade` | `number` | `0.08` | Transparency fade towards the ends of the cylinder |
 | `ribbonFade` | `number` | `0.05` | Transparency fade towards the ends of the ribbon |
+| `flatShading` | `boolean` | `true` | Use flat shading for geometry normals |
 
 ### Camera Settings
 
@@ -325,45 +326,6 @@ Cleans up the WebGL context, event listeners, and removes any injected DOM eleme
 
 ```typescript
 gradient.destroy();
-```
-
-### `downloadAsPNG(filename?)`
-
-Triggers a browser download of the current frame as a PNG image.
-
-- **`filename`**: Optional string for the output file (defaults to `"neat.png"`).
-
-```typescript
-gradient.downloadAsPNG("my-custom-gradient.png");
-```
-
-### `recordVideo(options?)`
-
-Records the canvas animation and saves it as a high-quality video file (MP4 or WebM depending on browser codec support) with a subtle watermark. Returns a `stop` function to end recording early.
-
-- **`durationMs`**: Duration of the recording in milliseconds (default: `5000`).
-- **`filename`**: Output file name (without extension, default: `"neat.firecms.co"`).
-- **`width`**: Output video width in pixels (default: current canvas width).
-- **`height`**: Output video height in pixels (default: current canvas height).
-- **`format`**: Preferred format `'mp4'` or `'webm'` (default: `'mp4'`).
-- **`onProgress`**: Callback triggered with progress value between `0` and `1`.
-- **`onComplete`**: Callback triggered when recording successfully finishes.
-
-```typescript
-const stopRecording = gradient.recordVideo({
-    durationMs: 8000,
-    filename: "neat-gradient-animation",
-    format: "mp4",
-    onProgress: (progress) => {
-        console.log(`Recording progress: ${Math.round(progress * 100)}%`);
-    },
-    onComplete: () => {
-        console.log("Recording complete!");
-    }
-});
-
-// To stop recording early:
-// stopRecording();
 ```
 
 ---

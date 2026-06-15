@@ -19,6 +19,7 @@ import { logEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
 import { ImportConfigDialog } from "./ImportConfigDialog";
 import { LicenseDialog } from "./LicenseDialog";
+import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -1235,13 +1236,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     };
 
     const handleStartRecording = useCallback(() => {
-        if (!gradientRef.current || isRecording) return;
+        if (!canvasRef.current || isRecording) return;
         setIsRecording(true);
         setRecordingProgress(0);
         logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution, format: recordFormat });
 
         // Determine target dimensions
-        const canvas = gradientRef.current;
         let width: number | undefined;
         let height: number | undefined;
         if (recordResolution === '720p') { width = 1280; height = 720; }
@@ -1249,7 +1249,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         else if (recordResolution === '4k') { width = 3840; height = 2160; }
         // 'current' → undefined, uses canvas size
 
-        const stop = canvas.recordVideo({
+        const stop = recordCanvasVideo(canvasRef.current, {
             durationMs: recordDuration * 1000,
             filename: 'neat.firecms.co',
             width,
@@ -1836,7 +1836,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 <Tooltip title="Download PNG">
                                     <IconButton className="text-inherit"
                                                 aria-label="Download PNG"
-                                                onClick={() => gradientRef.current?.downloadAsPNG()}>
+                                                onClick={() => canvasRef.current && downloadCanvasAsPNG(canvasRef.current)}>
                                         <Download className="w-5 h-5"/>
                                     </IconButton>
                                 </Tooltip>
