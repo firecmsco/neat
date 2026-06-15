@@ -4,7 +4,7 @@ import { verifyLicenseKey } from "./license";
 
 function _logBranding() {
     console.info(
-        "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nhttps://neat.firecms.co",
+        "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nGet a license key to remove the watermark and this message: https://neat.firecms.co",
         "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
     );
 }
