@@ -4,6 +4,7 @@ import { LicenseSuccessPage } from "./components/LicenseSuccessPage";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { Analytics } from "@firebase/analytics";
+import { setAnalyticsInstance } from "./utils/analytics";
 
 function App() {
     const [analytics, setAnalytics] = React.useState<Analytics | null>(null);
@@ -21,6 +22,7 @@ function App() {
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         setAnalytics(analytics);
+        setAnalyticsInstance(analytics);
     }, []);
 
     // Simple path-based routing (no react-router needed)

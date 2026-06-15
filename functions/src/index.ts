@@ -139,7 +139,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
                 domain: normalizedDomain,
             },
             success_url: `${baseUrl}/license/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${baseUrl}/`,
+            cancel_url: `${baseUrl}/?checkout_cancelled=1`,
         };
 
         // Pre-fill email if provided

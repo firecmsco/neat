@@ -20,6 +20,7 @@ import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure t
 import { ImportConfigDialog } from "./ImportConfigDialog";
 import { LicenseDialog } from "./LicenseDialog";
 import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
+import { trackCheckoutCancelled } from "../utils/analytics";
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -436,6 +437,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [dragActive, setDragActive] = React.useState<boolean>(false);
     const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [selectedArchetype, setSelectedArchetype] = React.useState<string>("random");
+
+    // Detect return from Stripe after cancellation
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("checkout_cancelled") === "1") {
+            trackCheckoutCancelled();
+            // Clean up URL without reload
+            const url = new URL(window.location.href);
+            url.searchParams.delete("checkout_cancelled");
+            window.history.replaceState({}, "", url.pathname + url.search);
+        }
+    }, []);
 
     const allPresets = React.useMemo(() => {
         const base = { ...PRESETS };

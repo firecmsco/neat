@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "./ui/dialog";
 import { Button } from "./ui/button";
+import {
+    trackLicenseEnterDomain,
+    trackBeginCheckout,
+    trackCheckoutRedirect,
+    trackCheckoutError,
+} from "../utils/analytics";
 
 // Cloud Function URL (direct — no hosting rewrite needed)
 const API_BASE = "https://us-central1-neat-co.cloudfunctions.net";
@@ -29,6 +35,7 @@ export function LicenseDialog({ open, onOpenChange }: LicenseDialogProps) {
     const handleCheckout = async () => {
         if (!isValidDomain) return;
 
+        trackBeginCheckout(normalizedDomain);
         setLoading(true);
         setError(null);
 
@@ -46,14 +53,18 @@ export function LicenseDialog({ open, onOpenChange }: LicenseDialogProps) {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || "Something went wrong");
+                const errMsg = data.error || "Something went wrong";
+                setError(errMsg);
+                trackCheckoutError(normalizedDomain, errMsg);
                 return;
             }
 
             // Redirect to Stripe Checkout
+            trackCheckoutRedirect(normalizedDomain);
             window.location.href = data.url;
         } catch (err: any) {
             setError("Network error. Please try again.");
+            trackCheckoutError(normalizedDomain, "network_error");
         } finally {
             setLoading(false);
         }
@@ -86,6 +97,9 @@ export function LicenseDialog({ open, onOpenChange }: LicenseDialogProps) {
                             onChange={(e) => {
                                 setDomain(e.target.value);
                                 setError(null);
+                            }}
+                            onBlur={() => {
+                                if (isValidDomain) trackLicenseEnterDomain(normalizedDomain);
                             }}
                             placeholder="example.com"
                             className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2.5 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all"
@@ -134,3 +148,4 @@ export function LicenseDialog({ open, onOpenChange }: LicenseDialogProps) {
         </Dialog>
     );
 }
+

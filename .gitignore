@@ -12,12 +12,24 @@
 /build
 
 # misc
-.DS_Store
+**/.DS_Store
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+firebase-debug.log
+error_log*.txt
+
+# stale dev/debug files
+old_*.ts
+validate.ts
+validate.js
+extract.js
+minimal_gl.html
+minimal_gl.js
+full_frag.glsl

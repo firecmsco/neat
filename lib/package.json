@@ -2,7 +2,7 @@
   "name": "@firecms/neat",
   "description": "Beautiful 3D gradients for your website",
   "access": "public",
-  "version": "0.9.3-canary.20260615211214",
+  "version": "1.0.0",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "dist/index.d.ts",
@@ -42,7 +42,7 @@
     "background"
   ],
   "author": "Francesco Gatti",
-  "license": "MIT AND Commons-Clause",
+  "license": "SEE LICENSE IN LICENSE",
   "bugs": {
     "url": "https://github.com/FireCMSco/neat/issues"
   },

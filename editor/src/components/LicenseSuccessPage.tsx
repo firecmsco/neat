@@ -1,4 +1,12 @@
 import React, { useEffect, useState } from "react";
+import {
+    trackPurchase,
+    trackLicenseKeyRetrieved,
+    trackLicenseKeyError,
+    trackCopyLicenseKey,
+    trackCopyCodeSnippet,
+    trackLicenseBackToEditor,
+} from "../utils/analytics";
 
 const API_BASE = "https://us-central1-neat-co.cloudfunctions.net";
 
@@ -7,7 +15,7 @@ type LicenseState =
     | { status: "success"; licenseKey: string; domain: string }
     | { status: "error"; message: string };
 
-function CopyButton({ text, label }: { text: string; label?: string }) {
+function CopyButton({ text, label, onCopy }: { text: string; label?: string; onCopy?: () => void }) {
     const [copied, setCopied] = useState(false);
     return (
         <button
@@ -15,6 +23,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
                 navigator.clipboard.writeText(text);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
+                onCopy?.();
             }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 copied
@@ -36,8 +45,12 @@ export function LicenseSuccessPage() {
 
         if (!sessionId) {
             setState({ status: "error", message: "No session ID found. Please check your purchase confirmation email." });
+            trackLicenseKeyError("no_session_id");
             return;
         }
+
+        // Fire purchase event once on page load with the session ID
+        trackPurchase(sessionId);
 
         let cancelled = false;
         let attempts = 0;
@@ -52,16 +65,21 @@ export function LicenseSuccessPage() {
 
                 if (res.ok && data.licenseKey) {
                     setState({ status: "success", licenseKey: data.licenseKey, domain: data.domain });
+                    trackLicenseKeyRetrieved(data.domain);
                 } else if (res.status === 402) {
                     // Payment not yet processed — retry
                     attempts++;
                     if (attempts < maxAttempts) {
                         setTimeout(fetchLicense, 2000);
                     } else {
-                        setState({ status: "error", message: "Payment is still processing. Please refresh this page in a moment." });
+                        const errMsg = "Payment is still processing. Please refresh this page in a moment.";
+                        setState({ status: "error", message: errMsg });
+                        trackLicenseKeyError("payment_processing_timeout");
                     }
                 } else {
-                    setState({ status: "error", message: data.error || "Failed to retrieve your license key." });
+                    const errMsg = data.error || "Failed to retrieve your license key.";
+                    setState({ status: "error", message: errMsg });
+                    trackLicenseKeyError(errMsg);
                 }
             } catch {
                 if (cancelled) return;
@@ -70,6 +88,7 @@ export function LicenseSuccessPage() {
                     setTimeout(fetchLicense, 2000);
                 } else {
                     setState({ status: "error", message: "Network error. Please refresh the page." });
+                    trackLicenseKeyError("network_error");
                 }
             }
         };
@@ -123,7 +142,7 @@ export function LicenseSuccessPage() {
                                 <span className="text-[10px] tracking-widest font-bold uppercase text-white/40">
                                     Your License Key
                                 </span>
-                                <CopyButton text={state.licenseKey} label="Copy key" />
+                                <CopyButton text={state.licenseKey} label="Copy key" onCopy={trackCopyLicenseKey} />
                             </div>
                             <div className="bg-black/40 border border-white/10 rounded-lg p-3 break-all">
                                 <code className="text-xs text-emerald-300/90 font-mono leading-relaxed">
@@ -152,6 +171,7 @@ const gradient = new NeatGradient({
                                 <CopyButton
                                     text={`licenseKey: "${state.licenseKey}",`}
                                     label="Copy line"
+                                    onCopy={trackCopyCodeSnippet}
                                 />
                             </div>
                             <div className="mt-4 space-y-2">
@@ -183,6 +203,7 @@ const gradient = new NeatGradient({
                         {/* Back to editor */}
                         <div className="text-center">
                             <a href="/"
+                               onClick={() => trackLicenseBackToEditor()}
                                className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors font-normal">
                                 ← Back to editor
                             </a>
@@ -193,3 +214,4 @@ const gradient = new NeatGradient({
         </div>
     );
 }
+
