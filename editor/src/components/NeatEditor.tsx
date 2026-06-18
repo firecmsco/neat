@@ -1952,7 +1952,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
                             >
                                 <img
-                                    src="https://img.shields.io/github/stars/FireCMSco/neat?style=social"
+                                    src="https://img.shields.io/github/stars/FireCMSco/neat?style=flat"
                                     alt="GitHub stars"
                                     style={{ height: 20 }}
                                 />
