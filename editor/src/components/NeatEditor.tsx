@@ -906,6 +906,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
         gradientRef.current = new NeatGradient({
             ref: canvasRef.current,
+            preserveDrawingBuffer: true,
             colors,
             speed: tweened.speed,
             horizontalPressure: tweened.horizontalPressure,

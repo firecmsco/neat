@@ -647,7 +647,7 @@ export class NeatGradient implements NeatController {
 
                 // Only upload static uniforms when they've been modified
                 if (this._uniformsDirty) {
-                    gl.uniform2f(locations.uniforms['u_resolution'], this._ref.clientWidth, this._ref.clientHeight);
+                    gl.uniform2f(locations.uniforms['u_resolution'], this._ref.width, this._ref.height);
                     gl.uniform2f(locations.uniforms['u_color_pressure'], this._horizontalPressure, this._verticalPressure);
 
                     gl.uniform1f(locations.uniforms['u_wave_frequency_x'], this._waveFrequencyX);
@@ -800,13 +800,11 @@ export class NeatGradient implements NeatController {
         };
         document.addEventListener('visibilitychange', this._visibilityHandler);
 
-        const setSize = () => {
+        const setSize = (width: number, height: number) => {
 
             const { gl, camera } = this.glState;
-            const width = this._ref.clientWidth;
-            const height = this._ref.clientHeight;
 
-            // Handle high DPI displays properly without scaling buffer resolution, matching client width
+            // Update canvas buffer dimensions to match layout size
             this._ref.width = width;
             this._ref.height = height;
 
@@ -814,21 +812,25 @@ export class NeatGradient implements NeatController {
 
             updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
-
-
             // Recompute projection matrix on resize
             const projLoc = this.glState.locations.uniforms["projectionMatrix"];
             gl.useProgram(this.glState.program);
             if (projLoc) gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
+            this._uniformsDirty = true;
         };
 
         // Debounce resize to prevent excessive operations
-        this.sizeObserver = new ResizeObserver(() => {
+        // Dimensions are extracted from contentRect immediately (no layout cost)
+        // and captured in the closure for the debounced callback.
+        this.sizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[entries.length - 1];
+            const width = Math.round(entry.contentRect.width);
+            const height = Math.round(entry.contentRect.height);
             if (this._resizeTimeoutId !== null) {
                 clearTimeout(this._resizeTimeoutId);
             }
             this._resizeTimeoutId = window.setTimeout(() => {
-                setSize();
+                setSize(width, height);
                 this._resizeTimeoutId = null;
             }, 100); // Wait 100ms after last resize event
         });
@@ -998,8 +1000,8 @@ export class NeatGradient implements NeatController {
         this.glState.indexType = (index instanceof Uint32Array) ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
 
         // Keep camera updated with the new shapeType and dimensions
-        const width = this._ref.clientWidth;
-        const height = this._ref.clientHeight;
+        const width = this._ref.width;
+        const height = this._ref.height;
         updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
         // Recompute projection matrix
@@ -1023,6 +1025,10 @@ export class NeatGradient implements NeatController {
 
         const width = this._ref.clientWidth;
         const height = this._ref.clientHeight;
+
+        // Set canvas buffer dimensions to match layout (one-time init)
+        this._ref.width = width;
+        this._ref.height = height;
 
         const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: true }) ||
             this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: true });
@@ -1517,8 +1523,8 @@ export class NeatGradient implements NeatController {
     _updateCameraFrustum() {
         if (!this.glState) return;
         const gl = this.glState.gl;
-        const width = this._ref.clientWidth;
-        const height = this._ref.clientHeight;
+        const width = this._ref.width;
+        const height = this._ref.height;
         updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
         const projLoc = this.glState.locations.uniforms["projectionMatrix"];
@@ -1729,8 +1735,8 @@ export class NeatGradient implements NeatController {
         const posBuf = this._watermarkBuffer;
         if (!prog || !tex || !posBuf) return;
 
-        const canvasW = this._ref.width || this._ref.clientWidth;
-        const canvasH = this._ref.height || this._ref.clientHeight;
+        const canvasW = this._ref.width;
+        const canvasH = this._ref.height;
         if (canvasW === 0 || canvasH === 0) return;
 
         const margin = 4;
