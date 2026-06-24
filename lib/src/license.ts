@@ -28,6 +28,7 @@ export interface LicensePayload {
 export interface LicenseResult {
     valid: boolean;
     payload?: LicensePayload;
+    reason?: string;
 }
 
 /**
@@ -93,34 +94,40 @@ export async function verifyLicenseKey(licenseKey: string): Promise<LicenseResul
             !crypto.subtle ||
             typeof crypto.subtle.verify !== "function"
         ) {
-            return { valid: false };
+            return { valid: false, reason: "Web Crypto API not available (page must be served over HTTPS)" };
         }
 
         // Parse key format: NEAT-<payload>.<signature>
-        if (!licenseKey.startsWith("NEAT-")) return { valid: false };
+        const cleanKey = licenseKey.trim();
+        if (!cleanKey.startsWith("NEAT-")) return { valid: false, reason: "Key must start with \"NEAT-\" prefix" };
 
-        const rest = licenseKey.slice(5); // Remove "NEAT-" prefix
+        const rest = cleanKey.slice(5); // Remove "NEAT-" prefix
         const dotIndex = rest.indexOf(".");
-        if (dotIndex === -1) return { valid: false };
+        if (dotIndex === -1) return { valid: false, reason: "Invalid key format: missing separator" };
 
         const payloadB64 = rest.slice(0, dotIndex);
         const signatureB64 = rest.slice(dotIndex + 1);
 
-        if (!payloadB64 || !signatureB64) return { valid: false };
+        if (!payloadB64 || !signatureB64) return { valid: false, reason: "Invalid key format: empty payload or signature" };
 
         // Decode payload
         const payloadBytes = base64urlToBytes(payloadB64);
-        const payloadJson = new TextDecoder().decode(payloadBytes);
+        const payloadBuffer = payloadBytes.buffer.slice(0);
+        const payloadJson = new TextDecoder().decode(payloadBuffer);
         const payload: LicensePayload = JSON.parse(payloadJson);
 
         // Validate payload structure
-        if (!payload.domain || typeof payload.domain !== "string") return { valid: false };
+        if (!payload.domain || typeof payload.domain !== "string") return { valid: false, reason: "Invalid payload: missing domain" };
 
         // Check domain match
-        if (!isDomainMatch(payload.domain)) return { valid: false };
+        if (!isDomainMatch(payload.domain)) {
+            const hostname = typeof window !== "undefined" && window.location ? window.location.hostname : "unknown";
+            return { valid: false, reason: `Domain mismatch: key is for "${payload.domain}" but current hostname is "${hostname}"` };
+        }
 
         // Decode signature
         const signatureBytes = base64urlToBytes(signatureB64);
+        const signatureBuffer = signatureBytes.buffer.slice(0);
 
         // Import public key
         const publicKey = await crypto.subtle.importKey(
@@ -135,13 +142,13 @@ export async function verifyLicenseKey(licenseKey: string): Promise<LicenseResul
         const valid = await crypto.subtle.verify(
             { name: "ECDSA", hash: "SHA-256" },
             publicKey,
-            signatureBytes,
-            payloadBytes
+            signatureBuffer,
+            payloadBuffer
         );
 
-        return valid ? { valid: true, payload } : { valid: false };
-    } catch {
-        return { valid: false };
+        return valid ? { valid: true, payload } : { valid: false, reason: "Signature verification failed" };
+    } catch (e) {
+        return { valid: false, reason: `Unexpected error: ${e instanceof Error ? e.message : String(e)}` };
     }
 }
 

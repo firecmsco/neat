@@ -578,6 +578,10 @@ export class NeatGradient implements NeatController {
         if (licenseKey) {
             verifyLicenseKey(licenseKey).then((result) => {
                 this._licensed = result.valid;
+                if (!result.valid) {
+                    console.warn(`NEAT license key error: ${result.reason}`);
+                    _logBranding();
+                }
             });
         } else {
             _logBranding();
@@ -1658,6 +1662,7 @@ export class NeatGradient implements NeatController {
 
         // ── 6. Make the watermark region clickable (throttled) ──
         this._wmClickHandler = (e: MouseEvent) => {
+            if (this._licensed) return;
             if (this._isOverWatermark(e)) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1665,6 +1670,11 @@ export class NeatGradient implements NeatController {
             }
         };
         this._wmMoveHandler = (e: MouseEvent) => {
+            if (this._licensed) {
+                if (this._ref.style.cursor === 'pointer') this._ref.style.cursor = '';
+                if (document.body.style.cursor === 'pointer') document.body.style.cursor = '';
+                return;
+            }
             if (this._wmMoveRafPending) return;
             this._wmMoveRafPending = true;
             requestAnimationFrame(() => {
