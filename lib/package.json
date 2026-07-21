@@ -2,7 +2,7 @@
   "name": "@firecms/neat",
   "description": "Beautiful 3D gradients for your website",
   "access": "public",
-  "version": "1.0.2-canary.20260629124312",
+  "version": "1.0.2",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "vite build && tsc"
+    "build": "node ./scripts/sync-version.js && vite build && tsc"
   },
   "browserslist": {
     "production": [

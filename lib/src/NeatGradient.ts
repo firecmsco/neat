@@ -1,10 +1,11 @@
 import { buildColorFunctions, buildNoise, buildVertUniforms, buildFragUniforms, fragmentShaderSource, vertexShaderSource } from "./shaders";
 import { generatePlaneGeometry, generateSphereGeometry, generateTorusGeometry, generateCylinderGeometry, generateRibbonGeometry, OrthographicCamera, updateCamera, Matrix4 } from "./math";
 import { verifyLicenseKey } from "./license";
+import { NEAT_VERSION } from "./version";
 
 function _logBranding() {
     console.info(
-        "%c🌈 Neat Gradients%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nGet a license key to remove the watermark and this message: https://neat.firecms.co",
+        `%c🌈 Neat Gradients v${NEAT_VERSION}%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nGet a license key to remove the watermark and this message: https://neat.firecms.co`,
         "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
     );
 }
