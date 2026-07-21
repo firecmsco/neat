@@ -5,6 +5,7 @@ export type NeatConfig = {
      * Format: "NEAT-<payload>.<signature>"
      */
     licenseKey?: string;
+    antialias?: boolean;
     resolution?: number;
     speed?: number;
     horizontalPressure?: number;

@@ -209,6 +209,7 @@ export class NeatGradient implements NeatController {
 
     private _ref: HTMLCanvasElement;
     private _licensed: boolean = false;
+    private _antialias: boolean = false;
 
     private _speed: number = -1;
 
@@ -320,6 +321,7 @@ export class NeatGradient implements NeatController {
 
     private requestRef: number = -1;
     private sizeObserver: ResizeObserver;
+    private _currentCursor: string = '';
 
     private _initialized: boolean = false;
     private _cachedColorRgb: [number, number, number][] = [];
@@ -369,7 +371,7 @@ export class NeatGradient implements NeatController {
     private _gradientVAO: WebGLVertexArrayObject | null = null;
     private _watermarkVAO: WebGLVertexArrayObject | null = null;
 
-    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number, preserveDrawingBuffer?: boolean }) {
+    constructor(config: NeatConfig & { ref: HTMLCanvasElement, resolution?: number, seed?: number, preserveDrawingBuffer?: boolean, antialias?: boolean }) {
 
         const {
             ref,
@@ -467,10 +469,12 @@ export class NeatGradient implements NeatController {
             planeTwist = 0,
             licenseKey,
             preserveDrawingBuffer = false,
+            antialias = false,
         } = config;
 
 
         this._ref = ref;
+        this._antialias = antialias;
 
         this.destroy = this.destroy.bind(this);
         this._initScene = this._initScene.bind(this);
@@ -806,6 +810,11 @@ export class NeatGradient implements NeatController {
 
         const setSize = (width: number, height: number) => {
 
+            // Skip if dimensions haven't changed — setting canvas.width or
+            // canvas.height (even to the same value) clears the WebGL
+            // backbuffer, causing a visible 1-frame blank flash.
+            if (this._ref.width === width && this._ref.height === height) return;
+
             const { gl, camera } = this.glState;
 
             // Update canvas buffer dimensions to match layout size
@@ -821,6 +830,11 @@ export class NeatGradient implements NeatController {
             gl.useProgram(this.glState.program);
             if (projLoc) gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
             this._uniformsDirty = true;
+
+            // Immediately redraw so the cleared backbuffer is never visible
+            // as a blank frame. The next scheduled rAF will simply overwrite
+            // this with the next animation tick.
+            render();
         };
 
         // Debounce resize to prevent excessive operations
@@ -836,6 +850,9 @@ export class NeatGradient implements NeatController {
             this._resizeTimeoutId = window.setTimeout(() => {
                 setSize(width, height);
                 this._resizeTimeoutId = null;
+                // Invalidate watermark rect cache so it's refreshed
+                // on next mouse event without forcing a reflow
+                this._wmCachedRect = null;
             }, 100); // Wait 100ms after last resize event
         });
 
@@ -930,6 +947,15 @@ export class NeatGradient implements NeatController {
         if (this._resolution === resolution) return;
         this._resolution = resolution;
         this._updateGeometry();
+    }
+
+    get antialias(): boolean {
+        return this._antialias;
+    }
+    set antialias(antialias: boolean) {
+        if (this._antialias === antialias) return;
+        this._antialias = antialias;
+        console.warn("NeatGradient: Changing 'antialias' at runtime is not supported because the WebGL context is already created. Recreate the NeatGradient instance to apply this change.");
     }
 
     get backgroundColor(): string {
@@ -1027,15 +1053,23 @@ export class NeatGradient implements NeatController {
 
     _initScene(resolution: number, preserveDrawingBuffer: boolean = false): WebGLState {
 
-        const width = this._ref.clientWidth;
-        const height = this._ref.clientHeight;
+        // Use the canvas element's own width/height attributes if already set
+        // by the consumer (e.g. via CSS + width/height attributes).  Fall back
+        // to reading layout dimensions only once, batching reads before writes
+        // to avoid a read→write→read forced-reflow cycle.
+        let width = this._ref.width;
+        let height = this._ref.height;
+        if (width === 0 || height === 0 || (width === 300 && height === 150)) {
+            // Default canvas size (300×150) means the consumer hasn't set
+            // explicit dimensions — read layout once, then write.
+            width = this._ref.clientWidth || 300;
+            height = this._ref.clientHeight || 150;
+            this._ref.width = width;
+            this._ref.height = height;
+        }
 
-        // Set canvas buffer dimensions to match layout (one-time init)
-        this._ref.width = width;
-        this._ref.height = height;
-
-        const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: true }) ||
-            this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: true });
+        const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: this._antialias }) ||
+            this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
 
         if (!gl) {
             throw new Error("WebGL not supported");
@@ -1671,16 +1705,20 @@ export class NeatGradient implements NeatController {
         };
         this._wmMoveHandler = (e: MouseEvent) => {
             if (this._licensed) {
-                if (this._ref.style.cursor === 'pointer') this._ref.style.cursor = '';
-                if (document.body.style.cursor === 'pointer') document.body.style.cursor = '';
+                if (this._currentCursor !== '') {
+                    this._currentCursor = '';
+                    this._ref.style.cursor = '';
+                    document.body.style.cursor = '';
+                }
                 return;
             }
             if (this._wmMoveRafPending) return;
             this._wmMoveRafPending = true;
             requestAnimationFrame(() => {
                 this._wmMoveRafPending = false;
+                // ── READ phase (geometry queries) ──
                 const now = performance.now();
-                if (!this._wmCachedRect || now - this._wmRectCacheTime > 100) {
+                if (!this._wmCachedRect || now - this._wmRectCacheTime > 500) {
                     this._wmCachedRect = this._ref.getBoundingClientRect();
                     this._wmRectCacheTime = now;
                 }
@@ -1689,22 +1727,25 @@ export class NeatGradient implements NeatController {
                 const y = e.clientY - rect.top;
                 const cw = rect.width;
                 const ch = rect.height;
-                if (x < 0 || y < 0 || x > cw || y > ch) {
-                    if (this._ref.style.cursor === 'pointer') this._ref.style.cursor = '';
-                    if (document.body.style.cursor === 'pointer') document.body.style.cursor = '';
-                    return;
+
+                // ── COMPUTE phase (no DOM access) ──
+                let wantCursor = '';
+                if (x >= 0 && y >= 0 && x <= cw && y <= ch) {
+                    const m = this._watermarkMargin;
+                    const ww = this._watermarkWidth;
+                    const wh = this._watermarkHeight;
+                    const left = cw - m - ww;
+                    const top = ch - m - wh;
+                    if (x >= left && x <= cw - m && y >= top && y <= ch - m) {
+                        wantCursor = 'pointer';
+                    }
                 }
-                const m = this._watermarkMargin;
-                const ww = this._watermarkWidth;
-                const wh = this._watermarkHeight;
-                const left = cw - m - ww;
-                const top = ch - m - wh;
-                const over = x >= left && x <= cw - m && y >= top && y <= ch - m;
-                this._ref.style.cursor = over ? 'pointer' : '';
-                if (over) {
-                    document.body.style.cursor = 'pointer';
-                } else if (document.body.style.cursor === 'pointer') {
-                    document.body.style.cursor = '';
+
+                // ── WRITE phase (style mutations, only if changed) ──
+                if (this._currentCursor !== wantCursor) {
+                    this._currentCursor = wantCursor;
+                    this._ref.style.cursor = wantCursor;
+                    document.body.style.cursor = wantCursor;
                 }
             });
         };
@@ -1714,10 +1755,11 @@ export class NeatGradient implements NeatController {
 
     /** Returns true if the mouse event is inside the watermark's pixel bounds. */
     private _isOverWatermark(e: MouseEvent): boolean {
-        const now = performance.now();
-        if (!this._wmCachedRect || now - this._wmRectCacheTime > 100) {
+        // Use cached rect from the mousemove handler to avoid a forced reflow
+        // during click handling. If no cache exists yet, populate it once.
+        if (!this._wmCachedRect) {
             this._wmCachedRect = this._ref.getBoundingClientRect();
-            this._wmRectCacheTime = now;
+            this._wmRectCacheTime = performance.now();
         }
         const rect = this._wmCachedRect;
         const x = e.clientX - rect.left;

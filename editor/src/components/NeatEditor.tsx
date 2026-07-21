@@ -511,6 +511,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const updatePresetConfig = (config: NeatConfig) => {
         setColors(config.colors);
         if (config.wireframe !== undefined) setWireframe(config.wireframe);
+        if (config.antialias !== undefined) setAntialias(config.antialias);
         if (config.speed !== undefined) setSpeed(config.speed);
         if (config.colorBlending !== undefined) setColorBlending(config.colorBlending);
         if (config.horizontalPressure !== undefined) setHorizontalPressure(config.horizontalPressure);
@@ -609,6 +610,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [selectedPreset, setSelectedPreset] = React.useState<string>("Neat");
     const [colors, setColors] = React.useState<NeatColor[]>(defaultConfig.colors ?? []);
     const [wireframe, setWireframe] = React.useState<boolean>(defaultConfig.wireframe ?? false);
+    const [antialias, setAntialias] = React.useState<boolean>(defaultConfig.antialias ?? false);
     const [speed, setSpeed] = React.useState<number>(defaultConfig.speed ?? 4);
     const [colorBlending, setColorBlending] = React.useState<number>(defaultConfig.colorBlending ?? 5);
     const [horizontalPressure, setHorizontalPressure] = React.useState<number>(defaultConfig.horizontalPressure ?? 3);
@@ -915,6 +917,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             waveFrequencyY: tweened.waveFrequencyY,
             waveAmplitude: tweened.waveAmplitude,
             wireframe,
+            antialias,
             colorBlending: tweened.colorBlending,
             shadows: tweened.shadows,
             highlights: tweened.highlights,
@@ -999,7 +1002,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             cameraZoom,
         });
         return gradientRef.current.destroy;
-    }, []);
+    }, [antialias]);
 
     // Update Gradient properties
     useEffect(() => {
@@ -1408,6 +1411,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         colorBrightness: brightness,
         colorSaturation: saturation,
         wireframe,
+        antialias,
         colorBlending,
         backgroundColor,
         backgroundAlpha,
@@ -2241,6 +2245,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <div className={"w-full flex"}>
                                                     <Checkbox checked={wireframe}
                                                               onChange={(checked: boolean) => setWireframe(checked)}/>
+                                                </div>
+                                            </Label>
+
+                                            <Label className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip className="text-xs w-28 text-right cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Enable WebGL multi-sample anti-aliasing (MSAA) for smoother edges.">
+                                                    Antialiasing
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={antialias}
+                                                              onChange={(checked: boolean) => setAntialias(checked)}/>
                                                 </div>
                                             </Label>
                                             {wireframe && (
