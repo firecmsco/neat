@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Neat — bitmap vs baked</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; font: 13px/1.4 system-ui, sans-serif; }
+        .row { display: flex; gap: 8px; padding: 8px; }
+        .cell { flex: 1; }
+        .cell h2 { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #888; }
+        canvas { width: 100%; height: 520px; display: block; background: #000; }
+        #log { padding: 8px; font-family: ui-monospace, monospace; white-space: pre-wrap; color: #9c9; }
+    </style>
+</head>
+<body>
+<div class="row">
+    <div class="cell"><h2>bitmap</h2><canvas id="a"></canvas></div>
+    <div class="cell"><h2>baked</h2><canvas id="b"></canvas></div>
+</div>
+<div id="log">booting…</div>
+
+<script type="module">
+    import { NeatGradient } from './dist/index.es.js';
+
+    // The rebase.pro hero preset — heavily magnified, which is the case the
+    // bitmap path degrades on.
+    const CONFIG = {
+        colors: [
+            { color: "#FB5066", enabled: true },
+            { color: "#36CCD6", enabled: true },
+            { color: "#FFC600", enabled: true },
+            { color: "#8B6AE6", enabled: true },
+            { color: "#2E0EC7", enabled: true },
+            { color: "#FF9A9E", enabled: true },
+        ],
+        // speed 0 plus an explicit tick seed: without the seed both instances
+        // start from getElapsedSecondsInLastHour(), whose 1-second resolution
+        // lets them land on different wave phases and ruins the comparison.
+        speed: 0, seed: 0,
+        horizontalPressure: 3,
+        verticalPressure: 3,
+        waveFrequencyX: 3,
+        waveFrequencyY: 5,
+        waveAmplitude: 10,
+        shadows: 2,
+        highlights: 6,
+        colorBrightness: 0.25,
+        colorSaturation: 1,
+        wireframe: false,
+        colorBlending: 3,
+        backgroundColor: "#000000",
+        backgroundAlpha: 0,
+        grainScale: 0,
+        grainSparsity: 0,
+        grainIntensity: 0,
+        grainSpeed: 0,
+        resolution: 0.05,
+        yOffset: 18063.63558959961,
+        yOffsetWaveMultiplier: 7.2,
+        yOffsetColorMultiplier: 6.8,
+        yOffsetFlowMultiplier: 7.7,
+        flowDistortionA: 0.4,
+        flowDistortionB: 2.6,
+        flowScale: 1.9,
+        flowEase: 0.94,
+        flowEnabled: true,
+        enableProceduralTexture: true,
+        transparentTextureVoid: false,
+        textureVoidLikelihood: 0.59,
+        textureVoidWidthMin: 120,
+        textureVoidWidthMax: 330,
+        textureBandDensity: 0.1,
+        textureColorBlending: 0,
+        textureSeed: 478,
+        textureEase: 0.86,
+        proceduralBackgroundColor: "#000000",
+        textureShapeTriangles: 51,
+        textureShapeCircles: 0,
+        textureShapeBars: 15,
+        textureShapeSquiggles: 0,
+        vignetteIntensity: 0,
+        vignetteRadius: 0.8,
+        bloomIntensity: 0,
+        chromaticAberration: 0,
+        shapeType: "ribbon",
+        planeBend: -0.8,
+        planeTwist: 1,
+        silhouetteFade: 0,
+        cylinderFade: 0.08,
+        ribbonFade: 0,
+        flatShading: true,
+        cameraLock: false,
+        cameraX: 0,
+        cameraY: -11.5,
+        cameraZ: 0,
+        cameraRotationX: 0.731,
+        cameraRotationY: 0.483,
+        cameraRotationZ: 0,
+        cameraZoom: 2.05,
+    };
+
+    // Camera overrides via query string, so magnification is easy to sweep.
+    const qs = new URLSearchParams(location.search);
+    for (const k of ['cameraZoom', 'cameraX', 'cameraY', 'cameraRotationX', 'textureShapeTriangles', 'bakeEdgeSoftness', 'textureBakeResolution']) {
+        if (qs.has(k)) CONFIG[k] = parseFloat(qs.get(k));
+    }
+
+    const log = document.getElementById('log');
+    const lines = [];
+    const say = (s) => { lines.push(s); log.textContent = lines.join('\n'); };
+
+    // Surface shader trouble instead of letting it scroll past.
+    const origLog = console.log;
+    console.log = (...args) => {
+        const s = args.map(a => typeof a === 'string' ? a : '').join(' ');
+        if (s.includes('ERROR_START') || s.includes('error')) say('CONSOLE: ' + s.slice(0, 400));
+        origLog.apply(console, args);
+    };
+
+    for (const c of [document.getElementById('a'), document.getElementById('b')]) {
+        c.width = c.clientWidth * devicePixelRatio;
+        c.height = c.clientHeight * devicePixelRatio;
+    }
+
+    const t0 = performance.now();
+    const bitmap = new NeatGradient({ ref: document.getElementById('a'), ...CONFIG, textureMode: 'bitmap', preserveDrawingBuffer: true });
+    const t1 = performance.now();
+    const vector = new NeatGradient({ ref: document.getElementById('b'), ...CONFIG, textureMode: 'baked', preserveDrawingBuffer: true });
+    const t2 = performance.now();
+
+    say(`bitmap init ${(t1 - t0).toFixed(1)}ms  active=${bitmap.activeTextureMode}`);
+    say(`baked  init ${(t2 - t1).toFixed(1)}ms  active=${vector.activeTextureMode}`);
+
+    // Nearest-neighbour magnified crop of the same region from each canvas, so
+    // edge quality is directly comparable rather than judged at 1x.
+    function crop(srcCanvas, label) {
+        const CW = 130, CH = 95, SCALE = 6;
+        const sx = parseInt(qs.get('cx') || '120', 10);
+        const sy = parseInt(qs.get('cy') || '110', 10);
+        const out = document.createElement('canvas');
+        out.width = CW * SCALE;
+        out.height = CH * SCALE;
+        out.style.width = (CW * SCALE) + 'px';
+        out.style.height = (CH * SCALE) + 'px';
+        const g = out.getContext('2d');
+        g.imageSmoothingEnabled = false;
+        g.drawImage(srcCanvas, sx, sy, CW, CH, 0, 0, CW * SCALE, CH * SCALE);
+        const wrap = document.createElement('div');
+        wrap.className = 'cell';
+        wrap.innerHTML = `<h2>${label} — ${SCALE}x crop @ ${sx},${sy}</h2>`;
+        wrap.appendChild(out);
+        return wrap;
+    }
+
+    setTimeout(() => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.appendChild(crop(document.getElementById('a'), 'bitmap'));
+        row.appendChild(crop(document.getElementById('b'), 'baked'));
+        document.body.insertBefore(row, log);
+        window.__neatReady = true;
+        say('ready');
+    }, 1200);
+
+    window.__neat = { bitmap, vector };
+</script>
+</body>
+</html>

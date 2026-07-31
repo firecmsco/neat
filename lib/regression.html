@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Neat — bitmap regression vs HEAD</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; font: 13px/1.5 ui-monospace, monospace; }
+        .row { display: flex; gap: 8px; padding: 8px; }
+        .cell h2 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #888; }
+        canvas { display: block; border: 1px solid #333; }
+        #log { padding: 8px; white-space: pre-wrap; color: #9c9; }
+    </style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<div id="log">…</div>
+
+<script type="module">
+    // Same preset rendered by the pre-change build and the current one, in
+    // bitmap mode. The refactor touched the shared shader path (varyings became
+    // version-neutral macros) and moved pattern generation out of the texture
+    // builder, so bitmap output has to be proven unchanged.
+    import { NeatGradient as Head } from './dist-head/index.es.js';
+    import { NeatGradient as Cur } from './dist/index.es.js';
+
+    const W = 560, H = 380;
+
+    const CONFIG = {
+        colors: [
+            { color: "#FB5066", enabled: true }, { color: "#36CCD6", enabled: true },
+            { color: "#FFC600", enabled: true }, { color: "#8B6AE6", enabled: true },
+            { color: "#2E0EC7", enabled: true }, { color: "#FF9A9E", enabled: true },
+        ],
+        // speed 0 plus an explicit tick seed makes the frame deterministic.
+        speed: 0, seed: 0,
+        horizontalPressure: 3, verticalPressure: 3,
+        waveFrequencyX: 3, waveFrequencyY: 5, waveAmplitude: 10,
+        shadows: 2, highlights: 6, colorBrightness: 0.25, colorSaturation: 1,
+        colorBlending: 3, backgroundColor: "#000000", backgroundAlpha: 0,
+        grainScale: 0, grainSparsity: 0, grainIntensity: 0, grainSpeed: 0,
+        resolution: 0.05,
+        yOffset: 18063.63, yOffsetWaveMultiplier: 7.2, yOffsetColorMultiplier: 6.8, yOffsetFlowMultiplier: 7.7,
+        flowDistortionA: 0.4, flowDistortionB: 2.6, flowScale: 1.9, flowEase: 0.94, flowEnabled: true,
+        enableProceduralTexture: true, transparentTextureVoid: false,
+        textureVoidLikelihood: 0.59, textureVoidWidthMin: 120, textureVoidWidthMax: 330,
+        textureBandDensity: 0.1, textureColorBlending: 0, textureSeed: 478, textureEase: 0.86,
+        proceduralBackgroundColor: "#000000",
+        textureShapeTriangles: 51, textureShapeCircles: 0, textureShapeBars: 15,
+        // Squiggles on: they exercise the one shape family the refactor moved
+        // but vector mode drops, so bitmap parity must still hold for them.
+        textureShapeSquiggles: 10,
+        shapeType: "ribbon", planeBend: -0.8, planeTwist: 1,
+        silhouetteFade: 0, cylinderFade: 0.08, ribbonFade: 0, flatShading: true,
+        cameraX: 0, cameraY: -11.5, cameraZ: 0,
+        cameraRotationX: 0.731, cameraRotationY: 0.483, cameraRotationZ: 0, cameraZoom: 2.05,
+    };
+
+    function mount(Ctor, label, extra) {
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const wrap = document.createElement('div');
+        wrap.className = 'cell';
+        wrap.innerHTML = `<h2>${label}</h2>`;
+        wrap.appendChild(c);
+        document.getElementById('row').appendChild(wrap);
+        new Ctor({ ref: c, ...CONFIG, ...extra, preserveDrawingBuffer: true });
+        return c;
+    }
+
+    const ca = mount(Head, 'HEAD (before)', {});
+    const cb = mount(Cur, 'current (bitmap)', { textureMode: 'bitmap' });
+
+    setTimeout(() => {
+        const ga = ca.getContext('webgl2') || ca.getContext('webgl');
+        const gb = cb.getContext('webgl2') || cb.getContext('webgl');
+        const a = new Uint8Array(W * H * 4), b = new Uint8Array(W * H * 4);
+        ga.readPixels(0, 0, W, H, ga.RGBA, ga.UNSIGNED_BYTE, a);
+        gb.readPixels(0, 0, W, H, gb.RGBA, gb.UNSIGNED_BYTE, b);
+
+        let differing = 0, worst = 0, sum = 0;
+        for (let i = 0; i < a.length; i += 4) {
+            const d = Math.max(
+                Math.abs(a[i] - b[i]), Math.abs(a[i+1] - b[i+1]), Math.abs(a[i+2] - b[i+2]), Math.abs(a[i+3] - b[i+3])
+            );
+            sum += d;
+            if (d > 1) differing++;
+            if (d > worst) worst = d;
+        }
+        const total = W * H;
+        document.getElementById('log').textContent =
+            `differing pixels (>1/255): ${differing} / ${total} = ${(100 * differing / total).toFixed(4)}%\n` +
+            `mean abs diff: ${(sum / total).toFixed(4)}/255   worst: ${worst}/255\n` +
+            (differing === 0 ? 'IDENTICAL — bitmap mode unchanged' : 'DIFFERS — investigate');
+        window.__done = true;
+    }, 1500);
+</script>
+</body>
+</html>

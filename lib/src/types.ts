@@ -36,6 +36,19 @@ export type NeatConfig = {
     flowEase?: number;
     flowEnabled?: boolean;
     enableProceduralTexture?: boolean;
+    /**
+     * How the procedural texture is produced. `bitmap` (default) draws the
+     * shapes through Canvas2D at a fixed 1024px; `baked` rasterizes them
+     * analytically on the GPU at a resolution derived from the canvas, giving
+     * exact edge coverage instead of a coarse grid. Both end up as an ordinary
+     * mipmapped texture, so runtime cost is the same. Squiggles are not
+     * supported when baking, and `baked` needs WebGL2.
+     */
+    textureMode?: 'bitmap' | 'baked';
+    /** Resolution of the baked texture. 0 (default) derives it from the canvas. */
+    textureBakeResolution?: number;
+    /** Multiplier on the antialiasing filter width used while baking, in output texels. Default 1. */
+    bakeEdgeSoftness?: number;
     textureVoidLikelihood?: number;
     textureVoidWidthMin?: number;
     textureVoidWidthMax?: number;

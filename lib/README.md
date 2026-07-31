@@ -260,6 +260,9 @@ function BackgroundGradient() {
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `enableProceduralTexture` | `boolean` | `false` | Enable texture overlay |
+| `textureMode` | `'bitmap' \| 'baked'` | `'bitmap'` | How the texture is drawn — see below |
+| `textureBakeResolution` | `number` | `0` | Baked texture size; 0 derives it from the canvas |
+| `bakeEdgeSoftness` | `number` | `1` | Antialiasing width when baking, in output texels |
 | `textureVoidLikelihood` | `number` | `0.45` | Gap frequency in texture (0-1) |
 | `textureVoidWidthMin` | `number` | `200` | Minimum gap width |
 | `textureVoidWidthMax` | `number` | `486` | Maximum gap width |
@@ -273,6 +276,58 @@ function BackgroundGradient() {
 | `textureShapeCircles` | `number` | `15` | Number of circle shapes |
 | `textureShapeBars` | `number` | `15` | Number of bar shapes |
 | `textureShapeSquiggles` | `number` | `10` | Number of squiggle shapes |
+
+#### Bitmap vs baked
+
+`textureMode` decides how the shapes above are drawn into the texture. Both
+modes read the same generated artwork, so a given `textureSeed` produces the
+same composition either way, and both end up as an ordinary mipmapped texture —
+runtime cost is identical. What differs is how sharp that texture is.
+
+**`bitmap`** (default) draws the shapes through Canvas2D at a hardcoded 1024px.
+Edges land on that grid, so once the camera magnifies the texture they soften
+and diagonals show the stair-stepping of the grid they were drawn on.
+
+**`baked`** rasterizes the same shapes analytically on the GPU: exact per-pixel
+edge coverage, at a resolution derived from the canvas rather than fixed. It is
+also the faster of the two to generate — around 20 ms against 35 ms for the
+Canvas2D path on a full-screen hero, because it skips the CPU drawing and the
+upload.
+
+| | `bitmap` | `baked` |
+|---|---|---|
+| resolution | 1024, always | from canvas, 1024–2048 (4096 opt-in) |
+| edge quality | Canvas2D antialiasing | exact analytic coverage |
+| generation | ~35 ms | ~20 ms |
+| runtime | one texture fetch | one texture fetch |
+| memory | ~5.5 MB | ~22 MB at 2048 |
+
+Three limits to know about:
+
+- **Squiggles are not supported when baking** and are dropped with a warning.
+  Cubic Béziers have no closed-form distance function, so they would cost
+  roughly ten times what every other shape does.
+- **`baked` needs WebGL2** (`texelFetch` and float textures) and falls back to
+  `bitmap` otherwise. Read `activeTextureMode` for the mode actually in use.
+- **Memory is per instance.** WebGL textures cannot be shared across contexts,
+  and every `NeatGradient` has its own canvas and context, so a page with
+  several of them pays for each. That is why the default caps at 2048 rather
+  than 4096; raise `textureBakeResolution` deliberately.
+
+```js
+const gradient = new NeatGradient({
+    ref: canvas,
+    enableProceduralTexture: true,
+    textureMode: "baked",
+    textureShapeSquiggles: 0,   // not available when baking
+    textureBakeResolution: 0,   // 0 = derive from the canvas
+    bakeEdgeSoftness: 1.0,      // antialiasing width, in output texels
+    // ...
+});
+
+gradient.activeTextureMode; // 'baked', or 'bitmap' if it had to fall back
+gradient.textureMode = "bitmap"; // switchable at runtime
+```
 
 ---
 

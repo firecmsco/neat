@@ -554,6 +554,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.textureEase !== undefined) setTextureEase(config.textureEase);
         if (config.proceduralBackgroundColor !== undefined) setProceduralBackgroundColor(config.proceduralBackgroundColor);
         setTransparentTextureVoid(config.transparentTextureVoid ?? false);
+        setTextureMode(config.textureMode ?? 'bitmap');
+        setBakeEdgeSoftness(config.bakeEdgeSoftness ?? 1.0);
         setTextureShapeTriangles(config.textureShapeTriangles ?? 20);
         setTextureShapeCircles(config.textureShapeCircles ?? 15);
         setTextureShapeBars(config.textureShapeBars ?? 15);
@@ -656,6 +658,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [textureEase, setTextureEase] = React.useState<number>(defaultConfig.textureEase ?? 0.5);
     const [proceduralBackgroundColor, setProceduralBackgroundColor] = React.useState<string>(defaultConfig.proceduralBackgroundColor ?? "#000000");
     const [transparentTextureVoid, setTransparentTextureVoid] = React.useState<boolean>(defaultConfig.transparentTextureVoid ?? false);
+    const [textureMode, setTextureMode] = React.useState<'bitmap' | 'baked'>(defaultConfig.textureMode ?? 'bitmap');
+    const [bakeEdgeSoftness, setBakeEdgeSoftness] = React.useState<number>(defaultConfig.bakeEdgeSoftness ?? 1.0);
     const [textureShapeTriangles, setTextureShapeTriangles] = React.useState<number>(defaultConfig.textureShapeTriangles ?? 20);
     const [textureShapeCircles, setTextureShapeCircles] = React.useState<number>(defaultConfig.textureShapeCircles ?? 15);
     const [textureShapeBars, setTextureShapeBars] = React.useState<number>(defaultConfig.textureShapeBars ?? 15);
@@ -940,6 +944,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
             enableProceduralTexture,
             transparentTextureVoid,
+            textureMode,
+            bakeEdgeSoftness,
             textureVoidLikelihood,
             textureVoidWidthMin,
             textureVoidWidthMax,
@@ -1045,6 +1051,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.proceduralBackgroundColor = proceduralBackgroundColor;
         // @ts-ignore
         gradientRef.current.transparentTextureVoid = transparentTextureVoid;
+        gradientRef.current.textureMode = textureMode;
+        gradientRef.current.bakeEdgeSoftness = bakeEdgeSoftness;
         // @ts-ignore
         gradientRef.current.textureShapeTriangles = textureShapeTriangles;
         // @ts-ignore
@@ -1117,6 +1125,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         enableProceduralTexture,
         proceduralBackgroundColor,
         transparentTextureVoid,
+        textureMode,
+        bakeEdgeSoftness,
         textureVoidLikelihood,
         textureVoidWidthMin,
         textureVoidWidthMax,
@@ -1434,6 +1444,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         // Texture generation
         enableProceduralTexture,
         transparentTextureVoid,
+        textureMode,
+        bakeEdgeSoftness,
         textureVoidLikelihood,
         textureVoidWidthMin,
         textureVoidWidthMax,
@@ -2678,6 +2690,47 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             )}
                                             {enableProceduralTexture && (
                                                 <div className="space-y-2 mt-2">
+                                                    <div className="flex flex-row gap-2 items-center">
+                                                        <Tooltip
+                                                            title="Bitmap draws the pattern through Canvas2D at a fixed 1024px, so edges land on a coarse grid and stair-step when magnified. Baked rasterizes the same shapes analytically on the GPU, at a resolution based on the canvas — sharper edges, same runtime cost, and it generates faster.">
+                                                            <span
+                                                                className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Rendering</span>
+                                                        </Tooltip>
+                                                        <div className="w-full flex gap-1">
+                                                            {(["bitmap", "baked"] as const).map((mode) => (
+                                                                <button
+                                                                    key={mode}
+                                                                    type="button"
+                                                                    onClick={() => setTextureMode(mode)}
+                                                                    className={`px-2 py-1 text-xs rounded capitalize ${
+                                                                        textureMode === mode
+                                                                            ? "bg-white/20 font-semibold"
+                                                                            : "bg-white/5 hover:bg-white/10"
+                                                                    }`}>
+                                                                    {mode}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    {textureMode === "baked" && (
+                                                        <>
+                                                            <div className="flex flex-row gap-2 items-center">
+                                                                <Tooltip
+                                                                    title="Antialiasing filter width used while baking, in output texels. 1 is exact single-texel coverage; raise it to soften.">
+                                                                    <span
+                                                                        className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Edge Softness</span>
+                                                                </Tooltip>
+                                                                <Slider value={[bakeEdgeSoftness]}
+                                                                        step={0.1} min={0.5} max={4}
+                                                                        onValueChange={(v) => setBakeEdgeSoftness(v[0] as number)}/>
+                                                            </div>
+                                                            {textureShapeSquiggles > 0 && (
+                                                                <div className="text-xs opacity-70 italic mt-1 pl-2">
+                                                                    ⚠️ Squiggles are not drawn when baking
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
                                                     <div className="flex flex-row gap-2 items-center">
                                                         <span className="w-28 text-right pr-2 text-xs">Gap Frequency</span>
                                                         <Slider

@@ -2,6 +2,8 @@ import { buildColorFunctions, buildNoise, buildVertUniforms, buildFragUniforms, 
 import { generatePlaneGeometry, generateSphereGeometry, generateTorusGeometry, generateCylinderGeometry, generateRibbonGeometry, OrthographicCamera, updateCamera, Matrix4 } from "./math";
 import { verifyLicenseKey } from "./license";
 import { NEAT_VERSION } from "./version";
+import { generatePattern, paintPattern, Pattern } from "./pattern";
+import { buildPatternData, buildPatternBakeFrag, PATTERN_BAKE_VERT, AUX_WIDTH, SHAPE_TEXELS } from "./patternData";
 
 function _logBranding() {
     console.info(
@@ -315,6 +317,25 @@ export class NeatGradient implements NeatController {
     private _proceduralTexture: WebGLTexture | null = null;
     private _proceduralBackgroundColor: string = "#000000";
 
+    private _textureMode: 'bitmap' | 'baked' = 'bitmap';
+    /** Resolved mode. Falls back to bitmap when the context cannot bake. */
+    private _activeTextureMode: 'bitmap' | 'baked' = 'bitmap';
+    private _isWebGL2: boolean = false;
+    private _derivativesSupported: boolean = false;
+    private _bakeWarned: boolean = false;
+    private _bakeEdgeSoftness: number = 1.0;
+    private _bakeSeamBlend: boolean = true;
+    /** 0 = derive from the canvas; otherwise an explicit square resolution. */
+    private _textureBakeResolution: number = 0;
+    private _shapeTexture: WebGLTexture | null = null;
+    private _auxTexture: WebGLTexture | null = null;
+    // Bake pipeline, created lazily and reused for every regeneration.
+    private _bakeProgram: WebGLProgram | null = null;
+    private _bakeQuad: WebGLBuffer | null = null;
+    private _bakeFbo: WebGLFramebuffer | null = null;
+    private _bakeVao: WebGLVertexArrayObject | null = null;
+    private _bakeUniforms: Record<string, WebGLUniformLocation | null> = {};
+
     private _textureShapeTriangles: number = 20;
     private _textureShapeCircles: number = 15;
     private _textureShapeBars: number = 15;
@@ -410,6 +431,9 @@ export class NeatGradient implements NeatController {
 
             // Texture generation
             enableProceduralTexture = false,
+            textureMode = 'bitmap',
+            textureBakeResolution = 0,
+            bakeEdgeSoftness = 1.0,
             textureVoidLikelihood = 0.45,
             textureVoidWidthMin = 200,
             textureVoidWidthMax = 486,
@@ -514,7 +538,12 @@ export class NeatGradient implements NeatController {
 
 
 
-        // Texture generation
+        // Texture generation.
+        // textureMode is set directly rather than through its setter: the setter
+        // rebuilds the program, and there is no program yet at this point.
+        this._textureMode = textureMode === 'baked' ? 'baked' : 'bitmap';
+        this._textureBakeResolution = textureBakeResolution;
+        this._bakeEdgeSoftness = bakeEdgeSoftness;
         this.enableProceduralTexture = enableProceduralTexture;
         this.textureVoidLikelihood = textureVoidLikelihood;
         this.textureVoidWidthMin = textureVoidWidthMin;
@@ -575,6 +604,7 @@ export class NeatGradient implements NeatController {
         this._planeTwist = planeTwist;
 
         this.glState = this._initScene(resolution, preserveDrawingBuffer);
+
         this._initWatermark();
 
         injectMetaGenerator();
@@ -720,7 +750,8 @@ export class NeatGradient implements NeatController {
                     this._yOffsetDirty = false;
                 }
 
-                // Only regenerate procedural texture when needed
+                // Regenerate the procedural texture when needed. Both modes
+                // produce a texture; they differ only in how it is drawn.
                 if (this._textureNeedsUpdate && this._enableProceduralTexture) {
                     if (this._proceduralTexture) {
                         gl.deleteTexture(this._proceduralTexture);
@@ -916,6 +947,21 @@ export class NeatGradient implements NeatController {
             }
 
         }
+        if (this.glState) {
+            const g = this.glState.gl;
+            if (this._bakeProgram) { g.deleteProgram(this._bakeProgram); this._bakeProgram = null; }
+            if (this._bakeQuad) { g.deleteBuffer(this._bakeQuad); this._bakeQuad = null; }
+            if (this._bakeFbo) { g.deleteFramebuffer(this._bakeFbo); this._bakeFbo = null; }
+            if (this._bakeVao) { (g as WebGL2RenderingContext).deleteVertexArray(this._bakeVao); this._bakeVao = null; }
+            if (this._shapeTexture) {
+                this.glState.gl.deleteTexture(this._shapeTexture);
+                this._shapeTexture = null;
+            }
+            if (this._auxTexture) {
+                this.glState.gl.deleteTexture(this._auxTexture);
+                this._auxTexture = null;
+            }
+        }
         if (this._proceduralTexture && this.glState) {
             this.glState.gl.deleteTexture(this._proceduralTexture);
         }
@@ -976,6 +1022,58 @@ export class NeatGradient implements NeatController {
             this._yOffsetDirty = true;
             this._yOffset = yOffset;
         }
+    }
+
+    /**
+     * How the procedural texture is produced.
+     *
+     * `bitmap` (default) draws the shapes through Canvas2D at a fixed 1024px.
+     * `baked` rasterizes them analytically on the GPU instead, at a resolution
+     * derived from the canvas, so edges get exact coverage rather than landing
+     * on a coarse grid. Both end up as an ordinary mipmapped texture, so the
+     * runtime cost is identical — the difference is how sharp it is, and how
+     * long generation takes (the GPU bake is the faster of the two).
+     *
+     * `baked` needs WebGL2; it falls back to `bitmap` otherwise. Squiggles are
+     * not supported when baking. Read `activeTextureMode` for what is in use.
+     */
+    get textureMode(): 'bitmap' | 'baked' {
+        return this._textureMode;
+    }
+    set textureMode(value: 'bitmap' | 'baked') {
+        const next = value === 'baked' ? 'baked' : 'bitmap';
+        if (this._textureMode === next) return;
+        this._textureMode = next;
+        this._bakeWarned = false;
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
+    }
+
+    /** Resolution of the baked texture. 0 derives it from the canvas size. */
+    get textureBakeResolution(): number {
+        return this._textureBakeResolution;
+    }
+    set textureBakeResolution(value: number) {
+        if (this._textureBakeResolution === value) return;
+        this._textureBakeResolution = value;
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
+    }
+
+    /**
+     * Multiplier on the antialiasing filter width used while baking, in output
+     * texels. 1 gives exact single-texel coverage; raise it to soften.
+     */
+    get bakeEdgeSoftness(): number {
+        return this._bakeEdgeSoftness;
+    }
+    set bakeEdgeSoftness(value: number) {
+        if (this._bakeEdgeSoftness === value) return;
+        this._bakeEdgeSoftness = value;
+        if (this._enableProceduralTexture) this._textureNeedsUpdate = true;
+    }
+
+    /** The mode actually in use, which falls back to `bitmap` if baking is unsupported. */
+    get activeTextureMode(): 'bitmap' | 'baked' {
+        return this._activeTextureMode;
     }
 
     get enableProceduralTexture(): boolean {
@@ -1069,15 +1167,19 @@ export class NeatGradient implements NeatController {
             this._ref.height = height;
         }
 
-        const gl = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: this._antialias }) ||
-            this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
+        const gl2 = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
+        const gl = gl2 || this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
 
         if (!gl) {
             throw new Error("WebGL not supported");
         }
 
+        this._isWebGL2 = !!gl2;
+
         const ext = gl.getExtension("OES_standard_derivatives");
         gl.getExtension("OES_element_index_uint");
+
+        this._derivativesSupported = this._isWebGL2 || !!ext;
 
         gl.viewport(0, 0, width, height);
 
@@ -1119,42 +1221,7 @@ export class NeatGradient implements NeatController {
         // Rebind the triangle index buffer as default
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-        const vertShaderSourceCombined = buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
-        const vertShader = gl.createShader(gl.VERTEX_SHADER)!;
-        gl.shaderSource(vertShader, vertShaderSourceCombined);
-        gl.compileShader(vertShader);
-        if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-            console.log("VERTEX_SHADER_ERROR_START");
-            console.log("Vertex shader error: ", gl.getShaderInfoLog(vertShader));
-            console.log("GL Error Code:", gl.getError());
-            console.log("Vertex Shader Source Dump:");
-            console.log(vertShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
-            console.log("VERTEX_SHADER_ERROR_END");
-        }
-
-        const fragShaderSourceCombined = buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
-        const fragShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-        gl.shaderSource(fragShader, fragShaderSourceCombined);
-        gl.compileShader(fragShader);
-        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-            console.log("FRAGMENT_SHADER_ERROR_START");
-            console.log("Fragment shader error: ", gl.getShaderInfoLog(fragShader));
-            console.log("GL Error Code:", gl.getError());
-            console.log("Fragment Shader Source Dump:");
-            console.log(fragShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
-            console.log("FRAGMENT_SHADER_ERROR_END");
-        }
-
-        const program = gl.createProgram()!;
-        gl.attachShader(program, vertShader);
-        gl.attachShader(program, fragShader);
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.log("PROGRAM_LINK_ERROR_START");
-            console.log("Program linking error: ", gl.getProgramInfoLog(program));
-            console.log("GL Error Code:", gl.getError());
-            console.log("PROGRAM_LINK_ERROR_END");
-        }
+        const program = this._compileProgram(gl);
 
         gl.useProgram(program);
 
@@ -1195,38 +1262,12 @@ export class NeatGradient implements NeatController {
         const colorsCountLoc = gl.getUniformLocation(program, "u_colors_count");
         gl.uniform1i(colorsCountLoc, COLORS_COUNT);
 
-        const uniformsList = [
-            "projectionMatrix", "modelViewMatrix",
-            "u_time", "u_resolution", "u_color_pressure", "u_wave_frequency_x", "u_wave_frequency_y",
-            "u_wave_amplitude", "u_colors_count", "u_plane_width", "u_plane_height", "u_shadows",
-            "u_highlights", "u_grain_intensity", "u_grain_sparsity", "u_grain_scale", "u_grain_speed",
-            "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
-            "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
-
-            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_transparent_texture_void", "u_saturation", "u_brightness", "u_color_blending",
-            "u_domain_warp_enabled", "u_domain_warp_intensity", "u_domain_warp_scale",
-            "u_vignette_intensity", "u_vignette_radius",
-            "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
-            "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
-            "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
-            "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade", "u_flat_shading"
-        ];
-
         const locations: WebGLState["locations"] = {
             attributes: { position: aPosition, normal: aNormal, uv: aUv },
             uniforms: {}
         };
 
-        uniformsList.forEach(name => {
-            locations.uniforms[name] = gl.getUniformLocation(program, name);
-        });
-
-        // Add colors uniforms manually
-        for (let i = 0; i < COLORS_COUNT; i++) {
-            locations.uniforms[`u_colors[${i}].is_active`] = gl.getUniformLocation(program, `u_colors[${i}].is_active`);
-            locations.uniforms[`u_colors[${i}].color`] = gl.getUniformLocation(program, `u_colors[${i}].color`);
-            locations.uniforms[`u_colors[${i}].influence`] = gl.getUniformLocation(program, `u_colors[${i}].influence`);
-        }
+        this._resolveProgramLocations(gl, program, locations);
 
         this._initialized = true;
         // New program needs all uniforms re-uploaded on first frame
@@ -1259,11 +1300,363 @@ export class NeatGradient implements NeatController {
 
 
 
+    /** Uniform locations belong to a program, so they are re-resolved on every recompile. */
+    _resolveProgramLocations(
+        gl: WebGLRenderingContext | WebGL2RenderingContext,
+        program: WebGLProgram,
+        locations: WebGLState["locations"]
+    ) {
+        const uniformsList = [
+            "projectionMatrix", "modelViewMatrix",
+            "u_time", "u_resolution", "u_color_pressure", "u_wave_frequency_x", "u_wave_frequency_y",
+            "u_wave_amplitude", "u_colors_count", "u_plane_width", "u_plane_height", "u_shadows",
+            "u_highlights", "u_grain_intensity", "u_grain_sparsity", "u_grain_scale", "u_grain_speed",
+            "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
+            "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
+
+            "u_procedural_texture", "u_enable_procedural_texture", "u_texture_ease", "u_transparent_texture_void", "u_saturation", "u_brightness", "u_color_blending",
+            "u_domain_warp_enabled", "u_domain_warp_intensity", "u_domain_warp_scale",
+            "u_vignette_intensity", "u_vignette_radius",
+            "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
+            "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
+            "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
+            "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade", "u_flat_shading",
+
+            "u_neat_shapes", "u_neat_aux", "u_neat_grid_dim", "u_neat_items_row",
+            "u_neat_stripes_row", "u_neat_stripe_count", "u_neat_stripe_lut_row", "u_neat_tile",
+            "u_neat_bg0", "u_neat_bg1", "u_neat_base", "u_neat_void_alpha",
+            "u_neat_edge_softness", "u_neat_seam_blend"
+        ];
+
+        uniformsList.forEach(name => {
+            locations.uniforms[name] = gl.getUniformLocation(program, name);
+        });
+
+        // Add colors uniforms manually
+        for (let i = 0; i < COLORS_COUNT; i++) {
+            locations.uniforms[`u_colors[${i}].is_active`] = gl.getUniformLocation(program, `u_colors[${i}].is_active`);
+            locations.uniforms[`u_colors[${i}].color`] = gl.getUniformLocation(program, `u_colors[${i}].color`);
+            locations.uniforms[`u_colors[${i}].influence`] = gl.getUniformLocation(program, `u_colors[${i}].influence`);
+        }
+
+        locations.attributes.position = gl.getAttribLocation(program, "position");
+        locations.attributes.normal = gl.getAttribLocation(program, "normal");
+        locations.attributes.uv = gl.getAttribLocation(program, "uv");
+    }
+
+    /** Compiles and links the gradient program. */
+    _compileProgram(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLProgram {
+        const vertShaderSourceCombined = buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
+        const vertShader = gl.createShader(gl.VERTEX_SHADER)!;
+        gl.shaderSource(vertShader, vertShaderSourceCombined);
+        gl.compileShader(vertShader);
+        if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+            console.log("VERTEX_SHADER_ERROR_START");
+            console.log("Vertex shader error: ", gl.getShaderInfoLog(vertShader));
+            console.log("GL Error Code:", gl.getError());
+            console.log("Vertex Shader Source Dump:");
+            console.log(vertShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
+            console.log("VERTEX_SHADER_ERROR_END");
+        }
+
+        const fragShaderSourceCombined = buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
+        const fragShader = gl.createShader(gl.FRAGMENT_SHADER)!;
+        gl.shaderSource(fragShader, fragShaderSourceCombined);
+        gl.compileShader(fragShader);
+        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+            console.log("FRAGMENT_SHADER_ERROR_START");
+            console.log("Fragment shader error: ", gl.getShaderInfoLog(fragShader));
+            console.log("GL Error Code:", gl.getError());
+            console.log("Fragment Shader Source Dump:");
+            console.log(fragShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
+            console.log("FRAGMENT_SHADER_ERROR_END");
+        }
+
+        const program = gl.createProgram()!;
+        gl.attachShader(program, vertShader);
+        gl.attachShader(program, fragShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.log("PROGRAM_LINK_ERROR_START");
+            console.log("Program linking error: ", gl.getProgramInfoLog(program));
+            console.log("GL Error Code:", gl.getError());
+            console.log("PROGRAM_LINK_ERROR_END");
+        }
+
+        gl.deleteShader(vertShader);
+        gl.deleteShader(fragShader);
+
+        return program;
+    }
+
+    /**
+     * Builds the pattern description from the current config.
+     *
+     * Both render modes go through this, so a given `textureSeed` describes the
+     * same artwork whether it ends up rasterized into a bitmap or compiled into
+     * the shader.
+     */
+    _buildPattern(size: number): Pattern | null {
+        return generatePattern({
+            size,
+            seed: this._textureSeed,
+            colors: this._colors,
+            colorBlending: this._textureColorBlending,
+            baseColor: this._proceduralBackgroundColor || "#000000",
+            tile: this._shapeType !== 'plane',
+            transparentVoid: this._transparentTextureVoid,
+            voidLikelihood: this._textureVoidLikelihood,
+            voidWidthMin: this._textureVoidWidthMin,
+            voidWidthMax: this._textureVoidWidthMax,
+            bandDensity: this._textureBandDensity,
+            triangles: this._textureShapeTriangles,
+            circles: this._textureShapeCircles,
+            bars: this._textureShapeBars,
+            squiggles: this._textureShapeSquiggles
+        });
+    }
+
+    /**
+     * Chooses the bake resolution.
+     *
+     * The old Canvas2D path used a hardcoded 1024 whether it was backing a
+     * 600px divider or a 5K hero, which is most of why the texture looked soft
+     * when magnified. Scaling with the canvas costs nothing at generation time
+     * and is what actually buys the sharpness.
+     */
+    _bakeResolution(): number {
+        if (this._textureBakeResolution > 0) return this._textureBakeResolution;
+        const longest = Math.max(this._ref.width || 0, this._ref.height || 0, 1);
+        // Round up to a power of two: mipmaps plus REPEAT wrapping want one, and
+        // it keeps the memory step predictable.
+        const target = Math.pow(2, Math.ceil(Math.log2(longest * 1.5)));
+        // Capped at 2048 by default: RGBA8 plus mipmaps is ~22MB there, and a
+        // page can hold several instances, each with its own context and so its
+        // own copy — textures cannot be shared across WebGL contexts. 4096 is
+        // ~89MB apiece, which is opt-in territory via textureBakeResolution.
+        return Math.min(2048, Math.max(1024, target));
+    }
+
+    /** Compiles the bake program and its quad, once per context. */
+    _ensureBakePipeline(gl: WebGL2RenderingContext): boolean {
+        if (this._bakeProgram) return true;
+
+        const mk = (type: number, src: string) => {
+            const sh = gl.createShader(type)!;
+            gl.shaderSource(sh, src);
+            gl.compileShader(sh);
+            if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+                console.log("NEAT_BAKE_SHADER_ERROR_START");
+                console.log(gl.getShaderInfoLog(sh));
+                console.log(src.split("\n").map((l, i) => `${i + 1}: ${l}`).join("\n"));
+                console.log("NEAT_BAKE_SHADER_ERROR_END");
+                return null;
+            }
+            return sh;
+        };
+
+        const vs = mk(gl.VERTEX_SHADER, PATTERN_BAKE_VERT);
+        const fs = mk(gl.FRAGMENT_SHADER, buildPatternBakeFrag());
+        if (!vs || !fs) return false;
+
+        const program = gl.createProgram()!;
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.bindAttribLocation(program, 0, "a_pos");
+        gl.linkProgram(program);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.log("NEAT_BAKE_LINK_ERROR:", gl.getProgramInfoLog(program));
+            gl.deleteProgram(program);
+            return false;
+        }
+
+        this._bakeProgram = program;
+        for (const name of [
+            "u_neat_shapes", "u_neat_aux", "u_neat_grid_dim", "u_neat_items_row",
+            "u_neat_stripes_row", "u_neat_stripe_count", "u_neat_stripe_lut_row",
+            "u_neat_tile", "u_neat_bg0", "u_neat_bg1", "u_neat_base",
+            "u_neat_void_alpha", "u_neat_edge_softness", "u_neat_seam_blend",
+            "u_neat_bake_size"
+        ]) {
+            this._bakeUniforms[name] = gl.getUniformLocation(program, name);
+        }
+
+        // A single oversized triangle covers the target with no seam down the
+        // middle that a two-triangle quad would risk.
+        //
+        // It gets its own vertex array. Attribute state belongs to whichever VAO
+        // is bound, and the bake runs mid-frame with the gradient's VAO active —
+        // setting up the quad without switching would overwrite the gradient's
+        // own attribute bindings and leave it drawing nothing.
+        const prevVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
+        this._bakeVao = gl.createVertexArray();
+        gl.bindVertexArray(this._bakeVao);
+        this._bakeQuad = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._bakeQuad);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.bindVertexArray(prevVao);
+
+        this._bakeFbo = gl.createFramebuffer();
+        return true;
+    }
+
+    /** Uploads the packed pattern into the two data textures the bake reads. */
+    _uploadPatternData(gl: WebGL2RenderingContext, data: ReturnType<typeof buildPatternData>) {
+        const upload = (tex: WebGLTexture, w: number, h: number, pixels: Float32Array) => {
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            // NEAREST and CLAMP_TO_EDGE: RGBA32F is not filterable without an
+            // extension, and texelFetch ignores filtering anyway — but the
+            // sampler still has to describe a complete texture.
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, w, h, 0, gl.RGBA, gl.FLOAT, pixels);
+        };
+
+        if (!this._shapeTexture) this._shapeTexture = gl.createTexture();
+        if (!this._auxTexture) this._auxTexture = gl.createTexture();
+
+        gl.activeTexture(gl.TEXTURE3);
+        upload(this._shapeTexture!, SHAPE_TEXELS, Math.max(1, data.shapeCount), data.shapes);
+        gl.activeTexture(gl.TEXTURE4);
+        upload(this._auxTexture!, AUX_WIDTH, data.auxHeight, data.aux);
+
+        const u = this._bakeUniforms;
+        gl.uniform1i(u["u_neat_shapes"], 3);
+        gl.uniform1i(u["u_neat_aux"], 4);
+        gl.uniform1f(u["u_neat_grid_dim"], data.gridDim);
+        gl.uniform1i(u["u_neat_items_row"], data.itemsRow);
+        gl.uniform1i(u["u_neat_stripes_row"], data.stripesRow);
+        gl.uniform1i(u["u_neat_stripe_count"], data.stripeCount);
+        gl.uniform1i(u["u_neat_stripe_lut_row"], data.stripeLutRow);
+        gl.uniform1f(u["u_neat_tile"], data.tile ? 1 : 0);
+        gl.uniform3fv(u["u_neat_bg0"], data.background0);
+        gl.uniform3fv(u["u_neat_bg1"], data.background1);
+        gl.uniform3fv(u["u_neat_base"], data.baseColor);
+        gl.uniform1f(u["u_neat_void_alpha"], data.voidAlpha);
+        gl.uniform1f(u["u_neat_edge_softness"], this._bakeEdgeSoftness);
+        gl.uniform1f(u["u_neat_seam_blend"], this._bakeSeamBlend ? 1 : 0);
+    }
+
+    /**
+     * Renders the pattern analytically into a texture.
+     *
+     * Returns null if anything is unavailable, which puts the caller back on
+     * the Canvas2D path.
+     */
+    _bakePatternTexture(gl: WebGL2RenderingContext): WebGLTexture | null {
+        const pattern = this._buildPattern(1024);
+        if (!pattern) return null;
+        if (!this._ensureBakePipeline(gl)) return null;
+
+        const data = buildPatternData(pattern);
+
+        if (!this._bakeWarned && data.droppedSquiggles > 0) {
+            console.warn(
+                `NeatGradient: textureMode 'baked' does not support squiggles (cubic Béziers have no closed-form distance); ${data.droppedSquiggles} dropped. Set textureShapeSquiggles to 0, or use textureMode 'bitmap'.`
+            );
+            this._bakeWarned = true;
+        }
+
+        const size = this._bakeResolution();
+
+        const tex = gl.createTexture()!;
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+        gl.useProgram(this._bakeProgram);
+        this._uploadPatternData(gl, data);
+        gl.uniform1f(this._bakeUniforms["u_neat_bake_size"], size);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this._bakeFbo);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.deleteTexture(tex);
+            return null;
+        }
+
+        // The bake writes finished RGBA; blending or depth would corrupt it.
+        const hadBlend = gl.isEnabled(gl.BLEND);
+        const hadDepth = gl.isEnabled(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+        gl.viewport(0, 0, size, size);
+
+        const prevVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
+        gl.bindVertexArray(this._bakeVao);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.bindVertexArray(prevVao);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        if (hadBlend) gl.enable(gl.BLEND);
+        if (hadDepth) gl.enable(gl.DEPTH_TEST);
+        gl.viewport(0, 0, this._ref.width, this._ref.height);
+
+        // Mipmaps and anisotropy are the half that runtime evaluation cannot
+        // have: they are what keeps the far, foreshortened end of the ribbon
+        // filtered rather than shimmering.
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        const ext = gl.getExtension('EXT_texture_filter_anisotropic') ||
+            gl.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+            gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+        if (ext) {
+            const max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+            gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+        }
+
+        // Hand the context back exactly as it was found. The bake runs partway
+        // through a frame, after the render loop has already bound the gradient
+        // program — leaving the bake program current would draw the rest of that
+        // frame's geometry through the wrong shader.
+        if (this.glState && this.glState.program) gl.useProgram(this.glState.program);
+        gl.activeTexture(gl.TEXTURE0);
+
+        return tex;
+    }
+
+    /** Resolves the requested mode against what this context can actually do. */
+    _resolveTextureMode(): 'bitmap' | 'baked' {
+        if (this._textureMode !== 'baked') return 'bitmap';
+        if (!this._isWebGL2) {
+            if (!this._bakeWarned) {
+                console.warn(
+                    "NeatGradient: textureMode 'baked' needs WebGL2 (texelFetch and float textures). Falling back to 'bitmap'."
+                );
+                this._bakeWarned = true;
+            }
+            return 'bitmap';
+        }
+        return 'baked';
+    }
+
     _createProceduralTexture(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLTexture | null {
+        this._activeTextureMode = this._resolveTextureMode();
+
+        if (this._activeTextureMode === 'baked') {
+            const baked = this._bakePatternTexture(gl as WebGL2RenderingContext);
+            if (baked) return baked;
+            // Anything unavailable in the bake path drops through to Canvas2D.
+            this._activeTextureMode = 'bitmap';
+        }
+
         // Texture size - 1024 provides good balance between quality and performance
         // Reduced from 2048 for better performance
         const texSize = 1024;
-        
+
         if (!this._sourceCanvas) {
             this._sourceCanvas = document.createElement('canvas');
             this._sourceCanvas.width = texSize;
@@ -1274,177 +1667,6 @@ export class NeatGradient implements NeatController {
         const sCtx = this._sourceCtx;
         if (!sCtx) return null;
 
-        let seed = this._textureSeed;
-        const baseSeed = this._textureSeed;
-
-        function random() {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        }
-
-        // Helper to reset seed for isolated shape generation
-        const setSeed = (offset: number) => {
-            seed = baseSeed + offset;
-        };
-
-        const colors = this._colors.filter(c => c.enabled).map(c => c.color);
-        if (colors.length === 0) return null;
-
-        const shouldTile = this._shapeType !== 'plane';
-        const dxs = shouldTile ? [-1, 0, 1] : [0];
-        const dys = shouldTile ? [-1, 0, 1] : [0];
-
-        // Helper functions
-        function hexToRgb(hex: string) {
-            const bigint = parseInt(hex.replace('#', ''), 16);
-            return {
-                r: (bigint >> 16) & 255,
-                g: (bigint >> 8) & 255,
-                b: bigint & 255
-            };
-        }
-
-        function rgbToHex(r: number, g: number, b: number) {
-            return "#" + ((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).padStart(6, '0');
-        }
-
-        const getInterColor = () => {
-            const c1 = colors[Math.floor(random() * colors.length)];
-            const c2 = colors[Math.floor(random() * colors.length)];
-            const mix = random() * this._textureColorBlending;
-            const rgb1 = hexToRgb(c1);
-            const rgb2 = hexToRgb(c2);
-            const r = rgb1.r + (rgb2.r - rgb1.r) * mix;
-            const g = rgb1.g + (rgb2.g - rgb1.g) * mix;
-            const b = rgb1.b + (rgb2.b - rgb1.b) * mix;
-            return rgbToHex(r, g, b);
-        };
-
-        // === SOURCE CANVAS ===
-        // Base with procedural background color so even sparse areas pick it up
-        const baseColor = this._proceduralBackgroundColor || "#000000";
-        sCtx.fillStyle = baseColor;
-        sCtx.fillRect(0, 0, texSize, texSize);
-
-        // Then lay a vertical gradient of mixed colors on top for richness
-        const bgGrad = sCtx.createLinearGradient(0, 0, 0, texSize);
-        bgGrad.addColorStop(0, getInterColor());
-        bgGrad.addColorStop(1, getInterColor());
-        sCtx.fillStyle = bgGrad;
-        sCtx.fillRect(0, 0, texSize, texSize);
-
-        // Triangles: use configurable count
-        for (let i = 0; i < this._textureShapeTriangles; i++) {
-            const fillStyle = getInterColor();
-            const x = random() * texSize;
-            const y = random() * texSize;
-            const s = 100 + random() * 300;
-            const x1 = (random() - 0.5) * s;
-            const y1 = (random() - 0.5) * s;
-            const x2 = (random() - 0.5) * s;
-            const y2 = (random() - 0.5) * s;
-
-            for (const dx of dxs) {
-                for (const dy of dys) {
-                    sCtx.fillStyle = fillStyle;
-                    sCtx.beginPath();
-                    const tx = x + dx * texSize;
-                    const ty = y + dy * texSize;
-                    sCtx.moveTo(tx, ty);
-                    sCtx.lineTo(tx + x1, ty + y1);
-                    sCtx.lineTo(tx + x2, ty + y2);
-                    sCtx.fill();
-                }
-            }
-        }
-
-        // Circles / rings: use configurable count
-        for (let i = 0; i < this._textureShapeCircles; i++) {
-            const strokeStyle = getInterColor();
-            const lineWidth = 10 + random() * 50;
-            const x = random() * texSize;
-            const y = random() * texSize;
-            const r = 50 + random() * 150;
-
-            for (const dx of dxs) {
-                for (const dy of dys) {
-                    sCtx.strokeStyle = strokeStyle;
-                    sCtx.lineWidth = lineWidth;
-                    sCtx.beginPath();
-                    sCtx.arc(x + dx * texSize, y + dy * texSize, r, 0, Math.PI * 2);
-                    sCtx.stroke();
-                }
-            }
-        }
-
-        // Bars: use configurable count
-        for (let i = 0; i < this._textureShapeBars; i++) {
-            const fillStyle = getInterColor();
-            const x = random() * texSize;
-            const y = random() * texSize;
-            const rot = random() * Math.PI;
-
-            for (const dx of dxs) {
-                for (const dy of dys) {
-                    sCtx.fillStyle = fillStyle;
-                    sCtx.save();
-                    sCtx.translate(x + dx * texSize, y + dy * texSize);
-                    sCtx.rotate(rot);
-                    sCtx.fillRect(-150, -25, 300, 50);
-                    sCtx.restore();
-                }
-            }
-        }
-
-        // Squiggles: use configurable count
-        sCtx.lineWidth = 15;
-        sCtx.lineCap = 'round';
-        for (let i = 0; i < this._textureShapeSquiggles; i++) {
-            const strokeStyle = getInterColor();
-            const x = random() * texSize;
-            const y = random() * texSize;
-            
-            const curves: Array<{ cx1: number, cy1: number, cx2: number, cy2: number, ex: number, ey: number }> = [];
-            let cx = 0;
-            let cy = 0;
-            for (let j = 0; j < 4; j++) {
-                const ex = cx + (random() - 0.5) * 300;
-                const ey = cy + (random() - 0.5) * 300;
-                curves.push({
-                    cx1: cx + (random() - 0.5) * 300,
-                    cy1: cy + (random() - 0.5) * 300,
-                    cx2: cx + (random() - 0.5) * 300,
-                    cy2: cy + (random() - 0.5) * 300,
-                    ex: ex,
-                    ey: ey
-                });
-                cx = ex;
-                cy = ey;
-            }
-
-            for (const dx of dxs) {
-                for (const dy of dys) {
-                    sCtx.strokeStyle = strokeStyle;
-                    sCtx.beginPath();
-                    const tx = x + dx * texSize;
-                    const ty = y + dy * texSize;
-                    sCtx.moveTo(tx, ty);
-                    
-                    for (const curve of curves) {
-                        sCtx.bezierCurveTo(
-                            tx + curve.cx1, ty + curve.cy1,
-                            tx + curve.cx2, ty + curve.cy2,
-                            tx + curve.ex, ty + curve.ey
-                        );
-                    }
-                    sCtx.stroke();
-                }
-            }
-        }
-
-        // === MASKED CANVAS ===
-        // Masking: Seed isolation
-        setSeed(50000);
         if (!this._maskedCanvas) {
             this._maskedCanvas = document.createElement('canvas');
             this._maskedCanvas.width = texSize;
@@ -1455,51 +1677,10 @@ export class NeatGradient implements NeatController {
         const ctx = this._maskedCtx;
         if (!ctx) return null;
 
-        // Start filled with the chosen void color so gaps show that color
-        if (this._transparentTextureVoid) {
-            ctx.clearRect(0, 0, texSize, texSize);
-        } else {
-            ctx.fillStyle = baseColor;
-            ctx.fillRect(0, 0, texSize, texSize);
-        }
+        const pattern = this._buildPattern(texSize);
+        if (!pattern) return null;
 
-        // Determine layout segments (matter vs void)
-        let layoutHead = 0;
-        const segments: Array<{ type: 'void' | 'matter', x: number, width: number }> = [];
-
-        while (layoutHead < texSize) {
-            const isVoid = random() < this._textureVoidLikelihood;
-            if (isVoid) {
-                const w = this._textureVoidWidthMin + random() * (this._textureVoidWidthMax - this._textureVoidWidthMin);
-                segments.push({ type: 'void', x: layoutHead, width: w });
-                layoutHead += w;
-            } else {
-                const w = 50 + random() * 200;
-                segments.push({ type: 'matter', x: layoutHead, width: w });
-                layoutHead += w;
-            }
-        }
-
-        // Render only matter bands from the source into the masked canvas
-        for (const seg of segments) {
-            if (seg.type === 'matter') {
-                const startX = seg.x;
-                const endX = Math.min(seg.x + seg.width, texSize);
-                let currentX = startX;
-
-                while (currentX < endX) {
-                    const stripeWidth = (2 + random() * 20) / this._textureBandDensity;
-                    const sourceX = Math.floor(random() * texSize);
-                    ctx.drawImage(
-                        sourceCanvas,
-                        sourceX, 0, stripeWidth, texSize,
-                        currentX, 0, stripeWidth, texSize
-                    );
-                    currentX += stripeWidth;
-                }
-            }
-            // void segments: leave as baseColor
-        }
+        paintPattern(pattern, sourceCanvas, sCtx, ctx);
 
         const tex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, tex);

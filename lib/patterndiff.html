@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Neat — pattern parity</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; font: 13px/1.4 system-ui, sans-serif; }
+        .row { display: flex; gap: 8px; padding: 8px; }
+        .cell h2 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #888; }
+        canvas { display: block; image-rendering: pixelated; border: 1px solid #333; }
+        #log { padding: 8px; font-family: ui-monospace, monospace; white-space: pre-wrap; color: #9c9; }
+    </style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<div id="log">…</div>
+
+<script type="module">
+    import { generatePattern, paintPattern, buildPatternData, buildPatternBakeFrag, AUX_WIDTH, SHAPE_TEXELS } from './dist/index.es.js';
+
+    const SIZE = 512;
+    const log = document.getElementById('log');
+    const row = document.getElementById('row');
+
+    const pattern = generatePattern({
+        size: SIZE,
+        seed: 478,
+        colors: [
+            { color: "#FB5066", enabled: true },
+            { color: "#36CCD6", enabled: true },
+            { color: "#FFC600", enabled: true },
+            { color: "#8B6AE6", enabled: true },
+            { color: "#2E0EC7", enabled: true },
+            { color: "#FF9A9E", enabled: true },
+        ],
+        colorBlending: 0,
+        baseColor: "#000000",
+        tile: true,
+        transparentVoid: false,
+        voidLikelihood: 0.59,
+        voidWidthMin: 120 / 2,
+        voidWidthMax: 330 / 2,
+        bandDensity: 0.1,
+        triangles: 51,
+        circles: 0,
+        bars: 15,
+        squiggles: 0,
+    });
+
+    function addCell(canvas, label) {
+        const wrap = document.createElement('div');
+        wrap.className = 'cell';
+        wrap.innerHTML = `<h2>${label}</h2>`;
+        wrap.appendChild(canvas);
+        row.appendChild(wrap);
+    }
+
+    // ── Reference: the bitmap rasterizer ──
+    const srcC = document.createElement('canvas'); srcC.width = srcC.height = SIZE;
+    const dstC = document.createElement('canvas'); dstC.width = dstC.height = SIZE;
+    paintPattern(pattern, srcC, srcC.getContext('2d'), dstC.getContext('2d'));
+    addCell(dstC, 'bitmap (paintPattern)');
+
+    // ── Under test: the analytic evaluator, over the same unit square ──
+    const glC = document.createElement('canvas'); glC.width = glC.height = SIZE;
+    const gl = glC.getContext('webgl2', { preserveDrawingBuffer: true, antialias: false });
+
+
+
+    const vs = `#version 300 es
+in vec2 a_pos; out vec2 v_uv;
+void main(){ v_uv = a_pos * 0.5 + 0.5; gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+
+    // The bake fragment shader is used verbatim, at the same resolution as the
+    // reference canvas, so this compares exactly what ships.
+    const fs = buildPatternBakeFrag();
+
+    function sh(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src); gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+        return s;
+    }
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    gl.useProgram(p);
+
+    {
+        const data = buildPatternData(pattern);
+        const up = (unit, w, h, px, name) => {
+            const t = gl.createTexture();
+            gl.activeTexture(gl.TEXTURE0 + unit);
+            gl.bindTexture(gl.TEXTURE_2D, t);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, w, h, 0, gl.RGBA, gl.FLOAT, px);
+            gl.uniform1i(gl.getUniformLocation(p, name), unit);
+        };
+        up(3, SHAPE_TEXELS, Math.max(1, data.shapeCount), data.shapes, 'u_neat_shapes');
+        up(4, AUX_WIDTH, data.auxHeight, data.aux, 'u_neat_aux');
+        const U = n => gl.getUniformLocation(p, n);
+        gl.uniform1f(U('u_neat_grid_dim'), data.gridDim);
+        gl.uniform1i(U('u_neat_items_row'), data.itemsRow);
+        gl.uniform1i(U('u_neat_stripes_row'), data.stripesRow);
+        gl.uniform1i(U('u_neat_stripe_count'), data.stripeCount);
+        gl.uniform1i(U('u_neat_stripe_lut_row'), data.stripeLutRow);
+        gl.uniform1f(U('u_neat_tile'), data.tile ? 1 : 0);
+        gl.uniform3fv(U('u_neat_bg0'), data.background0);
+        gl.uniform3fv(U('u_neat_bg1'), data.background1);
+        gl.uniform3fv(U('u_neat_base'), data.baseColor);
+        gl.uniform1f(U('u_neat_void_alpha'), data.voidAlpha);
+        window.__occupancy = data.meanCellOccupancy;
+    }
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(p, 'a_pos');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.viewport(0, 0, SIZE, SIZE);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // GL presents row 0 at the bottom, so flip for display only — the diff
+    // below compares the buffers directly and is unaffected.
+    glC.style.transform = 'scaleY(-1)';
+    addCell(glC, 'vector (analytic, flipped for display)');
+
+    // ── Diff ──
+    const a = dstC.getContext('2d').getImageData(0, 0, SIZE, SIZE).data;
+    const raw = new Uint8Array(SIZE * SIZE * 4);
+    gl.readPixels(0, 0, SIZE, SIZE, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+
+    const diffC = document.createElement('canvas'); diffC.width = diffC.height = SIZE;
+    const dctx = diffC.getContext('2d');
+    const img = dctx.createImageData(SIZE, SIZE);
+
+    let differing = 0, sum = 0, worst = 0;
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            const ia = (y * SIZE + x) * 4;
+            // No flip: texImage2D maps texel (0,0) to the canvas top-left, so
+            // uv.y = 0 means pattern y = 0 in both paths. readPixels row 0 is
+            // the bottom of the GL viewport, which is where v.y = 0 lands.
+            const ig = (y * SIZE + x) * 4;
+            const d = Math.max(
+                Math.abs(a[ia] - raw[ig]),
+                Math.abs(a[ia + 1] - raw[ig + 1]),
+                Math.abs(a[ia + 2] - raw[ig + 2])
+            );
+            sum += d;
+            if (d > 8) differing++;
+            if (d > worst) worst = d;
+            img.data[ia] = d > 8 ? 255 : 0;
+            img.data[ia + 1] = d > 8 ? 0 : Math.min(255, d * 8);
+            img.data[ia + 2] = 0;
+            img.data[ia + 3] = 255;
+        }
+    }
+    dctx.putImageData(img, 0, 0);
+    addCell(diffC, 'diff (red = >8/255)');
+
+    const total = SIZE * SIZE;
+    log.textContent =
+        `shapes: ${pattern.shapes.length}   stripes: ${pattern.stripes.length}` +
+        (window.__occupancy ? `   mean shapes/cell: ${window.__occupancy.toFixed(1)}` : '') + `\n` +
+        `differing pixels (>8/255): ${differing} / ${total} = ${(100 * differing / total).toFixed(3)}%\n` +
+        `mean abs diff: ${(sum / total).toFixed(2)}/255   worst: ${worst}/255`;
+</script>
+</body>
+</html>
