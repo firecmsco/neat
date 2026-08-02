@@ -1,0 +1,264 @@
+# Neat — animated 3D gradients for the web
+
+> Neat renders animated gradient backgrounds in WebGL. One `<canvas>`, one config
+> object, ~17 KB gzipped, zero dependencies. This file is the complete reference
+> for coding agents: everything below is enough to produce a working, good-looking
+> gradient without visiting the editor.
+
+- Package: `@firecms/neat` (npm)
+- Editor / preset browser: https://neat.firecms.co
+- Source: https://github.com/FireCMSco/neat
+- Full docs: https://github.com/FireCMSco/neat#readme
+- License: MIT + Commons Clause. Free to use; an unobtrusive "NEAT" watermark is
+  drawn unless a `licenseKey` is set (one-off €12 at https://neat.firecms.co).
+
+## Install
+
+```bash
+npm install @firecms/neat
+```
+
+## Minimal usage
+
+```ts
+import { NeatGradient } from "@firecms/neat";
+
+const gradient = new NeatGradient({
+    ref: document.getElementById("gradient") as HTMLCanvasElement,
+    colors: [
+        { color: "#FF5772", enabled: true },
+        { color: "#4CB4BB", enabled: true },
+        { color: "#FFC600", enabled: true },
+        { color: "#8B6AE6", enabled: true },
+        { color: "#2E0EC7", enabled: true }
+    ],
+    speed: 4,
+    horizontalPressure: 3,
+    verticalPressure: 4,
+    waveFrequencyX: 2,
+    waveFrequencyY: 3,
+    waveAmplitude: 5,
+    shadows: 1,
+    highlights: 5,
+    colorBlending: 8,
+    backgroundColor: "#003FFF",
+    backgroundAlpha: 1,
+    resolution: 1
+});
+
+// Always call this on unmount / teardown — it releases the WebGL context.
+gradient.destroy();
+```
+
+The canvas must have a real size. Neat renders into whatever box CSS gives it:
+
+```css
+#gradient { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; }
+```
+
+## React
+
+```tsx
+import { useEffect, useRef } from "react";
+import { NeatGradient } from "@firecms/neat";
+
+export function GradientBackground() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+        const gradient = new NeatGradient({
+            ref: canvasRef.current,
+            colors: [
+                { color: "#FF5772", enabled: true },
+                { color: "#4CB4BB", enabled: true },
+                { color: "#FFC600", enabled: true }
+            ],
+            speed: 3,
+            waveAmplitude: 5
+        });
+        return () => gradient.destroy();
+    }, []);
+
+    return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full -z-10"/>;
+}
+```
+
+Every config property is also a settable instance property, so animating at runtime
+is just assignment — no re-instantiation:
+
+```ts
+gradient.speed = 6;
+gradient.colorSaturation = -4;
+gradient.yOffset = window.scrollY; // drives the gradient from scroll position
+```
+
+## Configuration reference
+
+All properties are optional except `ref` and `colors`. Values outside the listed
+ranges are accepted but rarely look good.
+
+### Core
+
+| Property | Type | Default | Range | Notes |
+|---|---|---|---|---|
+| `ref` | `HTMLCanvasElement` | — | — | Required. The canvas to render into. |
+| `colors` | `NeatColor[]` | — | 1–6 entries | Required. `{ color: "#RRGGBB", enabled: boolean, influence?: number }` |
+| `speed` | number | 4 | 0–10 | 0 freezes the animation. |
+| `resolution` | number | 1 | 0.05–2 | Render scale. 0.5 halves the pixel cost; below ~0.3 it gets soft. |
+| `antialias` | boolean | false | — | MSAA. Mostly matters with `wireframe`. |
+| `backgroundColor` | string | `#FFFFFF` | hex | Shows where the gradient is transparent. |
+| `backgroundAlpha` | number | 1 | 0–1 | Set 0 to composite over page content. |
+| `licenseKey` | string | — | — | Removes the watermark. |
+
+### Shape of the gradient
+
+| Property | Type | Default | Range | Notes |
+|---|---|---|---|---|
+| `waveFrequencyX` | number | 5 | 0–10 | Horizontal wave count. |
+| `waveFrequencyY` | number | 5 | 0–10 | Vertical wave count. |
+| `waveAmplitude` | number | 3 | 0–10 | Wave height. 0 is flat. |
+| `horizontalPressure` | number | 3 | 0–10 | How much colour is pushed sideways. |
+| `verticalPressure` | number | 3 | 0–10 | How much colour is pushed vertically. |
+| `colorBlending` | number | 5 | 0–10 | Low = hard bands, high = smooth wash. |
+| `wireframe` | boolean | false | — | Renders the mesh instead of the surface. |
+
+### Colour grading
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `colorSaturation` | number | 0 | -10–10 |
+| `colorBrightness` | number | 1 | 0–10 |
+| `shadows` | number | 4 | 0–10 |
+| `highlights` | number | 4 | 0–10 |
+
+### Grain
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `grainIntensity` | number | 0.55 | 0–1 |
+| `grainScale` | number | 2 | 0–100 |
+| `grainSparsity` | number | 0 | 0–1 |
+| `grainSpeed` | number | 0.1 | 0–10 |
+
+### Scroll coupling
+
+`yOffset` shifts the field; the three multipliers control how strongly it moves the
+waves, the colours and the flow. Set `yOffset` from `scrollY` for a background that
+reacts to scrolling.
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `yOffset` | number | 0 | 0–100000 |
+| `yOffsetWaveMultiplier` | number | 4 | 0–20 |
+| `yOffsetColorMultiplier` | number | 4 | 0–20 |
+| `yOffsetFlowMultiplier` | number | 4 | 0–20 |
+
+### Flow field
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `flowEnabled` | boolean | true | — |
+| `flowDistortionA` | number | 0 | 0–5 |
+| `flowDistortionB` | number | 0 | 0–10 |
+| `flowScale` | number | 1 | 0–5 |
+| `flowEase` | number | 0 | 0–1 |
+
+### Post-processing
+
+| Property | Type | Default | Range | Notes |
+|---|---|---|---|---|
+| `domainWarpEnabled` | boolean | false | — | Organic, marbled distortion. |
+| `domainWarpIntensity` | number | 0.5 | 0–1.5 | |
+| `domainWarpScale` | number | 1 | 0.5–10 | |
+| `vignetteIntensity` | number | 0 | 0–1 | |
+| `vignetteRadius` | number | 0.8 | 0.1–1 | |
+| `fresnelEnabled` | boolean | false | — | Rim glow on 3D shapes. |
+| `fresnelPower` | number | 2 | 0–10 | |
+| `fresnelIntensity` | number | 0.5 | 0–3 | |
+| `fresnelColor` | string | `#FFFFFF` | hex | |
+| `iridescenceEnabled` | boolean | false | — | Oil-slick colour shift. |
+| `iridescenceIntensity` | number | 0.5 | 0–1 | |
+| `iridescenceSpeed` | number | 1 | 0–10 | |
+| `bloomIntensity` | number | 0 | 0–1 | |
+| `bloomThreshold` | number | 0.7 | 0–1 | |
+| `chromaticAberration` | number | 0 | 0–1 | |
+
+### Geometry and camera
+
+`shapeType` is `"plane"` (default), `"sphere"`, `"torus"`, `"cylinder"` or `"ribbon"`.
+A plane is what you want for a page background; the other shapes are objects floating
+in view.
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `shapeRotationX` / `Y` / `Z` | number | 0 | -π–π |
+| `shapeAutoRotateSpeedX` / `Y` | number | 0 | -10–10 |
+| `planeBend` | number | 0 | -5–5 |
+| `planeTwist` | number | 0 | -5–5 |
+| `sphereRadius` | number | 15 | 5–30 |
+| `torusRadius` | number | 15 | 5–30 |
+| `torusTube` | number | 5 | 1–15 |
+| `cylinderRadius` | number | 10 | 2–25 |
+| `cylinderHeight` | number | 40 | 10–60 |
+| `silhouetteFade` | number | 0.25 | 0–1 |
+| `flatShading` | boolean | true | — |
+| `cameraLock` | boolean | false | — |
+| `cameraX` / `cameraY` / `cameraZ` | number | 0 | -50–50 |
+| `cameraRotationX` / `Y` / `Z` | number | 0 | -π–π |
+| `cameraZoom` | number | 1 | 0.1–5 |
+
+### Procedural texture
+
+Off by default. Scatters shapes into the gradient for a printed, risographed look.
+
+| Property | Type | Default | Range |
+|---|---|---|---|
+| `enableProceduralTexture` | boolean | false | — |
+| `textureMode` | `"bitmap"` \| `"baked"` | `"bitmap"` | — |
+| `bakeEdgeSoftness` | number | 1 | 0.5–4 |
+| `textureBandDensity` | number | 2.15 | 0.1–3 |
+| `textureColorBlending` | number | 0.01 | 0–1 |
+| `textureVoidLikelihood` | number | 0.45 | 0–1 |
+| `textureVoidWidthMin` | number | 200 | 10–200 |
+| `textureVoidWidthMax` | number | 486 | 50–600 |
+| `textureSeed` | number | 333 | 0–1000 |
+| `textureEase` | number | 0.5 | 0–1 |
+| `proceduralBackgroundColor` | string | `#000000` | hex |
+| `transparentTextureVoid` | boolean | false | — |
+| `textureShapeTriangles` / `Circles` / `Bars` / `Squiggles` | number | 20 / 15 / 15 / 10 | 0–100 |
+
+`"baked"` rasterizes the texture analytically on the GPU for exact edges; it needs
+WebGL2 and does not support squiggles. `"bitmap"` works everywhere.
+
+## Presets
+
+The editor ships 25 named presets — Neat, Time, Fluid, Flame, Funky, Alejandra,
+Monterey, Virus, Blob, Sands, Nighttime, Prussian, Clouds, Lemon, Dark Mode, FireCMS,
+Stripe, Pastel, Cosmic Vortex, Bloom, Night Dunes, Forest, Bubble Gum, Oceans Eleven,
+Coral. Open https://neat.firecms.co, pick one, hit **Code** and you get the exact
+config object. The editor also previews any config as a website hero, mobile app,
+product UI or poster cards, which is the fastest way to check a palette in context.
+
+## Recipes
+
+- **Subtle brand background**: 3 desaturated colours, `speed: 1.5`, `waveAmplitude: 2`,
+  `colorBlending: 9`, `grainIntensity: 0.3`. Keep motion low behind text.
+- **Legible hero**: put the gradient in a container with a scrim
+  (`linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.1))`) under white type, rather than
+  darkening the gradient itself.
+- **Scroll-reactive**: assign `gradient.yOffset = window.scrollY` in a passive scroll
+  listener; leave the multipliers at 4.
+- **Cheap on laptops**: `resolution: 0.5` and `antialias: false`. Neat is one fragment
+  shader, so cost scales with pixels, not with the number of colours or effects.
+- **Static image**: `speed: 0`, then export a PNG from the editor.
+
+## Gotchas
+
+- Call `destroy()` on unmount. Browsers cap the number of live WebGL contexts.
+- Don't mount two full-screen instances on one page; render one and sample it, or
+  reuse the same canvas.
+- `colors` accepts up to 6 entries; disabled ones (`enabled: false`) are kept in the
+  config but ignored when rendering, which makes A/B-ing palettes easy.
+- Hex colours only — `rgb()`, `hsl()` and named colours are not parsed.
+- Without a `licenseKey` a small "NEAT" watermark is rendered in the corner.

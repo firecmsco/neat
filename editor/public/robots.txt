@@ -3,3 +3,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://neat.firecms.co/sitemap.xml
+
+# Config reference for coding agents
+# https://neat.firecms.co/llms.txt

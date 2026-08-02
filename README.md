@@ -539,6 +539,7 @@ Found a bug or have a feature request?
 ## 🔗 Links
 
 - 🌐 [Website & Editor](https://neat.firecms.co)
+- 🤖 [llms.txt](https://neat.firecms.co/llms.txt) — the whole config reference in one file, for coding agents
 - 📦 [npm Package](https://www.npmjs.com/package/@firecms/neat)
 - 💻 [GitHub Repository](https://github.com/FireCMSco/neat)
 - 💬 [Discord Community](https://discord.gg/fxy7xsQm3m)
