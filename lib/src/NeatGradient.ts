@@ -361,13 +361,97 @@ export class NeatGradient implements NeatController {
 
     // Performance optimizations
     private _resizeTimeoutId: number | null = null;
-    private _textureNeedsUpdate: boolean = false;
     private _colorsChanged: boolean = true;
-    private _uniformsDirty: boolean = true;
     private _textureDirty: boolean = true;
-    private _yOffsetDirty: boolean = false;
     private _modelViewMatrix: Matrix4 = new Matrix4();
     private _isVisible: boolean = true;
+
+    // The dirty flags below double as the wake-up mechanism for the render loop:
+    // when `speed` is 0 nothing advances between frames, so the loop parks itself
+    // and any property change schedules exactly one more frame. Every setter in
+    // the class (including the generated ones) already raises one of these, so
+    // routing them through accessors covers the whole API.
+    private __uniformsDirty: boolean = true;
+    private __yOffsetDirty: boolean = false;
+    private __textureNeedsUpdate: boolean = false;
+    /** The model-view matrix only changes with the camera, shape rotation or auto-rotation. */
+    private _matrixDirty: boolean = true;
+    /** True while the loop is stopped because the next frame would be identical. */
+    private _parked: boolean = false;
+    private _renderFrame: (() => void) | null = null;
+
+    private get _uniformsDirty(): boolean {
+        return this.__uniformsDirty;
+    }
+
+    private set _uniformsDirty(value: boolean) {
+        this.__uniformsDirty = value;
+        if (value) {
+            this._matrixDirty = true;
+            this._wake();
+        }
+    }
+
+    private get _yOffsetDirty(): boolean {
+        return this.__yOffsetDirty;
+    }
+
+    private set _yOffsetDirty(value: boolean) {
+        this.__yOffsetDirty = value;
+        if (value) this._wake();
+    }
+
+    private get _textureNeedsUpdate(): boolean {
+        return this.__textureNeedsUpdate;
+    }
+
+    private set _textureNeedsUpdate(value: boolean) {
+        this.__textureNeedsUpdate = value;
+        if (value) this._wake();
+    }
+
+    /** Segment count the current vertex buffers were built with. */
+    private _segmentsInUse: number = 0;
+
+    /** Feature set the current program was compiled for (see _shaderFeatureKey). */
+    private _shaderKey: string = "";
+
+    /** Drawing buffer size relative to the canvas' CSS size. */
+    private _renderScale: number = 1;
+    /** Last CSS size seen by the resize observer, so renderScale can be re-applied. */
+    private _cssWidth: number = 0;
+    private _cssHeight: number = 0;
+    private _applySize: ((cssWidth: number, cssHeight: number) => void) | null = null;
+
+    private get _meshBase(): number {
+        return (this._shapeType === 'plane' || this._shapeType === 'ribbon') ? 240 : 120;
+    }
+
+    /**
+     * Segment count for the displacement mesh.
+     *
+     * The grid used to be a flat 240×240 (≈58k vertices) whatever the canvas, so a
+     * 320px card paid exactly what a 4K hero did — and the vertex shader is the
+     * expensive half of this renderer, running Perlin noise, the flow field and the
+     * colour mix per vertex. One segment per ~6 canvas pixels is visually identical
+     * (it is what a 1440px-wide canvas was already getting) and costs a phone about
+     * a fifteenth of the vertices. `resolution` still scales it, so the control keeps
+     * working in both directions.
+     */
+    private _segmentsFor(base: number, width: number, height: number): number {
+        const resolution = this._resolution || 1;
+        const target = Math.round(base * resolution);
+        const longest = Math.max(width, height);
+        if (!longest) return target;
+        return Math.max(24, Math.min(target, Math.round((longest / 6) * resolution)));
+    }
+
+    /** Schedule a frame if the loop parked itself. No-op while it is running. */
+    private _wake() {
+        if (!this._parked || !this._isVisible || !this._renderFrame) return;
+        this._parked = false;
+        this.requestRef = requestAnimationFrame(this._renderFrame);
+    }
     private _visibilityObserver: IntersectionObserver | null = null;
     private _visibilityHandler: (() => void) | null = null;
 
@@ -495,11 +579,13 @@ export class NeatGradient implements NeatController {
             licenseKey,
             preserveDrawingBuffer = false,
             antialias = false,
+            renderScale = 1,
         } = config;
 
 
         this._ref = ref;
         this._antialias = antialias;
+        this._renderScale = Math.min(Math.max(renderScale, 0.1), 3);
 
         this.destroy = this.destroy.bind(this);
         this._initScene = this._initScene.bind(this);
@@ -613,6 +699,7 @@ export class NeatGradient implements NeatController {
         if (licenseKey) {
             verifyLicenseKey(licenseKey).then((result) => {
                 this._licensed = result.valid;
+                this._wake();   // the watermark has to come off even if we parked
                 if (!result.valid) {
                     console.warn(`NEAT license key error: ${result.reason}`);
                     _logBranding();
@@ -627,6 +714,12 @@ export class NeatGradient implements NeatController {
 
         const render = () => {
 
+            // A toggled feature needs a different shader variant. Only worth checking
+            // on frames where something actually changed.
+            if (this._initialized && this.__uniformsDirty && this._shaderKey !== this._shaderFeatureKey()) {
+                this._rebuildProgram();
+            }
+
             const { gl, program, locations, indexCount, indexType } = this.glState;
 
             if (this._initialized) {
@@ -638,45 +731,51 @@ export class NeatGradient implements NeatController {
 
                 gl.uniform1f(locations.uniforms['u_time'], tick);
 
-                // Update modelViewMatrix in every frame to support dynamic rotation and auto-rotation
-                const camera = this.glState.camera;
-                const modelViewMatrix = this._modelViewMatrix;
-                modelViewMatrix.identity();
-                
-                // 1. Camera translation (default camera distance + displacement)
-                modelViewMatrix.translate(
-                    -camera.position[0] - this._cameraX,
-                    -camera.position[1] - this._cameraY,
-                    -camera.position[2] - this._cameraZ
-                );
-                modelViewMatrix.translate(0, 0, -1);
-                
-                // 2. Camera rotation (revolving around target)
-                modelViewMatrix.rotateX(-this._cameraRotationX);
-                modelViewMatrix.rotateY(-this._cameraRotationY);
-                modelViewMatrix.rotateZ(-this._cameraRotationZ);
-                
-                let rx = this._shapeRotationX;
-                let ry = this._shapeRotationY;
-                let rz = this._shapeRotationZ;
-                
-                if (this._shapeAutoRotateSpeedX !== 0) {
-                    rx += tick * this._shapeAutoRotateSpeedX * 0.1;
+                // The matrix only depends on the camera, the shape rotation and the
+                // clock (through auto-rotation), so it is rebuilt when one of those
+                // changed rather than on every frame.
+                const autoRotating = this._shapeAutoRotateSpeedX !== 0 || this._shapeAutoRotateSpeedY !== 0;
+                if (this._matrixDirty || autoRotating) {
+                    const camera = this.glState.camera;
+                    const modelViewMatrix = this._modelViewMatrix;
+                    modelViewMatrix.identity();
+
+                    // 1. Camera translation (default camera distance + displacement)
+                    modelViewMatrix.translate(
+                        -camera.position[0] - this._cameraX,
+                        -camera.position[1] - this._cameraY,
+                        -camera.position[2] - this._cameraZ
+                    );
+                    modelViewMatrix.translate(0, 0, -1);
+
+                    // 2. Camera rotation (revolving around target)
+                    modelViewMatrix.rotateX(-this._cameraRotationX);
+                    modelViewMatrix.rotateY(-this._cameraRotationY);
+                    modelViewMatrix.rotateZ(-this._cameraRotationZ);
+
+                    let rx = this._shapeRotationX;
+                    let ry = this._shapeRotationY;
+                    const rz = this._shapeRotationZ;
+
+                    if (this._shapeAutoRotateSpeedX !== 0) {
+                        rx += tick * this._shapeAutoRotateSpeedX * 0.1;
+                    }
+                    if (this._shapeAutoRotateSpeedY !== 0) {
+                        ry += tick * this._shapeAutoRotateSpeedY * 0.1;
+                    }
+
+                    if (this._shapeType === 'plane' || this._shapeType === 'ribbon') {
+                        modelViewMatrix.rotateX(rx - Math.PI / 3.5);
+                    } else {
+                        modelViewMatrix.rotateX(rx);
+                    }
+                    modelViewMatrix.rotateY(ry);
+                    modelViewMatrix.rotateZ(rz);
+
+                    const mvLoc = locations.uniforms["modelViewMatrix"];
+                    if (mvLoc) gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
+                    this._matrixDirty = false;
                 }
-                if (this._shapeAutoRotateSpeedY !== 0) {
-                    ry += tick * this._shapeAutoRotateSpeedY * 0.1;
-                }
-                
-                if (this._shapeType === 'plane' || this._shapeType === 'ribbon') {
-                    modelViewMatrix.rotateX(rx - Math.PI / 3.5);
-                } else {
-                    modelViewMatrix.rotateX(rx);
-                }
-                modelViewMatrix.rotateY(ry);
-                modelViewMatrix.rotateZ(rz);
-                
-                const mvLoc = locations.uniforms["modelViewMatrix"];
-                if (mvLoc) gl.uniformMatrix4fv(mvLoc, false, modelViewMatrix.elements);
 
                 // Fast path: only upload yOffset when it changed (scroll)
                 if (this._yOffsetDirty && !this._uniformsDirty) {
@@ -810,10 +909,26 @@ export class NeatGradient implements NeatController {
             // Draw watermark overlay inside the canvas (skipped for licensed users)
             if (!this._licensed) this._renderWatermark(gl);
 
-            if (this._isVisible) {
-                this.requestRef = requestAnimationFrame(render);
+            if (!this._isVisible) {
+                this._parked = false;   // the visibility handlers own rescheduling
+                this.requestRef = -1;
+                return;
             }
+
+            // `tick` only advances by `dt * speed`, so at speed 0 the clock behind
+            // the waves, flow field, grain, iridescence and auto-rotation stands
+            // still and the next frame would be pixel-identical. Park instead, and
+            // let the dirty-flag setters wake us for the one frame a change needs.
+            if (this._speed === 0 && this._initialized) {
+                this._parked = true;
+                this.requestRef = -1;
+                return;
+            }
+
+            this.requestRef = requestAnimationFrame(render);
         };
+
+        this._renderFrame = render;
 
         // Visibility optimization: pause rendering when off-screen or tab hidden
         this._visibilityObserver = new IntersectionObserver((entries) => {
@@ -821,6 +936,7 @@ export class NeatGradient implements NeatController {
             this._isVisible = entries[0].isIntersecting && document.visibilityState !== 'hidden';
             if (this._isVisible && !wasVisible) {
                 lastTime = performance.now(); // Avoid time jump after resume
+                this._parked = false;
                 this.requestRef = requestAnimationFrame(render);
             }
         }, { threshold: 0 });
@@ -834,13 +950,37 @@ export class NeatGradient implements NeatController {
                 this._isVisible = true;
                 if (!wasVisible) {
                     lastTime = performance.now();
+                    this._parked = false;
                     this.requestRef = requestAnimationFrame(render);
                 }
             }
         };
         document.addEventListener('visibilitychange', this._visibilityHandler);
 
-        const setSize = (width: number, height: number) => {
+        const setSize = (cssWidth: number, cssHeight: number, fromObserver: boolean = false) => {
+
+            // A canvas with no CSS sizing takes its layout size from the width and
+            // height attributes. Scaling the drawing buffer would then shrink the
+            // element, the observer would report the smaller box, and it would
+            // shrink again. That echo is an observed size that both differs from the
+            // size we last acted on and exactly matches the buffer we just wrote —
+            // detect it once and stop scaling.
+            if (fromObserver && this._renderScale !== 1 && this._cssWidth > 0
+                && cssWidth !== this._cssWidth
+                && cssWidth === this._ref.width && cssHeight === this._ref.height) {
+                console.warn("NeatGradient: ignoring renderScale — the canvas takes its size from its width/height attributes. Size it with CSS to use renderScale.");
+                this._renderScale = 1;
+                // Restore the size the element had before we shrank it, rather than
+                // adopting the shrunken one.
+                cssWidth = this._cssWidth;
+                cssHeight = this._cssHeight;
+            }
+
+            this._cssWidth = cssWidth;
+            this._cssHeight = cssHeight;
+
+            const width = Math.max(1, Math.round(cssWidth * this._renderScale));
+            const height = Math.max(1, Math.round(cssHeight * this._renderScale));
 
             // Skip if dimensions haven't changed — setting canvas.width or
             // canvas.height (even to the same value) clears the WebGL
@@ -863,11 +1003,18 @@ export class NeatGradient implements NeatController {
             if (projLoc) gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
             this._uniformsDirty = true;
 
+            // Mesh density follows the canvas, so a big size change rebuilds it
+            if (this._segmentsFor(this._meshBase, width, height) !== this._segmentsInUse) {
+                this._updateGeometry();
+            }
+
             // Immediately redraw so the cleared backbuffer is never visible
             // as a blank frame. The next scheduled rAF will simply overwrite
             // this with the next animation tick.
             render();
         };
+
+        this._applySize = setSize;
 
         // Debounce resize to prevent excessive operations
         // Dimensions are extracted from contentRect immediately (no layout cost)
@@ -880,7 +1027,7 @@ export class NeatGradient implements NeatController {
                 clearTimeout(this._resizeTimeoutId);
             }
             this._resizeTimeoutId = window.setTimeout(() => {
-                setSize(width, height);
+                setSize(width, height, true);
                 this._resizeTimeoutId = null;
                 // Invalidate watermark rect cache so it's refreshed
                 // on next mouse event without forcing a reflow
@@ -987,6 +1134,19 @@ export class NeatGradient implements NeatController {
         this._grainScale = grainScale == 0 ? 1 : grainScale;
     }
 
+    get renderScale(): number {
+        return this._renderScale;
+    }
+
+    set renderScale(value: number) {
+        const next = Math.min(Math.max(value, 0.1), 3);
+        if (this._renderScale === next) return;
+        this._renderScale = next;
+        if (this._applySize && this._cssWidth > 0) {
+            this._applySize(this._cssWidth, this._cssHeight);
+        }
+    }
+
     get resolution(): number {
         return this._resolution;
     }
@@ -1090,19 +1250,20 @@ export class NeatGradient implements NeatController {
     _updateGeometry() {
         if (!this.glState) return;
         const gl = this.glState.gl;
-        const resolution = this._resolution || 1;
+        const segments = this._segmentsFor(this._meshBase, this._ref.width, this._ref.height);
+        this._segmentsInUse = segments;
 
         let geometry;
         if (this._shapeType === 'sphere') {
-            geometry = generateSphereGeometry(this._sphereRadius, 120 * resolution, 120 * resolution);
+            geometry = generateSphereGeometry(this._sphereRadius, segments, segments);
         } else if (this._shapeType === 'torus') {
-            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, 120 * resolution, 120 * resolution);
+            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, segments, segments);
         } else if (this._shapeType === 'cylinder') {
-            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, 120 * resolution, 120 * resolution);
+            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, segments, segments);
         } else if (this._shapeType === 'ribbon') {
-            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution, this._planeBend, this._planeTwist);
+            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, segments, segments, this._planeBend, this._planeTwist);
         } else {
-            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, segments, segments);
         }
         const { position, normal, uv, index, wireframeIndex } = geometry;
 
@@ -1156,16 +1317,21 @@ export class NeatGradient implements NeatController {
         // by the consumer (e.g. via CSS + width/height attributes).  Fall back
         // to reading layout dimensions only once, batching reads before writes
         // to avoid a read→write→read forced-reflow cycle.
-        let width = this._ref.width;
-        let height = this._ref.height;
-        if (width === 0 || height === 0 || (width === 300 && height === 150)) {
+        let cssWidth = this._ref.width;
+        let cssHeight = this._ref.height;
+        if (cssWidth === 0 || cssHeight === 0 || (cssWidth === 300 && cssHeight === 150)) {
             // Default canvas size (300×150) means the consumer hasn't set
             // explicit dimensions — read layout once, then write.
-            width = this._ref.clientWidth || 300;
-            height = this._ref.clientHeight || 150;
-            this._ref.width = width;
-            this._ref.height = height;
+            cssWidth = this._ref.clientWidth || 300;
+            cssHeight = this._ref.clientHeight || 150;
         }
+        this._cssWidth = cssWidth;
+        this._cssHeight = cssHeight;
+
+        const width = Math.max(1, Math.round(cssWidth * this._renderScale));
+        const height = Math.max(1, Math.round(cssHeight * this._renderScale));
+        this._ref.width = width;
+        this._ref.height = height;
 
         const gl2 = this._ref.getContext("webgl2", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
         const gl = gl2 || this._ref.getContext("webgl", { alpha: true, preserveDrawingBuffer, antialias: this._antialias });
@@ -1183,18 +1349,22 @@ export class NeatGradient implements NeatController {
 
         gl.viewport(0, 0, width, height);
 
-        // Generate parametric geometry based on shapeType
+        // Generate parametric geometry based on shapeType, at a density the canvas
+        // can actually show (see _segmentsFor)
+        const segments = this._segmentsFor(this._meshBase, width, height);
+        this._segmentsInUse = segments;
+
         let geometry;
         if (this._shapeType === 'sphere') {
-            geometry = generateSphereGeometry(this._sphereRadius, 120 * resolution, 120 * resolution);
+            geometry = generateSphereGeometry(this._sphereRadius, segments, segments);
         } else if (this._shapeType === 'torus') {
-            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, 120 * resolution, 120 * resolution);
+            geometry = generateTorusGeometry(this._torusRadius, this._torusTube, segments, segments);
         } else if (this._shapeType === 'cylinder') {
-            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, 120 * resolution, 120 * resolution);
+            geometry = generateCylinderGeometry(this._cylinderRadius, this._cylinderRadius, this._cylinderHeight, segments, segments);
         } else if (this._shapeType === 'ribbon') {
-            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution, this._planeBend, this._planeTwist);
+            geometry = generateRibbonGeometry(PLANE_WIDTH, PLANE_HEIGHT, segments, segments, this._planeBend, this._planeTwist);
         } else {
-            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 240 * resolution, 240 * resolution);
+            geometry = generatePlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, segments, segments);
         }
         const { position, normal, uv, index, wireframeIndex } = geometry;
 
@@ -1345,8 +1515,86 @@ export class NeatGradient implements NeatController {
     }
 
     /** Compiles and links the gradient program. */
+    /**
+     * Identifies the shader variant the current config needs. Compared each time a
+     * property changes; a different key means a recompile.
+     */
+    _shaderFeatureKey(): string {
+        return [
+            this._flatShading,
+            this._flowEnabled,
+            this._enableProceduralTexture,
+            this._domainWarpEnabled,
+            this._fresnelEnabled,
+            this._iridescenceEnabled,
+            this._vignetteIntensity > 0,
+            this._bloomIntensity > 0,
+            this._chromaticAberration > 0,
+            this._grainIntensity > 0
+        ].map((on) => (on ? "1" : "0")).join("");
+    }
+
+    /**
+     * Feature flags as compile-time constants rather than uniforms.
+     *
+     * Every effect used to be a runtime branch on a uniform, so a plain two-colour
+     * gradient still carried the domain-warp fbm calls, the triplanar texture taps,
+     * fresnel, iridescence, bloom and the 3D shading path in its instruction stream
+     * — costing register pressure and occupancy on mobile GPUs even when skipped.
+     * Feeding the flags in as constants lets the compiler fold the conditions and
+     * drop the dead half outright. Toggling a feature recompiles, which is fine for
+     * something that changes on a click rather than per frame.
+     */
+    _buildShaderDefines(): string {
+        const flag = (name: string, on: boolean) => `#define ${name} ${on ? "1.0" : "0.0"}\n`;
+        return flag("NEAT_FLAT_SHADING", this._flatShading)
+            + flag("NEAT_FLOW_ENABLED", this._flowEnabled)
+            + flag("NEAT_PROC_TEXTURE_ENABLED", this._enableProceduralTexture)
+            + flag("NEAT_DOMAIN_WARP_ENABLED", this._domainWarpEnabled)
+            + flag("NEAT_FRESNEL_ENABLED", this._fresnelEnabled)
+            + flag("NEAT_IRIDESCENCE_ENABLED", this._iridescenceEnabled)
+            + flag("NEAT_VIGNETTE_ENABLED", this._vignetteIntensity > 0)
+            + flag("NEAT_BLOOM_ENABLED", this._bloomIntensity > 0)
+            + flag("NEAT_CHROMATIC_ENABLED", this._chromaticAberration > 0)
+            + flag("NEAT_GRAIN_ENABLED", this._grainIntensity > 0);
+    }
+
+    /**
+     * Swaps in a program built for the current feature set. Attribute locations are
+     * pinned in _compileProgram, so the vertex buffers and the VAO stay valid.
+     */
+    _rebuildProgram() {
+        const gl = this.glState.gl;
+        const previous = this.glState.program;
+        const program = this._compileProgram(gl);
+
+        this.glState.program = program;
+        gl.useProgram(program);
+
+        const projLoc = gl.getUniformLocation(program, "projectionMatrix");
+        if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
+        const planeWidthLoc = gl.getUniformLocation(program, "u_plane_width");
+        if (planeWidthLoc) gl.uniform1f(planeWidthLoc, PLANE_WIDTH);
+        const planeHeightLoc = gl.getUniformLocation(program, "u_plane_height");
+        if (planeHeightLoc) gl.uniform1f(planeHeightLoc, PLANE_HEIGHT);
+        const colorsCountLoc = gl.getUniformLocation(program, "u_colors_count");
+        if (colorsCountLoc) gl.uniform1i(colorsCountLoc, COLORS_COUNT);
+
+        this.glState.locations.uniforms = {};
+        this._resolveProgramLocations(gl, program, this.glState.locations);
+
+        if (previous) gl.deleteProgram(previous);
+
+        this._uniformsDirty = true;
+        this._colorsChanged = true;
+        this._textureDirty = true;
+        this._matrixDirty = true;
+    }
+
     _compileProgram(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLProgram {
-        const vertShaderSourceCombined = buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
+        const defines = this._buildShaderDefines();
+        this._shaderKey = this._shaderFeatureKey();
+        const vertShaderSourceCombined = defines + buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
         const vertShader = gl.createShader(gl.VERTEX_SHADER)!;
         gl.shaderSource(vertShader, vertShaderSourceCombined);
         gl.compileShader(vertShader);
@@ -1359,7 +1607,7 @@ export class NeatGradient implements NeatController {
             console.log("VERTEX_SHADER_ERROR_END");
         }
 
-        const fragShaderSourceCombined = buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
+        const fragShaderSourceCombined = defines + buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
         const fragShader = gl.createShader(gl.FRAGMENT_SHADER)!;
         gl.shaderSource(fragShader, fragShaderSourceCombined);
         gl.compileShader(fragShader);
@@ -1375,6 +1623,11 @@ export class NeatGradient implements NeatController {
         const program = gl.createProgram()!;
         gl.attachShader(program, vertShader);
         gl.attachShader(program, fragShader);
+        // Pin the attribute slots so every variant shares them — the VAO built for
+        // the first program stays valid across recompiles.
+        gl.bindAttribLocation(program, 0, "position");
+        gl.bindAttribLocation(program, 1, "normal");
+        gl.bindAttribLocation(program, 2, "uv");
         gl.linkProgram(program);
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             console.log("PROGRAM_LINK_ERROR_START");
@@ -1913,9 +2166,12 @@ export class NeatGradient implements NeatController {
                 // ── COMPUTE phase (no DOM access) ──
                 let wantCursor = '';
                 if (x >= 0 && y >= 0 && x <= cw && y <= ch) {
-                    const m = this._watermarkMargin;
-                    const ww = this._watermarkWidth;
-                    const wh = this._watermarkHeight;
+                    // Watermark metrics are in drawing-buffer pixels, the pointer is
+                    // in CSS pixels; they differ whenever renderScale is not 1.
+                    const s = this._ref.width ? cw / this._ref.width : 1;
+                    const m = this._watermarkMargin * s;
+                    const ww = this._watermarkWidth * s;
+                    const wh = this._watermarkHeight * s;
                     const left = cw - m - ww;
                     const top = ch - m - wh;
                     if (x >= left && x <= cw - m && y >= top && y <= ch - m) {
@@ -1950,9 +2206,11 @@ export class NeatGradient implements NeatController {
         const ch = rect.height;
         if (x < 0 || y < 0 || x > cw || y > ch) return false;
 
-        const m = this._watermarkMargin;
-        const ww = this._watermarkWidth;
-        const wh = this._watermarkHeight;
+        // Watermark metrics are in drawing-buffer pixels, the pointer in CSS pixels
+        const s = this._ref.width ? cw / this._ref.width : 1;
+        const m = this._watermarkMargin * s;
+        const ww = this._watermarkWidth * s;
+        const wh = this._watermarkHeight * s;
         const left = cw - m - ww;
         const top = ch - m - wh;
 

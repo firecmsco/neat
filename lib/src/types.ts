@@ -6,7 +6,21 @@ export type NeatConfig = {
      */
     licenseKey?: string;
     antialias?: boolean;
+    /**
+     * Density of the displacement mesh, **not** the pixel resolution. At 1 the
+     * grid is 240×240 segments for a plane (120×120 for the 3D shapes), capped to
+     * what the canvas can actually show. Lower it to spend fewer vertices.
+     */
     resolution?: number;
+    /**
+     * Size of the drawing buffer relative to the canvas' CSS size. 1 (default)
+     * renders one pixel per CSS pixel; 0.75 renders 44% fewer pixels and lets the
+     * browser scale the result up, which is usually invisible behind content and
+     * is the cheapest win on low-end devices. Requires the canvas to be sized by
+     * CSS — if its layout size comes from the width/height attributes, scaling is
+     * ignored to avoid shrinking the element on every resize.
+     */
+    renderScale?: number;
     speed?: number;
     horizontalPressure?: number;
     verticalPressure?: number;

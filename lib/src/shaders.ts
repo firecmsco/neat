@@ -22,7 +22,7 @@ export const vertexShaderSource = `void main() {
     baseUv.y += flowOffset / u_plane_height; // Scale to match wave speed
     vec2 flowUv = baseUv;
 
-    if (u_flow_enabled > 0.5) {
+    if (NEAT_FLOW_ENABLED > 0.5) {
         if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
             vec2 ppp = -1.0 + 2.0 * baseUv;
             ppp += 0.1 * cos((1.5 * u_flow_scale) * ppp.yx + 1.1 * u_time + vec2(0.1, 1.1));
@@ -44,8 +44,8 @@ export const vertexShaderSource = `void main() {
     vec3 color = u_colors[0].color;
 
     vec3 distortedPos = position;
-    if (u_flat_shading < 0.5) {
-        if (u_flow_enabled > 0.5) {
+    if (NEAT_FLAT_SHADING < 0.5) {
+        if (NEAT_FLOW_ENABLED > 0.5) {
             if (u_flow_ease > 0.0 || u_flow_distortion_a > 0.0) {
                 vec3 ppp = position / 25.0;
                 ppp.xyz += 0.1 * cos((1.5 * u_flow_scale) * ppp.yxz + 1.1 * u_time + vec3(0.1, 1.1, 2.1));
@@ -64,7 +64,7 @@ export const vertexShaderSource = `void main() {
     }
 
     vec3 noise_cord;
-    if (u_flat_shading < 0.5) {
+    if (NEAT_FLAT_SHADING < 0.5) {
         noise_cord = vec3(distortedPos.x / 50.0, (distortedPos.y + colorOffset) / 50.0, distortedPos.z / 50.0);
     } else {
         vec2 adjustedUv = flowUv;
@@ -83,7 +83,7 @@ export const vertexShaderSource = `void main() {
                 float noiseSeed = 13. + float(i) * 7.;
 
                 float noise_z = u_time * noiseSpeed;
-                if (u_flat_shading < 0.5) {
+                if (NEAT_FLAT_SHADING < 0.5) {
                     noise_z = noise_cord.z * u_color_pressure.x * u_color_pressure.x + u_time * noiseSpeed;
                 }
 
@@ -144,8 +144,8 @@ void main() {
     vec3 baseColor;
     float texAlpha = 1.0;
 
-    if (u_enable_procedural_texture > 0.5) {
-        if (u_flat_shading < 0.5) {
+    if (NEAT_PROC_TEXTURE_ENABLED > 0.5) {
+        if (NEAT_FLAT_SHADING < 0.5) {
             float parallaxFactor = 0.25;
             float scrollOffset = (u_y_offset * u_y_offset_color_multiplier) * parallaxFactor;
             vec3 scrolledPos = vPosition;
@@ -198,9 +198,9 @@ void main() {
     vec3 color = baseColor;
 
     // === DOMAIN WARPING (simplified: 3 fbm calls instead of 5) ===
-    if (u_domain_warp_enabled > 0.5) {
+    if (NEAT_DOMAIN_WARP_ENABLED > 0.5) {
         vec3 p;
-        if (u_flat_shading < 0.5) {
+        if (NEAT_FLAT_SHADING < 0.5) {
             p = vec3((vPosition / 50.0 + vec3(0.5)) * u_domain_warp_scale);
             p.z += u_time * 0.15;
         } else {
@@ -237,7 +237,7 @@ void main() {
     float specular = pow(max(dot(normal, halfDir), 0.0), 32.0);
 
     // Blend smooth 3D shading with smooth height-based wave shading
-    if (u_flat_shading > 0.5) {
+    if (NEAT_FLAT_SHADING > 0.5) {
         // Flat / height-based wave shading (plane style)
         color += v_displacement_amount * u_highlights;
         float heightShadow = 1.0 - v_displacement_amount;
@@ -254,23 +254,23 @@ void main() {
     color = color * u_brightness;
 
     // === IRIDESCENCE ===
-    if (u_iridescence_enabled > 0.5) {
+    if (NEAT_IRIDESCENCE_ENABLED > 0.5) {
         float hue = fract(v_displacement_amount * 0.5 + 0.5 + u_time * u_iridescence_speed * 0.05);
         vec3 iriColor = hsl2rgb(hue, 0.8, 0.6);
         color = mix(color, iriColor, u_iridescence_intensity * abs(v_displacement_amount) * 0.6);
     }
 
     // === FRESNEL (Rim glow) ===
-    if (u_fresnel_enabled > 0.5) {
+    if (NEAT_FRESNEL_ENABLED > 0.5) {
         float slope = 1.0 - abs(v_displacement_amount);
         float fresnel = pow(max(slope, 0.0), u_fresnel_power);
         color += u_fresnel_color * fresnel * u_fresnel_intensity;
     }
 
     // === VIGNETTE ===
-    if (u_vignette_intensity > 0.0) {
+    if (NEAT_VIGNETTE_ENABLED > 0.5 && u_vignette_intensity > 0.0) {
         vec2 vigUv = vUv;
-        if (u_flat_shading < 0.5) {
+        if (NEAT_FLAT_SHADING < 0.5) {
             vigUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
         }
         float dist = length(vigUv - vec2(0.5));
@@ -279,17 +279,17 @@ void main() {
     }
 
     // === FAKE BLOOM ===
-    if (u_bloom_intensity > 0.0) {
+    if (NEAT_BLOOM_ENABLED > 0.5 && u_bloom_intensity > 0.0) {
         float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
         float bloomMask = smoothstep(u_bloom_threshold, 1.0, luma);
         color += color * bloomMask * u_bloom_intensity;
     }
 
     // === CHROMATIC ABERRATION ===
-    if (u_chromatic_aberration > 0.0) {
+    if (NEAT_CHROMATIC_ENABLED > 0.5 && u_chromatic_aberration > 0.0) {
         float caAmount = u_chromatic_aberration * 0.008;
         vec2 caUv = vUv;
-        if (u_flat_shading < 0.5) {
+        if (NEAT_FLAT_SHADING < 0.5) {
             caUv = (v_new_position.xy / v_new_position.w) * 0.5 + vec2(0.5);
         }
         float dist = length(caUv - vec2(0.5));
@@ -301,9 +301,9 @@ void main() {
 
     // Grain (use cheap hash noise instead of expensive fbm when static)
     float grain = 0.0;
-    if (u_grain_intensity > 0.0) {
+    if (NEAT_GRAIN_ENABLED > 0.5 && u_grain_intensity > 0.0) {
         vec2 noiseCoords = gl_FragCoord.xy / u_grain_scale;
-        if (u_grain_speed != 0.0 || u_flat_shading > 0.5) {
+        if (u_grain_speed != 0.0 || NEAT_FLAT_SHADING > 0.5) {
             grain = fbm(vec3(noiseCoords, u_time * u_grain_speed));
         } else {
             // Static grain: use cheap hash instead of fbm
@@ -321,7 +321,7 @@ void main() {
     float edgeAlpha = 1.0;
     
     // Silhouette falloff for 3D shapes (skip when flat shading or fade is zero)
-    if (u_silhouette_fade > 0.0 && u_flat_shading < 0.5) {
+    if (u_silhouette_fade > 0.0 && NEAT_FLAT_SHADING < 0.5) {
         edgeAlpha = smoothstep(0.0, u_silhouette_fade, ndotv);
     }
     

@@ -234,7 +234,24 @@ function BackgroundGradient() {
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `resolution` | `number` | `1` | Mesh resolution (0.1-2, lower = better performance) |
+| `resolution` | `number` | `1` | Mesh density (0.1-2, lower = better performance) |
+| `renderScale` | `number` | `1` | Drawing buffer size relative to the canvas' CSS size (0.1-3) |
+
+**`resolution` is mesh density, not pixel resolution.** It scales the displacement
+grid — 240x240 segments for a plane at `1`, 120x120 for the 3D shapes. Most of the
+per-frame cost is in the vertex shader, so this is the first thing to turn down.
+The grid is also capped to roughly one segment per 6 canvas pixels, so a small
+canvas never pays for detail it cannot show.
+
+**`renderScale` is the pixel one.** At `0.75` the gradient renders 44% fewer pixels
+and the browser scales the result up — usually invisible behind content, and the
+cheapest win on low-end devices. It needs the canvas to be sized by CSS; if the
+layout size comes from the width/height attributes, scaling is ignored (with a
+warning) so the element cannot shrink itself on every resize.
+
+**`speed: 0` costs nothing.** With the clock stopped every frame would be identical,
+so the render loop parks itself and only wakes when you change a property. A static
+gradient is a one-off render, not a 60fps redraw of the same image.
 
 ### Scroll Integration
 

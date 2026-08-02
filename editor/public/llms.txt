@@ -105,7 +105,8 @@ ranges are accepted but rarely look good.
 | `ref` | `HTMLCanvasElement` | — | — | Required. The canvas to render into. |
 | `colors` | `NeatColor[]` | — | 1–6 entries | Required. `{ color: "#RRGGBB", enabled: boolean, influence?: number }` |
 | `speed` | number | 4 | 0–10 | 0 freezes the animation. |
-| `resolution` | number | 1 | 0.05–2 | **Mesh density, not pixel scale.** The plane is 240×240 segments at 1, so 0.5 quarters the vertex count. The canvas backing store is always CSS-pixel sized, so raising this sharpens nothing — it only smooths the wave displacement. |
+| `resolution` | number | 1 | 0.05–2 | **Mesh density, not pixel scale.** The plane is 240×240 segments at 1, so 0.5 quarters the vertex count. Also capped to about one segment per 6 canvas pixels, so a small canvas never pays for detail it cannot show. Raising it smooths the wave displacement; it does not sharpen anything. |
+| `renderScale` | number | 1 | 0.1–3 | Drawing buffer size relative to the canvas' CSS size — this is the pixel knob. 0.75 renders 44% fewer pixels and lets the browser upscale. Needs the canvas sized by CSS; ignored (with a warning) if its layout size comes from the width/height attributes. |
 | `antialias` | boolean | false | — | MSAA. Mostly matters with `wireframe`. |
 | `backgroundColor` | string | `#FFFFFF` | hex | Shows where the gradient is transparent. |
 | `backgroundAlpha` | number | 1 | 0–1 | Set 0 to composite over page content. |
@@ -253,7 +254,9 @@ product UI or poster cards, which is the fastest way to check a palette in conte
   work is in the vertex shader — the displacement mesh is 240×240 segments at
   `resolution: 1`, which is far more than a small canvas needs — so mesh density is the
   first thing to turn down, not the effects.
-- **Static image**: `speed: 0`, then export a PNG from the editor.
+- **Static image**: `speed: 0`. The clock stops, so the render loop parks after one
+  frame and costs nothing until you change a property — a still gradient is free.
+  Export a PNG from the editor if you want a file.
 
 ## One gradient, many canvases
 

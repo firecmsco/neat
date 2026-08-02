@@ -640,6 +640,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY ?? 5);
     const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude ?? 3);
     const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution ?? 1);
+    // Pixel scale of the drawing buffer. Not part of a preset — it is a device
+    // trade-off, so it survives preset changes.
+    const [renderScale, setRenderScale] = React.useState<number>(1);
     const [backgroundAlpha, setBackgroundAlpha] = React.useState<number>(defaultConfig.backgroundAlpha ?? 1);
     const [backgroundColor, setBackgroundColor] = React.useState<string>(defaultConfig.backgroundColor ?? "#000000");
     const [grainIntensity, setGrainIntensity] = React.useState<number>(defaultConfig.grainIntensity ?? 0.55);
@@ -798,6 +801,13 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     // Scroll Handler - Infinite scroll with position reset
     const lastScrollTop = useRef(0);
+    // The gradient is driven straight from the scroll handler; React state only
+    // catches up periodically, for the sidebar slider and the exported config.
+    // Re-rendering this component on every scroll event was the most expensive
+    // thing happening during a scroll.
+    const yOffsetRef = useRef(0);
+    const yOffsetFlushRef = useRef<number | null>(null);
+    const scrollDrivenRef = useRef(false);
 
     useEffect(() => {
         const scrollContainer = scrollContentRef.current;
@@ -819,8 +829,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             // Calculate scroll delta
             const delta = scrollTop - lastScrollTop.current;
 
-            // Accumulate yOffset infinitely
-            setYOffset(prev => prev + delta);
+            // Accumulate yOffset infinitely, straight into the gradient
+            yOffsetRef.current += delta;
+            if (gradientRef.current) {
+                gradientRef.current.yOffset = yOffsetRef.current;
+            }
+            if (yOffsetFlushRef.current === null) {
+                yOffsetFlushRef.current = window.setTimeout(() => {
+                    yOffsetFlushRef.current = null;
+                    scrollDrivenRef.current = true;
+                    setYOffset(yOffsetRef.current);
+                }, 150);
+            }
 
             // Reset scroll position when near edges (infinite scroll effect)
             const threshold = maxScroll * 0.1; // 10% from edges
@@ -841,6 +861,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
         return () => {
             scrollContainer.removeEventListener("scroll", handleScroll);
+            if (yOffsetFlushRef.current !== null) {
+                clearTimeout(yOffsetFlushRef.current);
+                yOffsetFlushRef.current = null;
+            }
         };
     }, []);
 
@@ -896,12 +920,25 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     ]);
 
     // 2. IMMEDIATE SCROLL UPDATE (New Effect)
-    // This updates the gradient instantly without tweening lag
+    // This updates the gradient instantly without tweening lag.
+    // Scroll-driven changes already wrote to the gradient directly and are only
+    // echoed into state for the slider, so skip them here.
     useEffect(() => {
+        if (scrollDrivenRef.current) {
+            scrollDrivenRef.current = false;
+            return;
+        }
+        yOffsetRef.current = yOffset;
         if (gradientRef.current) {
             gradientRef.current.yOffset = yOffset;
         }
     }, [yOffset]);
+
+    useEffect(() => {
+        if (gradientRef.current) {
+            gradientRef.current.renderScale = renderScale;
+        }
+    }, [renderScale]);
 
     useEffect(() => {
         if (gradientRef.current) {
@@ -1401,8 +1438,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const fpsRafRef = useRef<number | null>(null);
 
 
-    // FPS measurement loop
+    // FPS measurement loop — only while the readout is actually on screen. It is
+    // hidden below `sm`, and a rAF loop plus two state updates a second is not
+    // free on the devices where the number would matter most.
     useEffect(() => {
+        if (!uiVisible || !window.matchMedia("(min-width: 640px)").matches) return;
+
         const tick = () => {
             fpsFrames.current++;
             const now = performance.now();
@@ -1421,7 +1462,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         return () => {
             if (fpsRafRef.current != null) cancelAnimationFrame(fpsRafRef.current);
         };
-    }, []);
+    }, [uiVisible]);
 
     const config: NeatConfig = {
         colors,
@@ -1445,6 +1486,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         grainIntensity,
         grainSpeed,
         resolution,
+        ...(renderScale !== 1 ? { renderScale } : {}),
         yOffset,
         yOffsetWaveMultiplier,
         yOffsetColorMultiplier,
@@ -2305,6 +2347,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                 <Slider value={[resolution]} step={0.05}
                                                         min={0.05} max={2}
                                                         onValueChange={(v) => setResolution(v[0] as number)}/>
+                                            </div>
+
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Pixels drawn per CSS pixel. Below 1 the gradient renders smaller and the browser scales it up — cheaper on every device, and usually invisible behind content.">
+                                                    Render scale
+                                                </Tooltip>
+                                                <Slider value={[renderScale]} step={0.05}
+                                                        min={0.25} max={2} resetValue={1}
+                                                        onValueChange={(v) => setRenderScale(v[0] as number)}/>
                                             </div>
 
                                             <Label className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
