@@ -9,7 +9,7 @@ Create stunning, animated 3D gradients with hardware-accelerated WebGL performan
 
 Design your perfect gradient with our visual editor, featuring 20+ presets and real-time preview. Export the config and use it in your project instantly.
 
-![Neat Gradient Examples](https://neat.firecms.co/og_image.png)
+![Neat Gradient Examples](https://neat.firecms.co/og_image_v2.png)
 
 ---
 
