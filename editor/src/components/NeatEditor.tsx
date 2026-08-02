@@ -464,6 +464,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
 
+    // Camera controls are a power-user tool — kept out of the way until asked for
+    const [cameraBarVisible, setCameraBarVisible] = React.useState<boolean>(() => {
+        return typeof window !== "undefined" && window.localStorage.getItem("neat.cameraBar") === "true";
+    });
+
+    const toggleCameraBar = React.useCallback(() => {
+        setCameraBarVisible((visible) => {
+            window.localStorage.setItem("neat.cameraBar", String(!visible));
+            return !visible;
+        });
+    }, []);
+
     // Which context the gradient is previewed in (full bleed, cards, website, …)
     const [showcaseMode, setShowcaseMode] = React.useState<ShowcaseMode>(() => {
         const stored = typeof window !== "undefined" ? window.localStorage.getItem("neat.showcase") : null;
@@ -1829,8 +1841,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     />
                 )}
 
-                {/* Floating camera controls bar (shown only when UI is visible) */}
-                {uiVisible && (
+                {/* Floating camera controls bar — off by default, toggled from the toolbar */}
+                {uiVisible && cameraBarVisible && (
                     <div className={"fixed bottom-[135px] sm:bottom-20 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5 "
                         + (uiOnDark ? "bg-black/25" : "bg-black/45")}>
                         <div className="flex items-center gap-1 text-neutral-400 border-r border-white/10 pr-2 h-7">
@@ -1995,6 +2007,14 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     </Button>
                                 </Tooltip>
                                 <div className="w-px h-7 bg-white/20"/>
+                                <Tooltip title={cameraBarVisible ? "Hide camera controls" : "Camera controls"}>
+                                    <IconButton className={cameraBarVisible ? "text-white bg-white/15" : "text-inherit"}
+                                                aria-label="Toggle camera controls"
+                                                aria-pressed={cameraBarVisible}
+                                                onClick={toggleCameraBar}>
+                                        <Camera className="w-5 h-5"/>
+                                    </IconButton>
+                                </Tooltip>
                                 <Tooltip title="Hide UI (H)">
                                     <IconButton className="text-inherit"
                                                 aria-label="Hide UI"
