@@ -467,9 +467,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     // Which context the gradient is previewed in (full bleed, cards, website, …)
     const [showcaseMode, setShowcaseMode] = React.useState<ShowcaseMode>(() => {
         const stored = typeof window !== "undefined" ? window.localStorage.getItem("neat.showcase") : null;
-        // First visit lands on the website mockup — it says what Neat is for faster
-        // than a bare gradient does. Returning visitors keep whatever they picked.
-        return isShowcaseMode(stored) ? stored : "site";
+        if (isShowcaseMode(stored)) return stored;
+        // First visit lands on a mockup — it says what Neat is for faster than a bare
+        // gradient does. On a phone that's the app screen: a website frame shrunk to
+        // 375px reads as a thumbnail, an app screen reads at full size.
+        if (typeof window !== "undefined" && window.innerWidth < 720) return "app";
+        return "site";
     });
     // null = follow the gradient's own background, otherwise the user's choice
     const [showcaseDark, setShowcaseDark] = React.useState<boolean | null>(null);

@@ -70,7 +70,7 @@ export function AppScene({ source, t }: { source: SourceRef; t: ShowcaseTokens }
                     <StatusBar color="#FFFFFF"/>
                     <div className="absolute inset-0 flex flex-col justify-end p-7 pb-11 text-white">
                         <div className="w-11 h-11 rounded-2xl mb-6 overflow-hidden ring-1 ring-white/40">
-                            <GradientSurface source={source} cx={0.75} cy={0.25} zoom={6}/>
+                            <GradientSurface source={source} cx={0.75} cy={0.25} zoom={6} fps={10}/>
                         </div>
                         <div className="text-[32px] leading-[1.08] font-semibold tracking-[-0.03em]"
                              style={{ textShadow: "0 2px 24px rgba(0,0,0,0.35)" }}>
@@ -102,7 +102,7 @@ export function AppScene({ source, t }: { source: SourceRef; t: ShowcaseTokens }
                             </div>
                             <div className="w-9 h-9 rounded-full overflow-hidden"
                                  style={{ border: `1px solid ${t.border}` }}>
-                                <GradientSurface source={source} cx={0.6} cy={0.3} zoom={8}/>
+                                <GradientSurface source={source} cx={0.6} cy={0.3} zoom={8} fps={10}/>
                             </div>
                         </div>
 
@@ -142,7 +142,7 @@ export function AppScene({ source, t }: { source: SourceRef; t: ShowcaseTokens }
                                     <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0"
                                          style={{ border: `1px solid ${t.border}` }}>
                                         <GradientSurface source={source} cx={0.2 + i * 0.28} cy={0.7 - i * 0.2}
-                                                         zoom={9}/>
+                                                         zoom={9} fps={10}/>
                                     </div>
                                     <div className="flex-1 space-y-1.5">
                                         <Bar w={[112, 92, 128][i]} h={8} color={t.text} opacity={0.32}/>

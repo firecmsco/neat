@@ -23,7 +23,7 @@ export function DashboardScene({ source, t }: { source: SourceRef; t: ShowcaseTo
                         <div className="flex items-center gap-2.5 px-1">
                             <div className="w-6 h-6 rounded-lg overflow-hidden"
                                  style={{ border: `1px solid ${t.border}` }}>
-                                <GradientSurface source={source} cx={0.3} cy={0.35} zoom={8}/>
+                                <GradientSurface source={source} cx={0.3} cy={0.35} zoom={8} fps={10}/>
                             </div>
                             <span className="text-[13px] font-semibold tracking-[-0.01em]"
                                   style={{ color: t.text }}>Nebula</span>
@@ -57,7 +57,7 @@ export function DashboardScene({ source, t }: { source: SourceRef; t: ShowcaseTo
                              style={{ borderTop: `1px solid ${t.border}` }}>
                             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0"
                                  style={{ border: `1px solid ${t.border}` }}>
-                                <GradientSurface source={source} cx={0.7} cy={0.6} zoom={10}/>
+                                <GradientSurface source={source} cx={0.7} cy={0.6} zoom={10} fps={10}/>
                             </div>
                             <div className="space-y-1.5">
                                 <Bar w={62} h={7} color={t.text} opacity={0.3}/>
@@ -79,7 +79,7 @@ export function DashboardScene({ source, t }: { source: SourceRef; t: ShowcaseTo
                                 </Pill>
                                 <div className="w-7 h-7 rounded-full overflow-hidden"
                                      style={{ border: `1px solid ${t.border}` }}>
-                                    <GradientSurface source={source} cx={0.35} cy={0.7} zoom={10}/>
+                                    <GradientSurface source={source} cx={0.35} cy={0.7} zoom={10} fps={10}/>
                                 </div>
                             </div>
                         </div>
@@ -167,7 +167,7 @@ export function DashboardScene({ source, t }: { source: SourceRef; t: ShowcaseTo
                                             <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0"
                                                  style={{ border: `1px solid ${t.border}` }}>
                                                 <GradientSurface source={source} cx={0.25 + i * 0.25}
-                                                                 cy={0.3 + i * 0.2} zoom={9}/>
+                                                                 cy={0.3 + i * 0.2} zoom={9} fps={10}/>
                                             </div>
                                             <Bar w={row.name} h={8} color={t.text} opacity={0.3}/>
                                         </div>

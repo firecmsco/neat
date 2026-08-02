@@ -27,7 +27,7 @@ export function SiteScene({ source, t }: { source: SourceRef; t: ShowcaseTokens 
                             <div className="flex items-center justify-between px-10 shrink-0" style={{ height: 72 }}>
                                 <div className="flex items-center gap-2.5">
                                     <div className="w-6 h-6 rounded-lg overflow-hidden ring-1 ring-white/40">
-                                        <GradientSurface source={source} cx={0.25} cy={0.3} zoom={5}/>
+                                        <GradientSurface source={source} cx={0.25} cy={0.3} zoom={5} fps={10}/>
                                     </div>
                                     <span className="text-[15px] font-semibold tracking-[-0.01em]">Nebula</span>
                                 </div>
@@ -76,7 +76,7 @@ export function SiteScene({ source, t }: { source: SourceRef; t: ShowcaseTokens 
                                     <div className="w-9 h-9 rounded-[10px] overflow-hidden"
                                          style={{ border: `1px solid ${t.border}` }}>
                                         <GradientSurface source={source} cx={0.2 + i * 0.3} cy={0.35 + i * 0.15}
-                                                         zoom={7}/>
+                                                         zoom={7} fps={10}/>
                                     </div>
                                     <div className="mt-3.5 text-[13.5px] font-semibold tracking-[-0.01em]"
                                          style={{ color: t.text }}>

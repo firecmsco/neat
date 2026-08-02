@@ -375,6 +375,111 @@ gradient.enableProceduralTexture = true;
 gradient.textureEase = 0.7;
 ```
 
+## 🪞 One gradient, many canvases
+
+Browsers only grant a handful of live WebGL contexts, and every extra `NeatGradient`
+runs its own shader. So don't create one per card — create **one** gradient and mirror
+it into as many plain 2D canvases as you like. Each mirror can show a different crop,
+they all stay perfectly in sync, and the cost per mirror is a GPU copy instead of a
+second render.
+
+This is exactly how the [editor](https://neat.firecms.co) previews a gradient as a
+website hero, a phone screen and a row of avatars at the same time.
+
+The source gradient needs `preserveDrawingBuffer: true` — without it the drawing buffer
+is cleared after compositing and there is nothing left to copy:
+
+```typescript
+import { NeatGradient } from "@firecms/neat";
+
+const source = document.getElementById("source") as HTMLCanvasElement;
+
+const gradient = new NeatGradient({
+    ref: source,
+    preserveDrawingBuffer: true,   // required to read the canvas from outside its own frame
+    colors: [
+        { color: "#FF5772", enabled: true },
+        { color: "#4CB4BB", enabled: true },
+        { color: "#FFC600", enabled: true }
+    ]
+});
+```
+
+Then mirror regions of it wherever you want:
+
+```typescript
+type MirrorOptions = {
+    cx?: number;    // horizontal centre of the crop, 0–1
+    cy?: number;    // vertical centre of the crop, 0–1
+    zoom?: number;  // 1 shows as much as fits, 2 shows half
+    fps?: number;   // refresh rate — drop it for small decorative mirrors
+};
+
+function mirror(target: HTMLCanvasElement, options: MirrorOptions = {}) {
+    const { cx = 0.5, cy = 0.5, zoom = 1, fps = 60 } = options;
+    const ctx = target.getContext("2d");
+    const interval = 1000 / fps;
+    let raf = 0;
+    let last = 0;
+
+    const draw = (now: number) => {
+        raf = requestAnimationFrame(draw);
+        if (!ctx || now - last < interval) return;
+        last = now;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.round(target.clientWidth * dpr);
+        const h = Math.round(target.clientHeight * dpr);
+        if (!w || !h || !source.width || !source.height) return;
+        if (target.width !== w || target.height !== h) {
+            target.width = w;
+            target.height = h;
+        }
+
+        // Largest crop of the source matching the target's aspect ratio, then zoomed
+        const aspect = w / h;
+        let cropW = source.width;
+        let cropH = source.width / aspect;
+        if (cropH > source.height) {
+            cropH = source.height;
+            cropW = source.height * aspect;
+        }
+        cropW /= zoom;
+        cropH /= zoom;
+
+        const sx = Math.min(Math.max(cx * source.width - cropW / 2, 0), source.width - cropW);
+        const sy = Math.min(Math.max(cy * source.height - cropH / 2, 0), source.height - cropH);
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, w, h);
+    };
+
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+}
+
+// A hero, a tight crop for a card, and a slow-refreshing avatar
+mirror(document.getElementById("hero") as HTMLCanvasElement);
+mirror(document.getElementById("card") as HTMLCanvasElement, { cx: 0.3, cy: 0.4, zoom: 1.7 });
+mirror(document.getElementById("avatar") as HTMLCanvasElement, { cx: 0.7, cy: 0.6, zoom: 10, fps: 10 });
+```
+
+**Things worth knowing**
+
+- The source canvas must stay laid out. `display: none` collapses it to zero size and
+  the gradient stops rendering — hide it with `position: fixed; inset: 0; z-index: -1`
+  behind your content, or cover it with an opaque layer, instead.
+- Use one `requestAnimationFrame` loop for all mirrors rather than one each; the example
+  above is per-mirror for clarity, but a shared ticker iterating a list scales better.
+- `drawImage` from a WebGL canvas is a cross-context copy — cheap on desktop, noticeable
+  on phones. There, cap the device pixel ratio at 1 and run mirrors at 30 fps, and give
+  small decorative ones (avatars, icons) 10 fps. Nobody can tell on a 40px circle.
+- Mirrors are ordinary canvases, so they take `border-radius`, `mask-image`, `filter`
+  and anything else CSS offers. A tiny mirror blurred to nothing makes a good ambient
+  glow behind a layout.
+- Only the source needs `preserveDrawingBuffer`. It is also what makes
+  `downloadAsPNG()` and video capture work.
+
 ---
 
 ## 📖 TypeScript Support

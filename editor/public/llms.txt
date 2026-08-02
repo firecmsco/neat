@@ -253,6 +253,35 @@ product UI or poster cards, which is the fastest way to check a palette in conte
   shader, so cost scales with pixels, not with the number of colours or effects.
 - **Static image**: `speed: 0`, then export a PNG from the editor.
 
+## One gradient, many canvases
+
+Never instantiate a `NeatGradient` per card, avatar or thumbnail — browsers cap live
+WebGL contexts and each instance runs its own shader. Create one, give it
+`preserveDrawingBuffer: true`, and blit crops of it into ordinary 2D canvases:
+
+```ts
+const ctx = target.getContext("2d");
+
+// Largest crop of the source with the target's aspect ratio, then zoomed and centred
+const aspect = target.width / target.height;
+let cropW = source.width;
+let cropH = source.width / aspect;
+if (cropH > source.height) { cropH = source.height; cropW = source.height * aspect; }
+cropW /= zoom; cropH /= zoom;
+const sx = Math.min(Math.max(cx * source.width - cropW / 2, 0), source.width - cropW);
+const sy = Math.min(Math.max(cy * source.height - cropH / 2, 0), source.height - cropH);
+
+ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, target.width, target.height);
+```
+
+Run all mirrors from one `requestAnimationFrame` loop. Every mirror shows a different
+part of the same field and stays in sync. On phones, cap the device pixel ratio at 1,
+run mirrors at 30 fps and small decorative ones at 10 fps — `drawImage` from a WebGL
+canvas is a cross-context copy and it is the expensive part, not the shader. Keep the
+source canvas laid out (`display: none` collapses it and rendering stops); hide it
+behind your content instead. Full helper:
+https://github.com/FireCMSco/neat#-one-gradient-many-canvases
+
 ## Gotchas
 
 - Call `destroy()` on unmount. Browsers cap the number of live WebGL contexts.

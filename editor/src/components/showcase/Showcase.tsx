@@ -1,6 +1,6 @@
 import React from "react";
 import { AppWindow, LayoutDashboard, LayoutGrid, Maximize2, Smartphone } from "lucide-react";
-import { GradientSurface, SourceRef } from "./GradientSurface";
+import { GradientSurface, isHandheld, SourceRef } from "./GradientSurface";
 import { showcaseTokens } from "./theme";
 import { CardsScene } from "./scenes/CardsScene";
 import { SiteScene } from "./scenes/SiteScene";
@@ -44,17 +44,20 @@ export function Showcase({
         <div className="fixed inset-0 z-[5] overflow-hidden pointer-events-none"
              style={{ backgroundColor: t.page }}>
 
-            {/* Ambient bounce light — the live gradient, blurred to nothing */}
+            {/* Ambient bounce light — the live gradient, blurred to nothing.
+                A viewport-sized blur repaints whenever this canvas changes, so it
+                refreshes slowly: the light drifts, which is all it has to do. */}
             <GradientSurface
                 source={source}
                 maxWidth={72}
+                fps={isHandheld ? 4 : 15}
                 className="absolute"
                 style={{
                     left: "-15%",
                     top: "-15%",
                     width: "130%",
                     height: "130%",
-                    filter: "blur(72px) saturate(1.3)",
+                    filter: `blur(${isHandheld ? 48 : 72}px) saturate(1.3)`,
                     opacity: dark ? 0.34 : 0.5
                 }}
             />

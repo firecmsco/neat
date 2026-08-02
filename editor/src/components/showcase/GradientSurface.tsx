@@ -24,10 +24,25 @@ type Surface = {
     maxWidth?: number;
     cssWidth: number;
     cssHeight: number;
+    /** Minimum ms between blits for this surface. */
+    interval: number;
+    lastDrawn: number;
 };
 
 const surfaces = new Set<Surface>();
 let rafId: number | null = null;
+
+/**
+ * Blitting a WebGL canvas into a 2D one is a cross-context copy — cheap on a
+ * desktop GPU, expensive on a phone. On touch devices every surface runs at a
+ * reduced rate and at 1x, which is invisible on a 40px avatar and is the
+ * difference between 60 and 20 fps on the whole scene.
+ */
+export const isHandheld = typeof window !== "undefined"
+    && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 720);
+
+const maxDpr = isHandheld ? 1 : 2;
+const defaultFps = isHandheld ? 30 : 60;
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
@@ -40,7 +55,7 @@ function drawSurface(s: Surface) {
     const sh = src.height;
     if (!sw || !sh || !s.cssWidth || !s.cssHeight) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     let w = Math.max(1, Math.round(s.cssWidth * dpr));
     let h = Math.max(1, Math.round(s.cssHeight * dpr));
     if (s.maxWidth && w > s.maxWidth) {
@@ -76,9 +91,13 @@ function drawSurface(s: Surface) {
     }
 }
 
-function tick() {
+function tick(now: number) {
     rafId = requestAnimationFrame(tick);
-    surfaces.forEach(drawSurface);
+    surfaces.forEach((s) => {
+        if (now - s.lastDrawn < s.interval) return;
+        s.lastDrawn = now;
+        drawSurface(s);
+    });
 }
 
 export type GradientSurfaceProps = {
@@ -91,6 +110,12 @@ export type GradientSurfaceProps = {
     zoom?: number;
     /** Cap the backing store width in device pixels (used for cheap blurred fills). */
     maxWidth?: number;
+    /**
+     * How often this surface refreshes. Decorative details (avatars, icons, the
+     * blurred ambient fill) look identical at a low rate and cost proportionally
+     * less. Defaults to 60, or 30 on touch devices.
+     */
+    fps?: number;
     className?: string;
     style?: React.CSSProperties;
 };
@@ -101,6 +126,7 @@ export function GradientSurface({
                                     cy = 0.5,
                                     zoom = 1,
                                     maxWidth,
+                                    fps,
                                     className,
                                     style
                                 }: GradientSurfaceProps) {
@@ -119,7 +145,9 @@ export function GradientSurface({
             zoom,
             maxWidth,
             cssWidth: canvas.clientWidth,
-            cssHeight: canvas.clientHeight
+            cssHeight: canvas.clientHeight,
+            interval: 1000 / Math.min(fps ?? defaultFps, defaultFps),
+            lastDrawn: 0
         };
 
         surfaces.add(surface);
@@ -141,7 +169,7 @@ export function GradientSurface({
                 rafId = null;
             }
         };
-    }, [source, cx, cy, zoom, maxWidth]);
+    }, [source, cx, cy, zoom, maxWidth, fps]);
 
     return <canvas ref={canvasRef} className={"block w-full h-full " + (className ?? "")} style={style}/>;
 }
