@@ -1974,7 +1974,7 @@ export const CORAL_PRESET = {
         },
         {
             color: '#FFECCE',
-            enabled: false,
+            enabled: true,
         },
         {
             color: '#FDEBAE',
@@ -1990,7 +1990,7 @@ export const CORAL_PRESET = {
         },
         {
             color: '#00FFFF',
-            enabled: true,
+            enabled: false,
         },
     ],
     speed: 2.5,
@@ -2005,7 +2005,7 @@ export const CORAL_PRESET = {
     colorSaturation: 7,
     wireframe: false,
     antialias: false,
-    colorBlending: 6,
+    colorBlending: 8,
     backgroundColor: '#F3F3F3',
     backgroundAlpha: 1,
     grainScale: 0,
@@ -2013,7 +2013,7 @@ export const CORAL_PRESET = {
     grainIntensity: 0,
     grainSpeed: 1,
     resolution: 0.55,
-    yOffset: 45482,
+    yOffset: 26610,
     yOffsetWaveMultiplier: 4,
     yOffsetColorMultiplier: 4,
     yOffsetFlowMultiplier: 4,
