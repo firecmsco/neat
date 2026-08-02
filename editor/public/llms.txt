@@ -175,15 +175,15 @@ reacts to scrolling.
 | `vignetteIntensity` | number | 0 | 0–1 | |
 | `vignetteRadius` | number | 0.8 | 0.1–1 | |
 | `fresnelEnabled` | boolean | false | — | Rim glow on 3D shapes. |
-| `fresnelPower` | number | 2 | 0–10 | |
+| `fresnelPower` | number | 2 | 0.5–5 | |
 | `fresnelIntensity` | number | 0.5 | 0–3 | |
 | `fresnelColor` | string | `#FFFFFF` | hex | |
 | `iridescenceEnabled` | boolean | false | — | Oil-slick colour shift. |
 | `iridescenceIntensity` | number | 0.5 | 0–1 | |
-| `iridescenceSpeed` | number | 1 | 0–10 | |
-| `bloomIntensity` | number | 0 | 0–1 | |
+| `iridescenceSpeed` | number | 1 | 0–5 | |
+| `bloomIntensity` | number | 0 | 0–3 | |
 | `bloomThreshold` | number | 0.7 | 0–1 | |
-| `chromaticAberration` | number | 0 | 0–1 | |
+| `chromaticAberration` | number | 0 | 0–20 | Prism-style channel separation; the editor goes well past subtle. |
 
 ### Geometry and camera
 
