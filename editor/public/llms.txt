@@ -105,7 +105,7 @@ ranges are accepted but rarely look good.
 | `ref` | `HTMLCanvasElement` | — | — | Required. The canvas to render into. |
 | `colors` | `NeatColor[]` | — | 1–6 entries | Required. `{ color: "#RRGGBB", enabled: boolean, influence?: number }` |
 | `speed` | number | 4 | 0–10 | 0 freezes the animation. |
-| `resolution` | number | 1 | 0.05–2 | Render scale. 0.5 halves the pixel cost; below ~0.3 it gets soft. |
+| `resolution` | number | 1 | 0.05–2 | **Mesh density, not pixel scale.** The plane is 240×240 segments at 1, so 0.5 quarters the vertex count. The canvas backing store is always CSS-pixel sized, so raising this sharpens nothing — it only smooths the wave displacement. |
 | `antialias` | boolean | false | — | MSAA. Mostly matters with `wireframe`. |
 | `backgroundColor` | string | `#FFFFFF` | hex | Shows where the gradient is transparent. |
 | `backgroundAlpha` | number | 1 | 0–1 | Set 0 to composite over page content. |
@@ -249,8 +249,10 @@ product UI or poster cards, which is the fastest way to check a palette in conte
   darkening the gradient itself.
 - **Scroll-reactive**: assign `gradient.yOffset = window.scrollY` in a passive scroll
   listener; leave the multipliers at 4.
-- **Cheap on laptops**: `resolution: 0.5` and `antialias: false`. Neat is one fragment
-  shader, so cost scales with pixels, not with the number of colours or effects.
+- **Cheap on phones**: `resolution: 0.5` (or lower) and `antialias: false`. Most of the
+  work is in the vertex shader — the displacement mesh is 240×240 segments at
+  `resolution: 1`, which is far more than a small canvas needs — so mesh density is the
+  first thing to turn down, not the effects.
 - **Static image**: `speed: 0`, then export a PNG from the editor.
 
 ## One gradient, many canvases
