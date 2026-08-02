@@ -21,6 +21,8 @@ import { ImportConfigDialog } from "./ImportConfigDialog";
 import { LicenseDialog } from "./LicenseDialog";
 import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
 import { trackCheckoutCancelled } from "../utils/analytics";
+import { isShowcaseMode, SHOWCASE_MODES, Showcase, ShowcaseMode } from "./showcase/Showcase";
+import { ContextSwitcher } from "./showcase/ContextSwitcher";
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -461,6 +463,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     // Global UI visibility
     const [uiVisible, setUiVisible] = React.useState<boolean>(true);
+
+    // Which context the gradient is previewed in (full bleed, cards, website, …)
+    const [showcaseMode, setShowcaseMode] = React.useState<ShowcaseMode>(() => {
+        const stored = typeof window !== "undefined" ? window.localStorage.getItem("neat.showcase") : null;
+        // First visit lands on the website mockup — it says what Neat is for faster
+        // than a bare gradient does. Returning visitors keep whatever they picked.
+        return isShowcaseMode(stored) ? stored : "site";
+    });
+    // null = follow the gradient's own background, otherwise the user's choice
+    const [showcaseDark, setShowcaseDark] = React.useState<boolean | null>(null);
 
     const editorContainerRef = React.useRef<HTMLDivElement | null>(null);
     const scrollContentRef = React.useRef<HTMLDivElement | null>(null);
@@ -1616,7 +1628,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setPreset(keys[nextIndex]);
     };
 
-    // Keyboard shortcuts: arrows for presets, 'c' to toggle controls, 'h' to toggle UI
+    // Showcase contexts: the mockups default to matching the gradient's own
+    // background, until the user overrides it.
+    const showcaseIsDark = showcaseDark ?? isDarkColor(backgroundColor);
+    // Overlaid UI sits on the gradient in full bleed mode, on the mockup stage otherwise
+    const uiOnDark = showcaseMode === "full" ? isDarkColor(backgroundColor) : showcaseIsDark;
+
+    const changeShowcaseMode = useCallback((mode: ShowcaseMode) => {
+        setShowcaseMode(mode);
+        window.localStorage.setItem("neat.showcase", mode);
+        logEvent(analytics, 'select_showcase_context', { context: mode });
+    }, [analytics]);
+
+    // Keyboard shortcuts: arrows for presets, 'c' to toggle controls, 'h' to toggle UI,
+    // 'v' to cycle preview contexts (or 1–5 to jump straight to one)
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             // Ignore keydown events if user is typing in input or textarea
@@ -1628,10 +1653,16 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             else if (event.key === "ArrowLeft") prevPreset();
             else if (event.key.toLowerCase() === 'c') setDrawerOpen((v) => !v);
             else if (event.key.toLowerCase() === 'h') setUiVisible((v) => !v);
+            else if (event.key.toLowerCase() === 'v') {
+                const i = SHOWCASE_MODES.findIndex((m) => m.id === showcaseMode);
+                changeShowcaseMode(SHOWCASE_MODES[(i + 1) % SHOWCASE_MODES.length].id);
+            } else if (event.key >= "1" && event.key <= "5") {
+                changeShowcaseMode(SHOWCASE_MODES[parseInt(event.key, 10) - 1].id);
+            }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [selectedPreset, allPresets]);
+    }, [selectedPreset, allPresets, showcaseMode, changeShowcaseMode]);
 
     // Touch swipe support for changing presets on mobile
     const touchStartX = useRef(0);
@@ -1704,9 +1735,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                 {/* Spacer to enable scrolling - creates 300vh of scrollable space */}
                 <div style={{ height: "300vh", width: "100%", pointerEvents: "none" }} />
 
-                {/* Centered NEAT title overlay (visible only when UI is visible) */}
+                {/* Preview contexts — mockups that sample the live canvas. Sits above the
+                    canvas but below the controls, and never eats pointer events so drag
+                    to rotate and scroll to animate keep working. */}
+                <Showcase mode={showcaseMode} source={canvasRef} dark={showcaseIsDark} />
+
+                {/* Centered NEAT title overlay (visible only when UI is visible).
+                    In the mockup contexts it stays in the DOM but visually hidden, so the
+                    page keeps its h1 and tagline for search engines. */}
                 {uiVisible && (
-                    <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div className={showcaseMode === "full"
+                        ? "fixed inset-0 z-10 flex items-center justify-center pointer-events-none"
+                        : "sr-only"}>
                         <div
                             className="relative p-2 select-none text-center flex flex-col items-center">
                             <div className="relative">
@@ -1733,9 +1773,21 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     </div>
                 )}
 
+                {/* Preview context switcher */}
+                {uiVisible && (
+                    <ContextSwitcher
+                        mode={showcaseMode}
+                        onChange={changeShowcaseMode}
+                        dark={showcaseIsDark}
+                        onToggleDark={() => setShowcaseDark(!showcaseIsDark)}
+                        onDark={uiOnDark}
+                    />
+                )}
+
                 {/* Floating camera controls bar (shown only when UI is visible) */}
                 {uiVisible && (
-                    <div className="fixed bottom-[135px] sm:bottom-20 left-1/2 -translate-x-1/2 z-20 bg-black/25 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5">
+                    <div className={"fixed bottom-[135px] sm:bottom-20 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5 "
+                        + (uiOnDark ? "bg-black/25" : "bg-black/45")}>
                         <div className="flex items-center gap-1 text-neutral-400 border-r border-white/10 pr-2 h-7">
                             <Camera className="w-4 h-4" />
                             <span className="text-[10px] font-bold uppercase tracking-wider">Camera</span>
@@ -1801,7 +1853,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                 {/* Compact floating toolbar (shown only when UI is visible) */}
                 {uiVisible && (
-                    <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 bg-black/35 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw]">
+                    <div className={"fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw] "
+                        + (uiOnDark ? "bg-black/35" : "bg-black/55")}>
                         {/* Desktop: single row, Mobile: two rows */}
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
                             {/* Row 1: Preset navigation */}
@@ -1933,9 +1986,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                 {/* FPS counter overlay */}
                 {uiVisible && (
-                    <div className="fixed top-6 left-6 z-20 bg-black/20 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-lg font-mono text-[11px] leading-tight select-none"
-                         style={{ color: isDarkColor(backgroundColor) ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
-                        <div className="font-semibold text-sm" style={{ color: isDarkColor(backgroundColor) ? 'white' : 'black' }}>
+                    <div className={"hidden sm:block fixed top-6 left-6 z-20 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-lg font-mono text-[11px] leading-tight select-none "
+                        + (uiOnDark ? "bg-black/20" : "bg-white/35")}
+                         style={{ color: uiOnDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
+                        <div className="font-semibold text-sm" style={{ color: uiOnDark ? 'white' : 'black' }}>
                             {fps} <span className="font-normal text-[10px]" style={{ opacity: 0.6 }}>FPS</span>
                         </div>
                         <div className="flex gap-3 mt-0.5" style={{ opacity: 0.7 }}>
@@ -1954,7 +2008,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline"
-                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                style={{ color: uiOnDark ? "white" : "black" }}
                                 onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'footer' })}
                             >
                                 Made by FireCMS
@@ -1978,7 +2032,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             <a
                                 href="mailto:hello@firecms.co"
                                 className="hover:underline"
-                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                style={{ color: uiOnDark ? "white" : "black" }}
                                 onClick={() => logEvent(analytics, 'click_email', { location: 'footer' })}
                             >
                                 hello@firecms.co
