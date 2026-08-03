@@ -1846,7 +1846,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     lifted clear of the bottom-left footer on narrow windows, and back
                     in the corner-free centre on wide ones. */}
                 {uiVisible && (
-                <div className="fixed bottom-24 xl:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 max-w-[95vw]">
+                <div className="fixed bottom-20 xl:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 max-w-[95vw]">
 
                 {/* Camera controls — off by default, toggled from the toolbar */}
                 {cameraBarVisible && (
@@ -1919,7 +1919,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     <div className={"text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-full "
                         + (uiOnDark ? "bg-black/35" : "bg-black/55")}>
                         {/* Desktop: single row, Mobile: two rows */}
-                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 max-w-full">
                             {/* Row 1: Preset navigation */}
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <Tooltip title="Previous preset (←)">
@@ -1956,8 +1956,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             {/* Divider - horizontal on mobile, vertical on desktop */}
                             <div className="w-full h-px sm:w-px sm:h-7 bg-white/20"/>
 
-                            {/* Row 2: Action buttons */}
-                            <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Row 2: Action buttons — wraps rather than overflowing the pill */}
+                            <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 sm:gap-3">
                                 <Button size="sm" className="px-3 py-1"
                                         onClick={() => setDrawerOpen(true)}>
                                     Edit
