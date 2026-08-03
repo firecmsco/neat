@@ -71,7 +71,7 @@ export function Showcase({
 
             {/* Inset so scenes never collide with the editor's own chrome */}
             <div key={mode}
-                 className="absolute left-0 right-0 top-[64px] bottom-[190px] sm:top-[78px] sm:bottom-[136px] showcase-enter">
+                 className="absolute left-0 right-0 top-[64px] bottom-[200px] sm:top-[78px] sm:bottom-[160px] xl:bottom-[136px] showcase-enter">
                 {mode === "cards" && <CardsScene source={source} t={t}/>}
                 {mode === "site" && <SiteScene source={source} t={t}/>}
                 {mode === "app" && <AppScene source={source} t={t}/>}
