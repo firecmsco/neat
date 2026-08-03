@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import "@fontsource/sofia-sans";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
@@ -489,15 +489,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     });
     // null = follow the gradient's own background, otherwise the user's choice
     const [showcaseDark, setShowcaseDark] = React.useState<boolean | null>(null);
-
-    // The bottom bars are centred and up to 95vw wide, so on a narrow window they
-    // reach over the bottom-left footer — and the toolbar grows to two rows on
-    // mobile. Rather than guessing offsets, measure whichever bar sits highest and
-    // park the footer above it.
-    const toolbarRef = React.useRef<HTMLDivElement | null>(null);
-    const cameraBarRef = React.useRef<HTMLDivElement | null>(null);
-    const footerRef = React.useRef<HTMLDivElement | null>(null);
-    const [footerBottom, setFooterBottom] = React.useState<number>(12);
 
     const editorContainerRef = React.useRef<HTMLDivElement | null>(null);
     const scrollContentRef = React.useRef<HTMLDivElement | null>(null);
@@ -1695,40 +1686,6 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setPreset(keys[nextIndex]);
     };
 
-    useLayoutEffect(() => {
-        const measure = () => {
-            const rects = [toolbarRef.current, cameraBarRef.current]
-                .filter((el): el is HTMLDivElement => !!el)
-                .map((el) => el.getBoundingClientRect());
-            if (!rects.length) {
-                setFooterBottom(12);
-                return;
-            }
-
-            const footerHeight = footerRef.current?.offsetHeight ?? 28;
-            const spaceBelow = window.innerHeight - Math.max(...rects.map((r) => r.bottom));
-
-            // The mobile toolbar sits 80px off the bottom, which leaves a band the
-            // footer fits in — sit in it, centred. Only when the bars run to the
-            // bottom of the window (desktop) does the footer go above them instead.
-            if (spaceBelow >= footerHeight + 12) {
-                setFooterBottom(Math.max(8, Math.round((spaceBelow - footerHeight) / 2)));
-            } else {
-                setFooterBottom(Math.round(window.innerHeight - Math.min(...rects.map((r) => r.top)) + 12));
-            }
-        };
-
-        measure();
-        window.addEventListener("resize", measure);
-        const observer = new ResizeObserver(measure);
-        if (toolbarRef.current) observer.observe(toolbarRef.current);
-        if (cameraBarRef.current) observer.observe(cameraBarRef.current);
-        return () => {
-            window.removeEventListener("resize", measure);
-            observer.disconnect();
-        };
-    }, [uiVisible, cameraBarVisible, selectedPreset]);
-
     // Showcase contexts: the mockups default to matching the gradient's own
     // background, until the user overrides it.
     const showcaseIsDark = showcaseDark ?? isDarkColor(backgroundColor);
@@ -1887,8 +1844,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                 {/* Floating camera controls bar — off by default, toggled from the toolbar */}
                 {uiVisible && cameraBarVisible && (
-                    <div ref={cameraBarRef}
-                         className={"fixed bottom-[190px] sm:bottom-20 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5 "
+                    <div className={"fixed bottom-[190px] sm:bottom-[152px] left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5 "
                         + (uiOnDark ? "bg-black/25" : "bg-black/45")}>
                         <div className="flex items-center gap-1 text-neutral-400 border-r border-white/10 pr-2 h-7">
                             <Camera className="w-4 h-4" />
@@ -1955,8 +1911,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
                 {/* Compact floating toolbar (shown only when UI is visible) */}
                 {uiVisible && (
-                    <div ref={toolbarRef}
-                         className={"fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw] "
+                    <div className={"fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw] "
                         + (uiOnDark ? "bg-black/35" : "bg-black/55")}>
                         {/* Desktop: single row, Mobile: two rows */}
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
@@ -2114,9 +2069,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     into one row that fits under the taller two-row toolbar. */}
                 {uiVisible && (
                     <div
-                        ref={footerRef}
-                        style={{ bottom: footerBottom }}
-                        className="fixed z-10 text-left left-4 flex flex-row items-center gap-3 sm:left-6 sm:flex-col sm:items-start sm:gap-1.5">
+                        className="fixed z-10 text-left bottom-3 left-4 sm:bottom-4 sm:left-6 flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-1.5">
                         <GitHubStars
                             onDark={uiOnDark}
                             onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
