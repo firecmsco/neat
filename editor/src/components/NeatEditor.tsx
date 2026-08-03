@@ -23,6 +23,7 @@ import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
 import { trackCheckoutCancelled } from "../utils/analytics";
 import { isShowcaseMode, SHOWCASE_MODES, Showcase, ShowcaseMode } from "./showcase/Showcase";
 import { ContextSwitcher } from "./showcase/ContextSwitcher";
+import { GitHubStars } from "./GitHubStars";
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -2079,19 +2080,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 Made by FireCMS
                             </a>
                         </div>
-                        <div className="hover:opacity-80 transition-opacity">
-                            <a
-                                href="https://github.com/FireCMSco/neat"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                        <div className="py-0.5">
+                            <GitHubStars
+                                onDark={uiOnDark}
                                 onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
-                            >
-                                <img
-                                    src="https://img.shields.io/github/stars/FireCMSco/neat?style=flat"
-                                    alt="GitHub stars"
-                                    style={{ height: 20 }}
-                                />
-                            </a>
+                            />
                         </div>
                         <div className="text-xs opacity-50 hover:opacity-80 transition-opacity">
                             <a
