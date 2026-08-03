@@ -496,7 +496,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     // park the footer above it.
     const toolbarRef = React.useRef<HTMLDivElement | null>(null);
     const cameraBarRef = React.useRef<HTMLDivElement | null>(null);
-    const [footerBottom, setFooterBottom] = React.useState<number>(24);
+    const footerRef = React.useRef<HTMLDivElement | null>(null);
+    const [footerBottom, setFooterBottom] = React.useState<number>(12);
 
     const editorContainerRef = React.useRef<HTMLDivElement | null>(null);
     const scrollContentRef = React.useRef<HTMLDivElement | null>(null);
@@ -1696,10 +1697,25 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
     useLayoutEffect(() => {
         const measure = () => {
-            const tops = [toolbarRef.current, cameraBarRef.current]
+            const rects = [toolbarRef.current, cameraBarRef.current]
                 .filter((el): el is HTMLDivElement => !!el)
-                .map((el) => el.getBoundingClientRect().top);
-            setFooterBottom(tops.length ? Math.round(window.innerHeight - Math.min(...tops) + 12) : 24);
+                .map((el) => el.getBoundingClientRect());
+            if (!rects.length) {
+                setFooterBottom(12);
+                return;
+            }
+
+            const footerHeight = footerRef.current?.offsetHeight ?? 28;
+            const spaceBelow = window.innerHeight - Math.max(...rects.map((r) => r.bottom));
+
+            // The mobile toolbar sits 80px off the bottom, which leaves a band the
+            // footer fits in — sit in it, centred. Only when the bars run to the
+            // bottom of the window (desktop) does the footer go above them instead.
+            if (spaceBelow >= footerHeight + 12) {
+                setFooterBottom(Math.max(8, Math.round((spaceBelow - footerHeight) / 2)));
+            } else {
+                setFooterBottom(Math.round(window.innerHeight - Math.min(...rects.map((r) => r.top)) + 12));
+            }
         };
 
         measure();
@@ -2098,6 +2114,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     into one row that fits under the taller two-row toolbar. */}
                 {uiVisible && (
                     <div
+                        ref={footerRef}
                         style={{ bottom: footerBottom }}
                         className="fixed z-10 text-left left-4 flex flex-row items-center gap-3 sm:left-6 sm:flex-col sm:items-start sm:gap-1.5">
                         <GitHubStars
