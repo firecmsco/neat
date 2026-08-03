@@ -1842,9 +1842,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     />
                 )}
 
-                {/* Floating camera controls bar — off by default, toggled from the toolbar */}
-                {uiVisible && cameraBarVisible && (
-                    <div className={"fixed bottom-[200px] sm:bottom-[152px] xl:bottom-20 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-[95vw] flex items-center gap-2 text-xs select-none border border-white/5 "
+                {/* Both bottom bars live in one stack, so a single rule positions them:
+                    lifted clear of the bottom-left footer on narrow windows, and back
+                    in the corner-free centre on wide ones. */}
+                {uiVisible && (
+                <div className="fixed bottom-24 xl:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 max-w-[95vw]">
+
+                {/* Camera controls — off by default, toggled from the toolbar */}
+                {cameraBarVisible && (
+                    <div className={"text-white backdrop-blur-md rounded-full px-3 py-1 shadow-lg max-w-full flex items-center gap-2 text-xs select-none border border-white/5 "
                         + (uiOnDark ? "bg-black/25" : "bg-black/45")}>
                         <div className="flex items-center gap-1 text-neutral-400 border-r border-white/10 pr-2 h-7">
                             <Camera className="w-4 h-4" />
@@ -1909,9 +1915,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     </div>
                 )}
 
-                {/* Compact floating toolbar (shown only when UI is visible) */}
-                {uiVisible && (
-                    <div className={"fixed bottom-24 xl:bottom-6 left-1/2 -translate-x-1/2 z-20 text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-[95vw] "
+                {/* Compact floating toolbar */}
+                    <div className={"text-white backdrop-blur-md rounded-2xl sm:rounded-full px-3 py-1.5 shadow-lg max-w-full "
                         + (uiOnDark ? "bg-black/35" : "bg-black/55")}>
                         {/* Desktop: single row, Mobile: two rows */}
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
@@ -2031,6 +2036,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             </div>
                         </div>
                     </div>
+                </div>
                 )}
 
                 {/* Quick restore when UI is hidden - small icon in bottom left */}
@@ -2069,7 +2075,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                     into one row that fits under the taller two-row toolbar. */}
                 {uiVisible && (
                     <div
-                        className="fixed z-10 text-left bottom-3 left-4 sm:bottom-4 sm:left-6 flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-1.5">
+                        className="fixed z-10 text-left bottom-4 left-4 flex flex-row items-center gap-3 xl:flex-col xl:items-start xl:gap-1.5">
                         <GitHubStars
                             onDark={uiOnDark}
                             onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
@@ -2083,8 +2089,8 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                 style={{ color: uiOnDark ? "white" : "black" }}
                                 onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'footer' })}
                             >
-                                <span className="sm:hidden">FireCMS</span>
-                                <span className="hidden sm:inline">Made by FireCMS</span>
+                                <span className="xl:hidden">FireCMS</span>
+                                <span className="hidden xl:inline">Made by FireCMS</span>
                             </a>
                         </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
