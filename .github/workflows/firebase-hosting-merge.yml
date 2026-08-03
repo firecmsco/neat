@@ -10,8 +10,18 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: yarn && cd editor && yarn build
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The repo declares pnpm via "packageManager"; corepack honours it.
+      - run: corepack enable
+      # editor/ is installed on its own: vite aliases @firecms/neat straight to
+      # lib/src, so the library needs no install or build of its own.
+      - run: pnpm install --frozen-lockfile
+        working-directory: editor
+      - run: pnpm build
+        working-directory: editor
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
