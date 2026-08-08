@@ -27,6 +27,21 @@ export type NeatConfig = {
     waveFrequencyX?: number;
     waveFrequencyY?: number;
     waveAmplitude?: number;
+
+    /**
+     * Second displacement layer, sampled on a rotated domain and running at its
+     * own rate. Where it crosses the base waves they interfere, which breaks up
+     * the single repeating direction the base layer has on its own.
+     */
+    secondaryWaveEnabled?: boolean;
+    secondaryWaveFrequencyX?: number;
+    secondaryWaveFrequencyY?: number;
+    /** Weight of the second layer against the first. 0 = base only, 10 = equal parts. */
+    secondaryWaveAmplitude?: number;
+    /** Rate of the second layer relative to `speed`. */
+    secondaryWaveSpeed?: number;
+    /** Rotation of the second layer's domain, in radians. 0 makes it run parallel to the base. */
+    secondaryWaveAngle?: number;
     highlights?: number;
     shadows?: number;
     colorSaturation?: number;
@@ -96,6 +111,25 @@ export type NeatConfig = {
     iridescenceIntensity?: number;
     iridescenceSpeed?: number;
 
+    /**
+     * Thin-film rainbow along the seams between colours — the oil-slick fringe,
+     * as opposed to `iridescence`, which tints the whole surface by height.
+     */
+    prismEdgeEnabled?: boolean;
+    prismEdgeIntensity?: number;
+    /** Thinness of the fringe. Higher values pull it tighter onto the seam. */
+    prismEdgeThinness?: number;
+    /** Apparent film thickness across one seam — how far through the Newton series it runs. */
+    prismEdgeSpread?: number;
+    /** Rate the film appears to thicken, drifting the colours. 0 holds them still. */
+    prismEdgeSpeed?: number;
+    /**
+     * How much the wave height varies the film thickness. This is what makes the
+     * hue shift *along* a seam rather than painting the whole rim one colour, and
+     * it is the only route by which the wave layers reach a flat-lit preset.
+     */
+    prismEdgeRipple?: number;
+
     // Bloom (fake)
     bloomIntensity?: number;
     bloomThreshold?: number;
@@ -137,7 +171,6 @@ export type NeatConfig = {
 export type NeatColor = {
     color: string;
     enabled: boolean;
-    influence?: number;
 }
 
 export type NeatController = {

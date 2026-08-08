@@ -142,6 +142,26 @@ function BackgroundGradient() {
 | `waveFrequencyX` | `number` | `5` | `0-10` | Horizontal wave frequency |
 | `waveFrequencyY` | `number` | `5` | `0-10` | Vertical wave frequency |
 
+#### Secondary Waves
+
+A second displacement layer sampled on a rotated domain and running at its own
+rate. On its own the base layer swells along one direction; crossing it with a
+second layer makes the two interfere, so ridges break up and reform instead of
+marching across the canvas.
+
+| Property | Type | Default | Range | Description |
+|----------|------|---------|-------|-------------|
+| `secondaryWaveEnabled` | `boolean` | `false` | | Enable the second wave layer |
+| `secondaryWaveFrequencyX` | `number` | `3` | `0-10` | Horizontal frequency of the second layer |
+| `secondaryWaveFrequencyY` | `number` | `3` | `0-10` | Vertical frequency of the second layer |
+| `secondaryWaveAmplitude` | `number` | `5` | `0-10` | Weight against the base layer (0 = base only, 10 = equal parts) |
+| `secondaryWaveSpeed` | `number` | `0.6` | `0-3` | Rate relative to `speed` |
+| `secondaryWaveAngle` | `number` | `1.0` | `0-π` | Domain rotation in radians (0 = parallel to the base) |
+
+`secondaryWaveAmplitude` is a blend weight, not an extra height — the combined
+displacement is renormalised so `waveAmplitude` stays the master control and the
+lighting keeps the same range whatever the mix.
+
 ### Colors
 
 | Property | Type | Default | Description |
@@ -158,7 +178,6 @@ function BackgroundGradient() {
 {
     color: string;      // Hex color (e.g., "#FF5772")
     enabled: boolean;   // Toggle color on/off
-    influence?: number; // Color strength (0-1, optional)
 }
 ```
 
@@ -207,6 +226,46 @@ function BackgroundGradient() {
 | `iridescenceEnabled` | `boolean` | `false` | Enable soap-bubble style color shifting |
 | `iridescenceIntensity` | `number` | `0.5` | Strength of the color shift effect |
 | `iridescenceSpeed` | `number` | `1.0` | Color cycle speed |
+
+#### Prism Edges
+
+Thin-film rainbow along the seams between colors — the oil-slick fringe you get
+where two films meet. Distinct from `iridescence`, which tints the whole surface
+by height: this one lives only on the boundaries and runs through the spectrum as
+it crosses them. It reads the color-mix field directly, so it needs no screen-space
+derivatives and works the same on WebGL1.
+
+The fringe colors follow thin-film interference rather than a hue wheel — each
+channel oscillates at a rate set by its wavelength, which produces the Newton
+series a real film shows (white → straw → magenta → blue → green, washing out as
+it thickens) instead of an even rainbow sweep.
+
+The fringe **tints at constant luminance** rather than glowing on top: it takes the
+surface's own brightness and supplies only the hue. Adding or screening the color
+instead — the obvious approach — only ever lightens, so over a pale surface every
+channel runs to white and the fringe degrades into a grey halo. Tinting keeps a
+bright mass bright and a dark one dark, which is what reads as petrol on water
+rather than a light behind it, and it works on light and dark backgrounds alike.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `prismEdgeEnabled` | `boolean` | `false` | Enable the fringe |
+| `prismEdgeIntensity` | `number` | `0.5` | How far the fringe tints the surface (0-1) |
+| `prismEdgeThinness` | `number` | `3.0` | Thinness — higher pulls the band tighter onto the seam (1-12) |
+| `prismEdgeSpread` | `number` | `1.0` | Apparent film thickness across one seam — how far through the Newton series it runs, so how many bands appear (0-3) |
+| `prismEdgeRipple` | `number` | `1.0` | How much the wave height varies the film thickness (0-4) |
+| `prismEdgeSpeed` | `number` | `0.5` | Rate the film appears to thicken, drifting the colors (0 = still) |
+
+`prismEdgeRipple` is what stops the fringe reading as one flat halo. A tight band
+samples a single slice of the series, so without it the whole rim comes out one
+color; letting the wave height modulate thickness — as it would on a real rippling
+film — shifts the hue *along* the seam. It is also the only route by which the wave
+layers reach a preset lit flat enough that their shading contributes nothing, so it
+pairs naturally with `secondaryWave*`.
+
+How soft the fringe is follows `colorBlending`: a wide blend gives a broad, hazy
+band, a tight one gives a hard rim. Push `prismEdgeThinness` up if the fringe is
+washing your base colors out to pastel.
 
 #### Bloom (Fake Glow)
 
@@ -271,10 +330,14 @@ function BackgroundGradient() {
 | `renderScale` | `number` | `1` | Drawing buffer size relative to the canvas' CSS size (0.1-3) |
 
 **`resolution` is mesh density, not pixel resolution.** It scales the displacement
-grid — 240x240 segments for a plane at `1`, 120x120 for the 3D shapes. Most of the
-per-frame cost is in the vertex shader, so this is the first thing to turn down.
-The grid is also capped to roughly one segment per 6 canvas pixels, so a small
-canvas never pays for detail it cannot show.
+grid — 240x240 segments for a plane at `1`, 120x120 for the 3D shapes. The grid is
+also capped to roughly one segment per 6 canvas pixels, so a small canvas never
+pays for detail it cannot show.
+
+The per-frame cost splits roughly evenly between the vertex shader (one Perlin
+evaluation per wave layer plus one simplex evaluation per enabled color, per vertex)
+and the fragment shader (dominated by film grain). Turning either side down helps;
+which one to reach for depends on whether you are vertex- or fill-bound.
 
 **`renderScale` is the pixel one.** At `0.75` the gradient renders 44% fewer pixels
 and the browser scales the result up — usually invisible behind content, and the
@@ -395,48 +458,41 @@ gradient.textureEase = 0.7;
    renderScale: 0.75  // 44% fewer pixels, browser upscales
    ```
 
-2. **Disable features you don't need:**
+2. **Disable features you don't need.** Effects you switch off are compiled out of
+   the shader entirely rather than branched around, so they cost exactly nothing:
+
    ```typescript
-   speed: 0,              // Static gradient
+   speed: 0,              // Static gradient — the render loop parks
    grainIntensity: 0,     // No grain effect
    flowEnabled: false,    // No flow distortion
    ```
 
-3. **Use fewer colors:**
-   - 3-4 colors = best performance
-   - 6 colors = more complex but slower
+3. **Use fewer colors.** Each enabled color is another simplex-noise evaluation per
+   vertex, so the cost is roughly linear in how many are on.
 
-### Design Tips
+**What things actually cost.** Measured on an Apple GPU at 2880x1620 with
+`resolution: 2`, as a share of frame time — treat these as rough proportions, not
+absolutes, since the balance shifts with canvas size and mesh density:
 
-- **Subtle animations:** `speed: 2-3`, `waveAmplitude: 3-5`
-- **Dramatic effects:** `speed: 5-8`, `waveAmplitude: 8-10`
-- **Smooth blending:** Higher `colorBlending` values (7-10)
-- **Sharp contrasts:** Lower `colorBlending` values (3-5)
+| Turning off | Frame time saved |
+|-------------|------------------|
+| `grainIntensity: 0` | ~29% |
+| Halving `resolution` | ~29% |
+| `renderScale: 0.75` | ~29% |
+| Each disabled color (6 → 2) | ~5% each |
+| `prismEdgeEnabled: false` | ~5% |
+| `secondaryWaveEnabled: false` | ~5% |
+| `flowEnabled: false` | ~2% |
 
-### Common Use Cases
+Grain is the single biggest switch, and the one most often left on without being
+noticed. The three leaders are close enough that on a struggling device it is worth
+trying all of them.
 
-**Hero Background:**
-```typescript
-{
-    colors: [/* your brand colors */],
-    speed: 3,
-    waveAmplitude: 5,
-    shadows: 2,
-    highlights: 7,
-    grainIntensity: 0.1
-}
-```
-
-**Subtle Page Background:**
-```typescript
-{
-    colors: [/* muted pastels */],
-    speed: 1,
-    waveAmplitude: 2,
-    colorBlending: 9,
-    backgroundAlpha: 0.7
-}
-```
+**Why grain costs what it does.** It is fractal noise — two 3D simplex evaluations
+per pixel — and each of those runs three nested hash rounds built on `sin()`, so the
+effect alone is roughly 24 transcendental calls per pixel per frame. There is no way
+to make it cheaper without changing how it looks, so if you are fill-bound and can
+live without it, turning it off is the largest single saving available.
 
 ---
 

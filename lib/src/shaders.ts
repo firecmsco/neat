@@ -16,6 +16,31 @@ export const vertexShaderSource = `void main() {
         u_time
     ));
 
+    // 1b. SECONDARY WAVES
+    // A second noise layer sampled on a rotated domain and moving at its own
+    // rate. Crossing the base layer at an angle is what turns the regular swell
+    // into interference, so the ridges stop repeating along one direction.
+    if (NEAT_SECONDARY_WAVE_ENABLED > 0.5) {
+        float t2 = u_time * u_wave2_speed;
+        float ca = cos(u_wave2_angle);
+        float sa = sin(u_wave2_angle);
+        float px = position.x;
+        float py = position.y + waveOffset;
+        vec2 rp = vec2(ca * px - sa * py, sa * px + ca * py);
+
+        float secondary = cnoise( vec3(
+            u_wave2_frequency_x * rp.x + t2,
+            u_wave2_frequency_y * rp.y - t2,
+            t2 * 0.6 + 41.7
+        ));
+
+        // Normalised blend rather than a plain sum: the displacement drives the
+        // highlight/shadow terms downstream, which expect roughly the same range
+        // whatever the mix.
+        v_displacement_amount = (v_displacement_amount + secondary * u_wave2_amplitude)
+            / (1.0 + u_wave2_amplitude);
+    }
+
     // 2. FLOW FIELD
     // Apply flow offset to scroll the flow field mask
     vec2 baseUv = vUv;
@@ -75,8 +100,23 @@ export const vertexShaderSource = `void main() {
     const float minNoise = .0;
     const float maxNoise = .9;
 
-    for (int i = 1; i < 6; i++) {
-        if (i < u_colors_count) {
+    // Where the colour seams are, for the prism fringe.
+    //   x — how mid-transition the most-transitioning colour is, 1 on a seam and
+    //       0 deep inside a colour. A max of smooth terms, so it stays continuous
+    //       even where which colour is winning changes; picking one transition per
+    //       vertex instead makes the varying jump between triangles and the fringe
+    //       comes out as a staircase.
+    //   y — total mix progress, which climbs by ~1 across each seam and so gives
+    //       the hue a ramp to run along.
+    vec2 edge = vec2(0.0);
+
+    // The whole mix below is dead weight when a procedural texture is supplying the
+    // colour — the fragment shader reads v_color only on the non-texture path — and
+    // that is up to five simplex-noise evaluations per vertex thrown away. Both flags
+    // are compile-time constants, so this folds away entirely rather than branching.
+    // The prism fringe reads the same field, so it has to keep the loop alive.
+    if (NEAT_PROC_TEXTURE_ENABLED < 0.5 || NEAT_PRISM_EDGE_ENABLED > 0.5) {
+        for (int i = 1; i < 6; i++) {
             if (u_colors[i].is_active > 0.5) {
                 float noiseFlow = (1. + float(i)) / 30.;
                 float noiseSpeed = (1. + float(i)) * 0.11;
@@ -96,12 +136,24 @@ export const vertexShaderSource = `void main() {
                 ) - (.1 * float(i)) + (.5 * u_color_blending);
 
                 noise = clamp(noise, minNoise, maxNoise + float(i) * 0.02);
-                color = mix(color, u_colors[i].color, smoothstep(0.0, u_color_blending, noise));
+                float mixAmount = smoothstep(0.0, u_color_blending, noise);
+                color = mix(color, u_colors[i].color, mixAmount);
+
+                if (NEAT_PRISM_EDGE_ENABLED > 0.5) {
+                    // Seams found so far sit *under* this colour, so fade them by
+                    // how much of them it covers before folding in its own. Without
+                    // this a buried transition still lights up, and fringes appear
+                    // stranded in the middle of a solid area with no seam in sight.
+                    edge.x *= (1.0 - mixAmount);
+                    edge.x = max(edge.x, 4.0 * mixAmount * (1.0 - mixAmount));
+                    edge.y += mixAmount;
+                }
             }
         }
     }
 
     v_color = color;
+    v_edge = edge;
 
     // 4. FRESNEL (rim glow)
     // (Calculated in fragment shader using displacement slope approximation)
@@ -109,7 +161,6 @@ export const vertexShaderSource = `void main() {
     // 5. VERTEX POSITION
     vec3 newPosition = position + normal * v_displacement_amount * u_wave_amplitude;
     vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
-    vViewPosition = mvPosition.xyz;
     vNormal = normalize((modelViewMatrix * vec4(normal, 0.0)).xyz);
     gl_Position = projectionMatrix * mvPosition;
     v_new_position = gl_Position;
@@ -136,6 +187,26 @@ float fbm(vec3 x) {
 vec3 hsl2rgb(float h, float s, float l) {
     vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
     return l + s * (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
+}
+
+// Thin-film interference ramp.
+//
+// A film reflects each wavelength by how its own period fits the extra distance
+// through the film, so the channels oscillate at *different rates* set by their
+// wavelengths — they do not sit at fixed offsets around a colour wheel. That is
+// the whole difference between a soap film and a rainbow: the Newton series runs
+// white → straw → magenta → blue → green and washes out as the film thickens,
+// where a hue sweep would just cycle evenly forever. The constants are the red
+// wavelength over each channel's, near enough for something decorative.
+// Rescaled to peak at 1. Raw interference is dark over much of the series, and
+// the fringe is screened on, which ignores dark — so untouched it simply vanishes
+// at half the thicknesses. Scaling keeps the ratios between channels, so the hue
+// order and the wash-out towards white both survive; only the overall level moves,
+// and that is what the intensity control is for.
+vec3 thinFilm(float t) {
+    const vec3 inverseWavelength = vec3(1.0, 1.18, 1.42);
+    vec3 f = 0.5 + 0.5 * cos(6.283185 * inverseWavelength * t);
+    return f / max(max(f.r, max(f.g, f.b)), 0.0001);
 }
 
 void main() {
@@ -260,6 +331,40 @@ void main() {
         color = mix(color, iriColor, u_iridescence_intensity * abs(v_displacement_amount) * 0.6);
     }
 
+    // === PRISM EDGES (thin-film fringe along colour seams) ===
+    // Oil-slick behaviour: the rainbow lives on the boundary between two colours,
+    // not on the surface, and it runs through the spectrum as you cross it. Both
+    // halves come straight off the colour-mix field the vertex shader already
+    // built, so no screen-space derivatives are needed.
+    if (NEAT_PRISM_EDGE_ENABLED > 0.5) {
+        // pow() is undefined for a zero base with a non-positive exponent, and
+        // both are reachable from config — off-seam the base is exactly 0.
+        float band = pow(clamp(v_edge.x, 0.0, 1.0), max(u_prism_edge_thinness, 0.001));
+
+        // Thickness has to vary *along* the seam, not just across it. A tight band
+        // samples one slice of the series, so on its own it paints the whole rim a
+        // single colour — where a real slick shifts hue as you follow the edge.
+        // Riding the wave height is what a film on a rippling surface actually
+        // does, and it means the wave layers show through the fringe even when the
+        // lighting is flat enough that their shading contributes nothing.
+        float thickness = v_edge.y * u_prism_edge_spread
+            + v_displacement_amount * u_prism_edge_ripple
+            + u_time * u_prism_edge_speed * 0.05;
+        vec3 fringe = thinFilm(thickness);
+
+        // Tint at constant luminance rather than screening the fringe on. Screening
+        // only lightens, so over a pale surface — the usual case here — every channel
+        // runs towards white and the hue washes out to a grey halo. Rescaling the
+        // fringe to the surface's own brightness instead keeps a bright mass bright
+        // and a dark one dark while the film supplies the hue, which is what reads as
+        // petrol on water rather than a glow behind it.
+        const vec3 luma = vec3(0.2126, 0.7152, 0.0722);
+        vec3 tinted = fringe * (dot(color, luma) / max(dot(fringe, luma), 0.001));
+
+        // Intensity is a blend amount here; past 1 mix() extrapolates out of gamut.
+        color = mix(color, min(tinted, vec3(1.0)), band * clamp(u_prism_edge_intensity, 0.0, 1.0));
+    }
+
     // === FRESNEL (Rim glow) ===
     if (NEAT_FRESNEL_ENABLED > 0.5) {
         float slope = 1.0 - abs(v_displacement_amount);
@@ -355,9 +460,9 @@ varying vec2 vFlowUv;
 varying vec4 v_new_position;
 varying vec3 v_color;
 varying float v_displacement_amount;
-varying vec3 vViewPosition;
 varying vec3 vNormal;
 varying vec3 vPosition;
+varying vec2 v_edge;
 
 uniform float u_time;
 uniform vec2 u_resolution;
@@ -365,6 +470,13 @@ uniform vec2 u_color_pressure;
 uniform float u_wave_frequency_x;
 uniform float u_wave_frequency_y;
 uniform float u_wave_amplitude;
+
+// Secondary wave layer
+uniform float u_wave2_frequency_x;
+uniform float u_wave2_frequency_y;
+uniform float u_wave2_amplitude;
+uniform float u_wave2_speed;
+uniform float u_wave2_angle;
 uniform float u_plane_width;
 uniform float u_plane_height;
 uniform float u_color_blending;
@@ -373,7 +485,6 @@ uniform int u_colors_count;
 struct ColorStop {
     float is_active;
     vec3 color;
-    float influence;
 };
 uniform ColorStop u_colors[6];
 
@@ -408,9 +519,9 @@ varying vec2 vFlowUv;
 varying vec4 v_new_position;
 varying vec3 v_color;
 varying float v_displacement_amount;
-varying vec3 vViewPosition;
 varying vec3 vNormal;
 varying vec3 vPosition;
+varying vec2 v_edge;
 
 uniform float u_time;
 uniform vec2 u_resolution;
@@ -459,6 +570,13 @@ uniform vec3 u_fresnel_color;
 uniform float u_iridescence_enabled;
 uniform float u_iridescence_intensity;
 uniform float u_iridescence_speed;
+
+// Prism edge uniforms
+uniform float u_prism_edge_intensity;
+uniform float u_prism_edge_thinness;
+uniform float u_prism_edge_spread;
+uniform float u_prism_edge_speed;
+uniform float u_prism_edge_ripple;
 
 // Bloom uniforms
 uniform float u_bloom_intensity;

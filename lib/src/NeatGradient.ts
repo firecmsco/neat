@@ -20,6 +20,7 @@ const COLORS_COUNT = 6;
 
 
 
+
 export interface WebGLState {
     gl: WebGLRenderingContext | WebGL2RenderingContext;
     program: WebGLProgram;
@@ -56,6 +57,9 @@ const PROP_DESCRIPTORS: PropDesc[] = [
     ['waveFrequencyX', '_waveFrequencyX', 1/0.04, 0.04, 'u'],
     ['waveFrequencyY', '_waveFrequencyY', 1/0.04, 0.04, 'u'],
     ['waveAmplitude', '_waveAmplitude', 1/0.75, 0.75, 'u'],
+    ['secondaryWaveFrequencyX', '_secondaryWaveFrequencyX', 1/0.04, 0.04, 'u'],
+    ['secondaryWaveFrequencyY', '_secondaryWaveFrequencyY', 1/0.04, 0.04, 'u'],
+    ['secondaryWaveAmplitude', '_secondaryWaveAmplitude', 10, 1/10, 'u'],
     ['highlights', '_highlights', 100, 1/100, 'u'],
     ['shadows', '_shadows', 100, 1/100, 'u'],
     ['colorSaturation', '_saturation', 10, 1/10, 'u'],
@@ -92,6 +96,15 @@ const PROP_DESCRIPTORS: PropDesc[] = [
     ['iridescenceEnabled', '_iridescenceEnabled', 1, 1, 'u'],
     ['iridescenceIntensity', '_iridescenceIntensity', 1, 1, 'u'],
     ['iridescenceSpeed', '_iridescenceSpeed', 1, 1, 'u'],
+    ['secondaryWaveEnabled', '_secondaryWaveEnabled', 1, 1, 'u'],
+    ['secondaryWaveSpeed', '_secondaryWaveSpeed', 1, 1, 'u'],
+    ['secondaryWaveAngle', '_secondaryWaveAngle', 1, 1, 'u'],
+    ['prismEdgeEnabled', '_prismEdgeEnabled', 1, 1, 'u'],
+    ['prismEdgeIntensity', '_prismEdgeIntensity', 1, 1, 'u'],
+    ['prismEdgeThinness', '_prismEdgeThinness', 1, 1, 'u'],
+    ['prismEdgeSpread', '_prismEdgeSpread', 1, 1, 'u'],
+    ['prismEdgeSpeed', '_prismEdgeSpeed', 1, 1, 'u'],
+    ['prismEdgeRipple', '_prismEdgeRipple', 1, 1, 'u'],
     ['bloomIntensity', '_bloomIntensity', 1, 1, 'u'],
     ['bloomThreshold', '_bloomThreshold', 1, 1, 'u'],
     ['chromaticAberration', '_chromaticAberration', 1, 1, 'u'],
@@ -139,6 +152,12 @@ export interface NeatGradient {
     waveFrequencyX: number;
     waveFrequencyY: number;
     waveAmplitude: number;
+    secondaryWaveEnabled: boolean;
+    secondaryWaveFrequencyX: number;
+    secondaryWaveFrequencyY: number;
+    secondaryWaveAmplitude: number;
+    secondaryWaveSpeed: number;
+    secondaryWaveAngle: number;
     highlights: number;
     shadows: number;
     colorSaturation: number;
@@ -173,6 +192,12 @@ export interface NeatGradient {
     iridescenceEnabled: boolean;
     iridescenceIntensity: number;
     iridescenceSpeed: number;
+    prismEdgeEnabled: boolean;
+    prismEdgeIntensity: number;
+    prismEdgeThinness: number;
+    prismEdgeSpread: number;
+    prismEdgeSpeed: number;
+    prismEdgeRipple: number;
     bloomIntensity: number;
     bloomThreshold: number;
     chromaticAberration: number;
@@ -222,6 +247,13 @@ export class NeatGradient implements NeatController {
     private _waveFrequencyX: number = -1;
     private _waveFrequencyY: number = -1;
     private _waveAmplitude: number = -1;
+
+    private _secondaryWaveEnabled: boolean = false;
+    private _secondaryWaveFrequencyX: number = 0.12;
+    private _secondaryWaveFrequencyY: number = 0.12;
+    private _secondaryWaveAmplitude: number = 0.5;
+    private _secondaryWaveSpeed: number = 0.6;
+    private _secondaryWaveAngle: number = 1.0;
 
     private _shadows: number = -1;
     private _highlights: number = -1;
@@ -280,6 +312,13 @@ export class NeatGradient implements NeatController {
     private _iridescenceEnabled: boolean = false;
     private _iridescenceIntensity: number = 0.5;
     private _iridescenceSpeed: number = 1.0;
+
+    private _prismEdgeEnabled: boolean = false;
+    private _prismEdgeIntensity: number = 0.5;
+    private _prismEdgeThinness: number = 3.0;
+    private _prismEdgeSpread: number = 1.0;
+    private _prismEdgeSpeed: number = 0.5;
+    private _prismEdgeRipple: number = 1.0;
 
     private _bloomIntensity: number = 0;
     private _bloomThreshold: number = 0.7;
@@ -482,6 +521,12 @@ export class NeatGradient implements NeatController {
             waveFrequencyX = 5,
             waveFrequencyY = 5,
             waveAmplitude = 3,
+            secondaryWaveEnabled = false,
+            secondaryWaveFrequencyX = 3,
+            secondaryWaveFrequencyY = 3,
+            secondaryWaveAmplitude = 5,
+            secondaryWaveSpeed = 0.6,
+            secondaryWaveAngle = 1.0,
             colors,
             highlights = 4,
             shadows = 4,
@@ -539,6 +584,12 @@ export class NeatGradient implements NeatController {
             iridescenceEnabled = false,
             iridescenceIntensity = 0.5,
             iridescenceSpeed = 1.0,
+            prismEdgeEnabled = false,
+            prismEdgeIntensity = 0.5,
+            prismEdgeThinness = 3.0,
+            prismEdgeSpread = 1.0,
+            prismEdgeSpeed = 0.5,
+            prismEdgeRipple = 1.0,
             bloomIntensity = 0.0,
             bloomThreshold = 0.7,
             chromaticAberration = 0.0,
@@ -591,6 +642,12 @@ export class NeatGradient implements NeatController {
         this.waveFrequencyX = waveFrequencyX;
         this.waveFrequencyY = waveFrequencyY;
         this.waveAmplitude = waveAmplitude;
+        this.secondaryWaveEnabled = secondaryWaveEnabled;
+        this.secondaryWaveFrequencyX = secondaryWaveFrequencyX;
+        this.secondaryWaveFrequencyY = secondaryWaveFrequencyY;
+        this.secondaryWaveAmplitude = secondaryWaveAmplitude;
+        this.secondaryWaveSpeed = secondaryWaveSpeed;
+        this.secondaryWaveAngle = secondaryWaveAngle;
         this.colorBlending = colorBlending;
         this._resolution = resolution;
         this.grainScale = grainScale;
@@ -653,6 +710,12 @@ export class NeatGradient implements NeatController {
         this.iridescenceEnabled = iridescenceEnabled;
         this.iridescenceIntensity = iridescenceIntensity;
         this.iridescenceSpeed = iridescenceSpeed;
+        this.prismEdgeEnabled = prismEdgeEnabled;
+        this.prismEdgeIntensity = prismEdgeIntensity;
+        this.prismEdgeThinness = prismEdgeThinness;
+        this.prismEdgeSpread = prismEdgeSpread;
+        this.prismEdgeSpeed = prismEdgeSpeed;
+        this.prismEdgeRipple = prismEdgeRipple;
         this.bloomIntensity = bloomIntensity;
         this.bloomThreshold = bloomThreshold;
         this.chromaticAberration = chromaticAberration;
@@ -785,6 +848,11 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_wave_frequency_x'], this._waveFrequencyX);
                     gl.uniform1f(locations.uniforms['u_wave_frequency_y'], this._waveFrequencyY);
                     gl.uniform1f(locations.uniforms['u_wave_amplitude'], this._waveAmplitude);
+                    gl.uniform1f(locations.uniforms['u_wave2_frequency_x'], this._secondaryWaveFrequencyX);
+                    gl.uniform1f(locations.uniforms['u_wave2_frequency_y'], this._secondaryWaveFrequencyY);
+                    gl.uniform1f(locations.uniforms['u_wave2_amplitude'], this._secondaryWaveAmplitude);
+                    gl.uniform1f(locations.uniforms['u_wave2_speed'], this._secondaryWaveSpeed);
+                    gl.uniform1f(locations.uniforms['u_wave2_angle'], this._secondaryWaveAngle);
                     gl.uniform1f(locations.uniforms['u_color_blending'], this._colorBlending);
                     gl.uniform1f(locations.uniforms['u_shadows'], this._shadows);
                     gl.uniform1f(locations.uniforms['u_highlights'], this._highlights);
@@ -831,6 +899,12 @@ export class NeatGradient implements NeatController {
                     gl.uniform1f(locations.uniforms['u_iridescence_intensity'], this._iridescenceIntensity);
                     gl.uniform1f(locations.uniforms['u_iridescence_speed'], this._iridescenceSpeed);
 
+                    gl.uniform1f(locations.uniforms['u_prism_edge_intensity'], this._prismEdgeIntensity);
+                    gl.uniform1f(locations.uniforms['u_prism_edge_thinness'], this._prismEdgeThinness);
+                    gl.uniform1f(locations.uniforms['u_prism_edge_spread'], this._prismEdgeSpread);
+                    gl.uniform1f(locations.uniforms['u_prism_edge_speed'], this._prismEdgeSpeed);
+                    gl.uniform1f(locations.uniforms['u_prism_edge_ripple'], this._prismEdgeRipple);
+
                     gl.uniform1f(locations.uniforms['u_bloom_intensity'], this._bloomIntensity);
                     gl.uniform1f(locations.uniforms['u_bloom_threshold'], this._bloomThreshold);
                     gl.uniform1f(locations.uniforms['u_chromatic_aberration'], this._chromaticAberration);
@@ -872,7 +946,6 @@ export class NeatGradient implements NeatController {
                             const rgb = this._cachedColorRgb[i] || [0, 0, 0];
                             gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], c.enabled ? 1.0 : 0.0);
                             gl.uniform3fv(locations.uniforms[`u_colors[${i}].color`], rgb);
-                            gl.uniform1f(locations.uniforms[`u_colors[${i}].influence`], c.influence || 0);
                         } else {
                             gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], 0.0);
                         }
@@ -1473,7 +1546,9 @@ export class NeatGradient implements NeatController {
         const uniformsList = [
             "projectionMatrix", "modelViewMatrix",
             "u_time", "u_resolution", "u_color_pressure", "u_wave_frequency_x", "u_wave_frequency_y",
-            "u_wave_amplitude", "u_colors_count", "u_plane_width", "u_plane_height", "u_shadows",
+            "u_wave_amplitude", "u_wave2_frequency_x", "u_wave2_frequency_y", "u_wave2_amplitude",
+            "u_wave2_speed", "u_wave2_angle",
+            "u_colors_count", "u_plane_width", "u_plane_height", "u_shadows",
             "u_highlights", "u_grain_intensity", "u_grain_sparsity", "u_grain_scale", "u_grain_speed",
             "u_flow_distortion_a", "u_flow_distortion_b", "u_flow_scale", "u_flow_ease", "u_flow_enabled",
             "u_y_offset", "u_y_offset_wave_multiplier", "u_y_offset_color_multiplier", "u_y_offset_flow_multiplier",
@@ -1483,6 +1558,8 @@ export class NeatGradient implements NeatController {
             "u_vignette_intensity", "u_vignette_radius",
             "u_fresnel_enabled", "u_fresnel_power", "u_fresnel_intensity", "u_fresnel_color",
             "u_iridescence_enabled", "u_iridescence_intensity", "u_iridescence_speed",
+            "u_prism_edge_intensity", "u_prism_edge_thinness", "u_prism_edge_spread", "u_prism_edge_speed",
+            "u_prism_edge_ripple",
             "u_bloom_intensity", "u_bloom_threshold", "u_chromatic_aberration",
             "u_shape_type", "u_silhouette_fade", "u_cylinder_fade", "u_ribbon_fade", "u_flat_shading",
 
@@ -1500,7 +1577,6 @@ export class NeatGradient implements NeatController {
         for (let i = 0; i < COLORS_COUNT; i++) {
             locations.uniforms[`u_colors[${i}].is_active`] = gl.getUniformLocation(program, `u_colors[${i}].is_active`);
             locations.uniforms[`u_colors[${i}].color`] = gl.getUniformLocation(program, `u_colors[${i}].color`);
-            locations.uniforms[`u_colors[${i}].influence`] = gl.getUniformLocation(program, `u_colors[${i}].influence`);
         }
 
         locations.attributes.position = gl.getAttribLocation(program, "position");
@@ -1521,6 +1597,8 @@ export class NeatGradient implements NeatController {
             this._domainWarpEnabled,
             this._fresnelEnabled,
             this._iridescenceEnabled,
+            this._secondaryWaveEnabled,
+            this._prismEdgeEnabled,
             this._vignetteIntensity > 0,
             this._bloomIntensity > 0,
             this._chromaticAberration > 0,
@@ -1547,6 +1625,8 @@ export class NeatGradient implements NeatController {
             + flag("NEAT_DOMAIN_WARP_ENABLED", this._domainWarpEnabled)
             + flag("NEAT_FRESNEL_ENABLED", this._fresnelEnabled)
             + flag("NEAT_IRIDESCENCE_ENABLED", this._iridescenceEnabled)
+            + flag("NEAT_SECONDARY_WAVE_ENABLED", this._secondaryWaveEnabled)
+            + flag("NEAT_PRISM_EDGE_ENABLED", this._prismEdgeEnabled)
             + flag("NEAT_VIGNETTE_ENABLED", this._vignetteIntensity > 0)
             + flag("NEAT_BLOOM_ENABLED", this._bloomIntensity > 0)
             + flag("NEAT_CHROMATIC_ENABLED", this._chromaticAberration > 0)
