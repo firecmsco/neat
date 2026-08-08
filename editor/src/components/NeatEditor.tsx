@@ -142,6 +142,20 @@ function generateSmartConfig(archetype: string): NeatConfig {
     let waveFrequencyX = randomInRange(2, 6);
     let waveFrequencyY = randomInRange(2, 6);
     let waveAmplitude = randomInRange(2, 6);
+    let secondaryWaveEnabled = Math.random() < 0.4;
+    let secondaryWaveFrequencyX = randomInRange(1.5, 6);
+    let secondaryWaveFrequencyY = randomInRange(1.5, 6);
+    let secondaryWaveAmplitude = randomInRange(2, 6);
+    let secondaryWaveSpeed = randomInRange(0.3, 1.6);
+    // Keep it well off 0 and π, where the second layer runs parallel to the base
+    // and stops reading as a separate wave.
+    let secondaryWaveAngle = randomInRange(0.5, 2.6);
+    let prismEdgeEnabled = false;
+    let prismEdgeIntensity = randomInRange(0.25, 0.7);
+    let prismEdgeThinness = randomInRange(2, 6);
+    let prismEdgeSpread = randomInRange(0.6, 1.6);
+    let prismEdgeSpeed = randomInRange(0.1, 0.8);
+    let prismEdgeRipple = randomInRange(0.5, 2.0);
     let backgroundAlpha = randomInRange(0.9, 1.0);
     let grainIntensity = randomInRange(0.05, 0.25);
     let grainScale = randomInRange(1, 4);
@@ -208,7 +222,14 @@ function generateSmartConfig(archetype: string): NeatConfig {
         
         yOffsetWaveMultiplier = randomInRange(2.0, 4.5);
         yOffsetColorMultiplier = randomInRange(2.0, 4.5);
-        
+
+        // Slow, wide swells are where a crossing layer reads most clearly.
+        secondaryWaveEnabled = Math.random() < 0.7;
+        secondaryWaveFrequencyX = randomInRange(1.0, 3.5);
+        secondaryWaveFrequencyY = randomInRange(1.0, 3.5);
+        secondaryWaveAmplitude = randomInRange(3, 7);
+        secondaryWaveSpeed = randomInRange(0.3, 0.9);
+
         vignetteIntensity = randomInRange(0.25, 0.55);
         vignetteRadius = randomInRange(0.55, 0.85);
         
@@ -301,6 +322,10 @@ function generateSmartConfig(archetype: string): NeatConfig {
         iridescenceEnabled = true;
         iridescenceIntensity = randomInRange(0.7, 1.0);
         iridescenceSpeed = randomInRange(1.5, 3.5);
+        prismEdgeEnabled = Math.random() < 0.7;
+        prismEdgeIntensity = randomInRange(0.3, 0.9);
+        prismEdgeThinness = randomInRange(2, 7);
+        secondaryWaveEnabled = Math.random() < 0.5;
         fresnelEnabled = true;
         fresnelIntensity = randomInRange(1.2, 2.5);
         fresnelPower = randomInRange(1.8, 3.5);
@@ -365,6 +390,12 @@ function generateSmartConfig(archetype: string): NeatConfig {
         waveFrequencyX,
         waveFrequencyY,
         waveAmplitude,
+        secondaryWaveEnabled,
+        secondaryWaveFrequencyX,
+        secondaryWaveFrequencyY,
+        secondaryWaveAmplitude,
+        secondaryWaveSpeed,
+        secondaryWaveAngle,
         backgroundAlpha,
         backgroundColor,
         grainIntensity,
@@ -407,6 +438,12 @@ function generateSmartConfig(archetype: string): NeatConfig {
         iridescenceEnabled,
         iridescenceIntensity,
         iridescenceSpeed,
+        prismEdgeEnabled,
+        prismEdgeIntensity,
+        prismEdgeThinness,
+        prismEdgeSpread,
+        prismEdgeSpeed,
+        prismEdgeRipple,
         bloomIntensity,
         bloomThreshold,
         chromaticAberration,
@@ -481,11 +518,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [showcaseMode, setShowcaseMode] = React.useState<ShowcaseMode>(() => {
         const stored = typeof window !== "undefined" ? window.localStorage.getItem("neat.showcase") : null;
         if (isShowcaseMode(stored)) return stored;
-        // First visit lands on a mockup — it says what Neat is for faster than a bare
-        // gradient does. On a phone that's the app screen: a website frame shrunk to
-        // 375px reads as a thumbnail, an app screen reads at full size.
-        if (typeof window !== "undefined" && window.innerWidth < 720) return "app";
-        return "site";
+        // First visit lands on the bare gradient. The mockups explain what Neat is
+        // for, but they shrink the thing people came to look at into a corner of a
+        // phone frame; full bleed puts the gradient itself first and the mockups are
+        // one click away.
+        return "full";
     });
     // null = follow the gradient's own background, otherwise the user's choice
     const [showcaseDark, setShowcaseDark] = React.useState<boolean | null>(null);
@@ -548,6 +585,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (config.highlights !== undefined) setHighlights(config.highlights);
         if (config.colorSaturation !== undefined) setSaturation(config.colorSaturation);
         if (config.colorBrightness !== undefined) setBrightness(config.colorBrightness);
+        setSecondaryWaveEnabled(config.secondaryWaveEnabled ?? false);
+        setSecondaryWaveFrequencyX(config.secondaryWaveFrequencyX ?? 3);
+        setSecondaryWaveFrequencyY(config.secondaryWaveFrequencyY ?? 3);
+        setSecondaryWaveAmplitude(config.secondaryWaveAmplitude ?? 5);
+        setSecondaryWaveSpeed(config.secondaryWaveSpeed ?? 0.6);
+        setSecondaryWaveAngle(config.secondaryWaveAngle ?? 1.0);
         if (config.waveFrequencyX !== undefined) setWaveFrequencyX(config.waveFrequencyX);
         if (config.waveFrequencyY !== undefined) setWaveFrequencyY(config.waveFrequencyY);
         if (config.waveAmplitude !== undefined) setWaveAmplitude(config.waveAmplitude);
@@ -603,6 +646,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         setIridescenceEnabled(config.iridescenceEnabled ?? false);
         setIridescenceIntensity(config.iridescenceIntensity ?? 0.5);
         setIridescenceSpeed(config.iridescenceSpeed ?? 1);
+        setPrismEdgeEnabled(config.prismEdgeEnabled ?? false);
+        setPrismEdgeIntensity(config.prismEdgeIntensity ?? 0.5);
+        setPrismEdgeThinness(config.prismEdgeThinness ?? 3);
+        setPrismEdgeSpread(config.prismEdgeSpread ?? 1);
+        setPrismEdgeSpeed(config.prismEdgeSpeed ?? 0.5);
+        setPrismEdgeRipple(config.prismEdgeRipple ?? 1.0);
         setBloomIntensity(config.bloomIntensity ?? 0);
         setBloomThreshold(config.bloomThreshold ?? 0.7);
         setChromaticAberration(config.chromaticAberration ?? 0);
@@ -652,6 +701,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [waveFrequencyX, setWaveFrequencyX] = React.useState<number>(defaultConfig.waveFrequencyX ?? 5);
     const [waveFrequencyY, setWaveFrequencyY] = React.useState<number>(defaultConfig.waveFrequencyY ?? 5);
     const [waveAmplitude, setWaveAmplitude] = React.useState<number>(defaultConfig.waveAmplitude ?? 3);
+    const [secondaryWaveEnabled, setSecondaryWaveEnabled] = React.useState<boolean>(defaultConfig.secondaryWaveEnabled ?? false);
+    const [secondaryWaveFrequencyX, setSecondaryWaveFrequencyX] = React.useState<number>(defaultConfig.secondaryWaveFrequencyX ?? 3);
+    const [secondaryWaveFrequencyY, setSecondaryWaveFrequencyY] = React.useState<number>(defaultConfig.secondaryWaveFrequencyY ?? 3);
+    const [secondaryWaveAmplitude, setSecondaryWaveAmplitude] = React.useState<number>(defaultConfig.secondaryWaveAmplitude ?? 5);
+    const [secondaryWaveSpeed, setSecondaryWaveSpeed] = React.useState<number>(defaultConfig.secondaryWaveSpeed ?? 0.6);
+    const [secondaryWaveAngle, setSecondaryWaveAngle] = React.useState<number>(defaultConfig.secondaryWaveAngle ?? 1.0);
     const [resolution, setResolution] = React.useState<number>(defaultConfig.resolution ?? 1);
     // Pixel scale of the drawing buffer. Not part of a preset — it is a device
     // trade-off, so it survives preset changes.
@@ -710,6 +765,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [iridescenceEnabled, setIridescenceEnabled] = React.useState<boolean>(defaultConfig.iridescenceEnabled ?? false);
     const [iridescenceIntensity, setIridescenceIntensity] = React.useState<number>(defaultConfig.iridescenceIntensity ?? 0.5);
     const [iridescenceSpeed, setIridescenceSpeed] = React.useState<number>(defaultConfig.iridescenceSpeed ?? 1);
+    const [prismEdgeEnabled, setPrismEdgeEnabled] = React.useState<boolean>(defaultConfig.prismEdgeEnabled ?? false);
+    const [prismEdgeIntensity, setPrismEdgeIntensity] = React.useState<number>(defaultConfig.prismEdgeIntensity ?? 0.5);
+    const [prismEdgeThinness, setPrismEdgeThinness] = React.useState<number>(defaultConfig.prismEdgeThinness ?? 3);
+    const [prismEdgeSpread, setPrismEdgeSpread] = React.useState<number>(defaultConfig.prismEdgeSpread ?? 1);
+    const [prismEdgeSpeed, setPrismEdgeSpeed] = React.useState<number>(defaultConfig.prismEdgeSpeed ?? 0.5);
+    const [prismEdgeRipple, setPrismEdgeRipple] = React.useState<number>(defaultConfig.prismEdgeRipple ?? 1.0);
     const [bloomIntensity, setBloomIntensity] = React.useState<number>(defaultConfig.bloomIntensity ?? 0);
     const [bloomThreshold, setBloomThreshold] = React.useState<number>(defaultConfig.bloomThreshold ?? 0.7);
     const [chromaticAberration, setChromaticAberration] = React.useState<number>(defaultConfig.chromaticAberration ?? 0);
@@ -982,6 +1043,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             speed: tweened.speed,
             horizontalPressure: tweened.horizontalPressure,
             verticalPressure: tweened.verticalPressure,
+            secondaryWaveEnabled,
+            secondaryWaveFrequencyX,
+            secondaryWaveFrequencyY,
+            secondaryWaveAmplitude,
+            secondaryWaveSpeed,
+            secondaryWaveAngle,
             waveFrequencyX: tweened.waveFrequencyX,
             waveFrequencyY: tweened.waveFrequencyY,
             waveAmplitude: tweened.waveAmplitude,
@@ -1038,6 +1105,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             iridescenceEnabled,
             iridescenceIntensity,
             iridescenceSpeed,
+            prismEdgeEnabled,
+            prismEdgeIntensity,
+            prismEdgeThinness,
+            prismEdgeSpread,
+            prismEdgeSpeed,
+            prismEdgeRipple,
             bloomIntensity,
             bloomThreshold,
             chromaticAberration,
@@ -1086,6 +1159,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.waveFrequencyX = tweened.waveFrequencyX;
         gradientRef.current.waveFrequencyY = tweened.waveFrequencyY;
         gradientRef.current.waveAmplitude = tweened.waveAmplitude;
+        gradientRef.current.secondaryWaveEnabled = secondaryWaveEnabled;
+        gradientRef.current.secondaryWaveFrequencyX = secondaryWaveFrequencyX;
+        gradientRef.current.secondaryWaveFrequencyY = secondaryWaveFrequencyY;
+        gradientRef.current.secondaryWaveAmplitude = secondaryWaveAmplitude;
+        gradientRef.current.secondaryWaveSpeed = secondaryWaveSpeed;
+        gradientRef.current.secondaryWaveAngle = secondaryWaveAngle;
         gradientRef.current.shadows = tweened.shadows;
         gradientRef.current.highlights = tweened.highlights;
         gradientRef.current.colorSaturation = tweened.saturation;
@@ -1141,6 +1220,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         gradientRef.current.iridescenceEnabled = iridescenceEnabled;
         gradientRef.current.iridescenceIntensity = iridescenceIntensity;
         gradientRef.current.iridescenceSpeed = iridescenceSpeed;
+        gradientRef.current.prismEdgeEnabled = prismEdgeEnabled;
+        gradientRef.current.prismEdgeIntensity = prismEdgeIntensity;
+        gradientRef.current.prismEdgeThinness = prismEdgeThinness;
+        gradientRef.current.prismEdgeSpread = prismEdgeSpread;
+        gradientRef.current.prismEdgeSpeed = prismEdgeSpeed;
+        gradientRef.current.prismEdgeRipple = prismEdgeRipple;
         gradientRef.current.bloomIntensity = bloomIntensity;
         gradientRef.current.bloomThreshold = bloomThreshold;
         gradientRef.current.chromaticAberration = chromaticAberration;
@@ -1210,6 +1295,9 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         fresnelEnabled, fresnelPower, fresnelIntensity, fresnelColor,
 
         iridescenceEnabled, iridescenceIntensity, iridescenceSpeed,
+        prismEdgeEnabled, prismEdgeIntensity, prismEdgeThinness, prismEdgeSpread, prismEdgeSpeed, prismEdgeRipple,
+        secondaryWaveEnabled, secondaryWaveFrequencyX, secondaryWaveFrequencyY,
+        secondaryWaveAmplitude, secondaryWaveSpeed, secondaryWaveAngle,
         bloomIntensity, bloomThreshold,
         chromaticAberration,
 
@@ -1485,6 +1573,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         waveFrequencyX,
         waveFrequencyY,
         waveAmplitude,
+        secondaryWaveEnabled,
+        secondaryWaveFrequencyX,
+        secondaryWaveFrequencyY,
+        secondaryWaveAmplitude,
+        secondaryWaveSpeed,
+        secondaryWaveAngle,
         shadows,
         highlights,
         colorBrightness: brightness,
@@ -1543,6 +1637,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         iridescenceEnabled,
         iridescenceIntensity,
         iridescenceSpeed,
+        prismEdgeEnabled,
+        prismEdgeIntensity,
+        prismEdgeThinness,
+        prismEdgeSpread,
+        prismEdgeSpeed,
+        prismEdgeRipple,
         bloomIntensity,
         bloomThreshold,
         chromaticAberration,
@@ -1809,24 +1909,28 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             className="relative p-2 select-none text-center flex flex-col items-center">
                             <div className="relative">
                                 <h1
-                                    className="font-sofia font-semibold mix-blend-soft-light opacity-50 text-[6rem] sm:text-[10rem] md:text-[14rem] leading-none neon-text"
+                                    className="font-sofia font-semibold mix-blend-soft-light opacity-50 text-[3.5rem] sm:text-[5.5rem] md:text-[8rem] leading-none neon-text"
                                     style={{ color: complementaryColor }}
                                 >
                                     NEAT
                                 </h1>
                                 <h1
-                                    className="absolute inset-0 flex items-center justify-center font-sofia font-semibold mix-blend-color-dodge opacity-70 text-[6rem] sm:text-[10rem] md:text-[14rem] leading-none shiny-text"
+                                    className="absolute inset-0 flex items-center justify-center font-sofia font-semibold mix-blend-color-dodge opacity-70 text-[3.5rem] sm:text-[5.5rem] md:text-[8rem] leading-none shiny-text"
                                     style={{ color: complementaryColor }}
                                 >
                                     NEAT
                                 </h1>
+                                {/* Sits inside the wordmark's box and out of flow, so the box keeps
+                                    shrink-to-fitting to "NEAT" alone and w-full here resolves to
+                                    exactly the wordmark's width. The tagline then wraps within it at
+                                    every breakpoint instead of running wider than the title. */}
+                                <p
+                                    className="absolute top-full left-0 w-full mt-1.5 uppercase text-[0.42rem] sm:text-[0.5rem] md:text-[0.62rem] leading-snug drop-shadow-md"
+                                    style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
+                                >
+                                    Beautiful 3D gradient animations for your website
+                                </p>
                             </div>
-                            <p
-                                className="mt-3 uppercase text-sm sm:text-base md:text-lg drop-shadow-md"
-                                style={{ color: isDarkColor(backgroundColor) ? "white" : "black" }}
-                            >
-                                Beautiful 3D gradient animations for your website
-                            </p>
                         </div>
                     </div>
                 )}
@@ -2670,6 +2774,68 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                             </div>
                                         </div>
 
+                                        {/* Secondary Waves subsection */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="A second wave layer crossing the base one at an angle. The two interfere, so ridges break up instead of marching in one direction.">
+                                                    Secondary
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={secondaryWaveEnabled}
+                                                              onChange={(checked: boolean) => setSecondaryWaveEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            {speed === 0 && secondaryWaveEnabled && (
+                                                <div className="text-xs opacity-70 italic pl-2">
+                                                    ⚠️ Secondary waves need animation speed &gt; 0
+                                                </div>
+                                            )}
+                                            <div className={`space-y-2 transition-opacity ${!secondaryWaveEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Frequency X</span>
+                                                    <Slider value={[secondaryWaveFrequencyX]} step={0.1}
+                                                            min={0} max={10}
+                                                            disabled={!secondaryWaveEnabled}
+                                                            onValueChange={(v) => setSecondaryWaveFrequencyX(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs shrink-0 whitespace-nowrap">Frequency Y</span>
+                                                    <Slider value={[secondaryWaveFrequencyY]} step={0.1}
+                                                            min={0} max={10}
+                                                            disabled={!secondaryWaveEnabled}
+                                                            onValueChange={(v) => setSecondaryWaveFrequencyY(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Weight against the base layer. 0 keeps the base waves only, 10 mixes both in equal parts. Overall height still comes from the base Amplitude.">
+                                                        Mix
+                                                    </Tooltip>
+                                                    <Slider value={[secondaryWaveAmplitude]} step={0.1}
+                                                            min={0} max={10}
+                                                            disabled={!secondaryWaveEnabled}
+                                                            onValueChange={(v) => setSecondaryWaveAmplitude(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Rate of the second layer relative to the overall Speed. Differing rates are what keep the interference from settling into a pattern.">
+                                                        Speed
+                                                    </Tooltip>
+                                                    <Slider value={[secondaryWaveSpeed]} step={0.05}
+                                                            min={0} max={3}
+                                                            disabled={!secondaryWaveEnabled}
+                                                            onValueChange={(v) => setSecondaryWaveSpeed(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20 block shrink-0 whitespace-nowrap" title="Rotation of the second layer, in radians. At 0 it runs parallel to the base and mostly just adds detail; turn it to get crossing ridges.">
+                                                        Angle
+                                                    </Tooltip>
+                                                    <Slider value={[secondaryWaveAngle]} step={0.05}
+                                                            min={0} max={3.14}
+                                                            disabled={!secondaryWaveEnabled}
+                                                            onValueChange={(v) => setSecondaryWaveAngle(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Flow Field subsection */}
                                         <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
                                             <Label
@@ -3132,6 +3298,63 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                             min={0} max={5}
                                                             disabled={!iridescenceEnabled}
                                                             onValueChange={(v) => setIridescenceSpeed(v[0] as number)}/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Prism Edges */}
+                                        <div className="space-y-2 pl-2 border-l-2 border-white/20 border-t border-white/5 pt-2">
+                                            <Label
+                                                className="cursor-pointer flex items-center gap-2 [&:has(:checked)]:bg-gray-100 dark:[&:has(:checked)]:bg-gray-800">
+                                                <Tooltip title="Oil-slick rainbow along the seams between colors. Unlike Iridescence, which tints the whole surface, this one only lives on the boundaries.">
+                                                    <span className="text-xs w-24 text-right font-semibold cursor-help border-b border-dashed border-white/20">Prism Edges</span>
+                                                </Tooltip>
+                                                <div className={"w-full flex"}>
+                                                    <Checkbox checked={prismEdgeEnabled}
+                                                              onChange={(checked: boolean) => setPrismEdgeEnabled(checked)}/>
+                                                </div>
+                                            </Label>
+                                            <div className={`space-y-2 transition-opacity ${!prismEdgeEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Intensity</span>
+                                                    <Slider value={[prismEdgeIntensity]} step={0.05}
+                                                            min={0} max={1}
+                                                            disabled={!prismEdgeEnabled}
+                                                            onValueChange={(v) => setPrismEdgeIntensity(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip title="How tightly the fringe hugs the seam. Higher values pull it into a thin rim; how soft that rim looks also follows Color Blending.">
+                                                        <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Thinness</span>
+                                                    </Tooltip>
+                                                    <Slider value={[prismEdgeThinness]} step={0.25}
+                                                            min={1} max={12}
+                                                            disabled={!prismEdgeEnabled}
+                                                            onValueChange={(v) => setPrismEdgeThinness(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip title="How thick the film appears across a seam. Low values stay in the pale end of the series; higher values run further through it and stack repeated bands.">
+                                                        <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Spread</span>
+                                                    </Tooltip>
+                                                    <Slider value={[prismEdgeSpread]} step={0.05}
+                                                            min={0} max={3}
+                                                            disabled={!prismEdgeEnabled}
+                                                            onValueChange={(v) => setPrismEdgeSpread(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Tooltip title="Lets the wave height vary the film thickness, so the hue shifts as you follow a seam instead of the whole rim being one colour. At 0 the waves stop reaching the fringe.">
+                                                        <span className="w-28 text-right pr-2 text-xs cursor-help border-b border-dashed border-white/20">Ripple</span>
+                                                    </Tooltip>
+                                                    <Slider value={[prismEdgeRipple]} step={0.05}
+                                                            min={0} max={4}
+                                                            disabled={!prismEdgeEnabled}
+                                                            onValueChange={(v) => setPrismEdgeRipple(v[0] as number)}/>
+                                                </div>
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <span className="w-28 text-right pr-2 text-xs">Drift</span>
+                                                    <Slider value={[prismEdgeSpeed]} step={0.05}
+                                                            min={0} max={3}
+                                                            disabled={!prismEdgeEnabled}
+                                                            onValueChange={(v) => setPrismEdgeSpeed(v[0] as number)}/>
                                                 </div>
                                             </div>
                                         </div>
