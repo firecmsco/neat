@@ -135,8 +135,22 @@ export const vertexShaderSource = `void main() {
                     ) + noiseSeed
                 ) - (.1 * float(i)) + (.5 * u_color_blending);
 
+                // Influence moves the threshold this colour has to clear, so it wins
+                // more or less ground against the ones under it. Scaling mixAmount
+                // instead would just make it translucent over the same territory,
+                // which is opacity, not influence. The span is wide enough that 0
+                // pushes the whole field below the floor (the colour disappears) and
+                // 2 pushes most of it above the ceiling, with 1 shifting by nothing
+                // so existing configs are untouched.
+                noise += (u_colors[i].influence - 1.0) * 0.6;
+
                 noise = clamp(noise, minNoise, maxNoise + float(i) * 0.02);
                 float mixAmount = smoothstep(0.0, u_color_blending, noise);
+                // The bias alone leaves a faint trace at influence 0, because the
+                // noise still pokes above the floor at its strongest points. Fade it
+                // out over the bottom of the range so 0 means gone; above 0.08 this
+                // is 1 and the useful range is untouched.
+                mixAmount *= smoothstep(0.0, 0.08, u_colors[i].influence);
                 color = mix(color, u_colors[i].color, mixAmount);
 
                 if (NEAT_PRISM_EDGE_ENABLED > 0.5) {
@@ -485,6 +499,7 @@ uniform int u_colors_count;
 struct ColorStop {
     float is_active;
     vec3 color;
+    float influence;
 };
 uniform ColorStop u_colors[6];
 

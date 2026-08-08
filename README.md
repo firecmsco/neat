@@ -178,8 +178,16 @@ lighting keeps the same range whatever the mix.
 {
     color: string;      // Hex color (e.g., "#FF5772")
     enabled: boolean;   // Toggle color on/off
+    influence?: number; // How much canvas it claims (0-2, default 1)
 }
 ```
+
+**`influence` is territory, not opacity.** Each color is laid over the ones before
+it wherever its own noise field clears a threshold; influence moves that threshold.
+Turning it down shrinks the regions the color holds rather than making it
+translucent everywhere it already appears. 1 is neutral, 0 removes the color without
+having to disable it, and 2 lets it dominate. It is ignored on the first color,
+which is the base the rest are mixed over and so is always fully present.
 
 ### Visual Effects
 

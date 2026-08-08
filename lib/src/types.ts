@@ -171,6 +171,19 @@ export type NeatConfig = {
 export type NeatColor = {
     color: string;
     enabled: boolean;
+    /**
+     * How much of the canvas this colour claims, against the colours listed before
+     * it. 1 (the default) is neutral, 0 removes it without having to disable it, and
+     * 2 lets it dominate.
+     *
+     * This shifts the threshold the colour's noise field has to clear, so it takes
+     * more or less *territory* — turning it down shrinks the colour's regions rather
+     * than making it translucent everywhere it already appears.
+     *
+     * Ignored on the first colour, which is the base the rest are mixed over and so
+     * is always fully present.
+     */
+    influence?: number;
 }
 
 export type NeatController = {

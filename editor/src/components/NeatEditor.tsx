@@ -2272,6 +2272,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                                         key={index}
                                                         color={color}
                                                         showEnabled={true}
+                                                        showInfluence={index > 0}
                                                         onChange={(newColor) => handleColorChange(newColor, index)}
                                                     />
                                                 ))}

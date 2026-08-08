@@ -946,6 +946,10 @@ export class NeatGradient implements NeatController {
                             const rgb = this._cachedColorRgb[i] || [0, 0, 0];
                             gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], c.enabled ? 1.0 : 0.0);
                             gl.uniform3fv(locations.uniforms[`u_colors[${i}].color`], rgb);
+                            // Defaults to 1, not 0: every config written before this
+                            // existed omits it, and 0 would render them as a flat
+                            // base colour.
+                            gl.uniform1f(locations.uniforms[`u_colors[${i}].influence`], c.influence ?? 1);
                         } else {
                             gl.uniform1f(locations.uniforms[`u_colors[${i}].is_active`], 0.0);
                         }
@@ -1577,6 +1581,7 @@ export class NeatGradient implements NeatController {
         for (let i = 0; i < COLORS_COUNT; i++) {
             locations.uniforms[`u_colors[${i}].is_active`] = gl.getUniformLocation(program, `u_colors[${i}].is_active`);
             locations.uniforms[`u_colors[${i}].color`] = gl.getUniformLocation(program, `u_colors[${i}].color`);
+            locations.uniforms[`u_colors[${i}].influence`] = gl.getUniformLocation(program, `u_colors[${i}].influence`);
         }
 
         locations.attributes.position = gl.getAttribLocation(program, "position");
