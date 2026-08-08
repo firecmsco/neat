@@ -9,16 +9,12 @@
         "editor"
     ],
     "scripts": {
-        "dev": "cd editor && run-s dev",
-        "deploy": "cd editor && run-s deploy",
-        "build": "cd lib && run-s build"
+        "dev": "cd editor && pnpm dev",
+        "deploy": "cd editor && pnpm deploy",
+        "build": "cd lib && pnpm build"
     },
     "devDependencies": {
-        "npm-run-all": "^4.1.5",
         "playwright": "^1.58.2"
-    },
-    "dependencies": {
-        "tailwind": "^4.0.0"
     },
     "packageManager": "pnpm@11.3.0+sha512.2c403d6594527287672b1f7056343a1f7c3634036a67ffabfcc2b3d7595d843768f8787148d1b57cf7956c90606bbd192857c363af19e96d2d0ec9ec5741d215"
 }
