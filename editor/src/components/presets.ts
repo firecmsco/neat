@@ -1362,58 +1362,6 @@ export const NIGHTTIME = {
 };
 
 
-export const FOREST_PRESET = {
-    "colors": [
-        {
-            "color": "#005F73",
-            "enabled": true
-        },
-        {
-            "color": "#0A9396",
-            "enabled": true
-        },
-        {
-            "color": "#94D2BD",
-            "enabled": true
-        },
-        {
-            "color": "#E9D8A6",
-            "enabled": true
-        },
-        {
-            "color": "#EE9B00",
-            "enabled": false
-        }
-    ],
-    "speed": 3,
-    "horizontalPressure": 5,
-    "verticalPressure": 7,
-    "waveFrequencyX": 2,
-    "waveFrequencyY": 2,
-    "waveAmplitude": 8,
-    "shadows": 6,
-    "highlights": 8,
-    "colorBrightness": 1,
-    "colorSaturation": 7,
-    "wireframe": false,
-    "colorBlending": 10,
-    "backgroundColor": "#004E64",
-    "backgroundAlpha": 1,
-    "grainScale": 3,
-    "grainIntensity": 0.3,
-    "grainSpeed": 1,
-    "resolution": 1,
-    enableProceduralTexture: false,
-    flowEnabled: false,
-
-    silhouetteFade: 0.25,
-    cylinderFade: 0.08,
-    ribbonFade: 0.05,
-    shapeType: 'plane',
-    cameraLock: true,
-};
-
-
 const OCEANS_ELEVEN_PRESET = {
     colors: [
         {
@@ -2081,6 +2029,104 @@ export const CORAL_PRESET = {
 } satisfies NeatConfig;
 
 
+/**
+ * Pale grey ground with a single huge yellow bloom and an oil-slick rim where it
+ * meets the background. Everything here works against contrast: flat lighting, low
+ * pressure and very high blending keep it to one soft mass, so the only hard read
+ * on the canvas is the prism fringe along the seams.
+ */
+export const OIL_SLICK_PRESET = {
+    // Order matters: each colour is mixed over the ones before it, so the yellow
+    // sits last to come out as the dominant mass, over grey as the ground.
+    colors: [
+        {
+            color: '#D6D4D1',
+            enabled: true,
+        },
+        {
+            color: '#C6A8F0',
+            enabled: true,
+        },
+        {
+            color: '#FFC3DA',
+            enabled: true,
+        },
+        {
+            color: '#FFF700',
+            enabled: true,
+        },
+        {
+            color: '#FFE7A6',
+            enabled: false,
+        },
+        {
+            color: '#A8EDE4',
+            enabled: false,
+        },
+    ],
+    speed: 1.5,
+    // Pressure sets the scale of the masses. Much below this and one colour takes
+    // the whole canvas; much above and it breaks into scattered patches.
+    horizontalPressure: 4.6,
+    verticalPressure: 4.6,
+    waveFrequencyX: 1.5,
+    waveFrequencyY: 1.5,
+    waveAmplitude: 4,
+
+    secondaryWaveEnabled: true,
+    secondaryWaveFrequencyX: 2.6,
+    secondaryWaveFrequencyY: 1.4,
+    secondaryWaveAmplitude: 6,
+    secondaryWaveSpeed: 0.45,
+    secondaryWaveAngle: 1.15,
+
+    // Near-flat lighting. Any relief reads as a 3D surface and breaks the illusion
+    // of a film lying flat on the page.
+    shadows: 0,
+    highlights: 1,
+    colorBrightness: 1.02,
+    colorSaturation: 1,
+    wireframe: false,
+    colorBlending: 4.8,
+    backgroundColor: '#D6D4D1',
+    backgroundAlpha: 1,
+
+    grainScale: 1,
+    grainSparsity: 0.0,
+    grainIntensity: 0.08,
+    grainSpeed: 0.05,
+    resolution: 1,
+    yOffsetWaveMultiplier: 4,
+    yOffsetColorMultiplier: 4,
+    yOffsetFlowMultiplier: 4,
+
+    flowEnabled: true,
+    flowDistortionA: 0.6,
+    flowDistortionB: 1.2,
+    flowScale: 1.2,
+    flowEase: 0.15,
+
+    // Spread just above 1 puts two or three broad interference orders across each
+    // seam — the magenta-then-green sequence a petrol film shows. Push it further
+    // and the orders stack up into a hologram; drop it below 1 and the rim collapses
+    // to a single flat colour.
+    prismEdgeEnabled: true,
+    prismEdgeIntensity: 0.45,
+    prismEdgeThinness: 4,
+    prismEdgeSpread: 1.2,
+    prismEdgeRipple: 0.8,
+    prismEdgeSpeed: 0.35,
+
+    enableProceduralTexture: false,
+    textureEase: 0.5,
+    silhouetteFade: 0.25,
+    cylinderFade: 0.08,
+    ribbonFade: 0.05,
+    shapeType: 'plane',
+    cameraLock: true,
+} satisfies NeatConfig;
+
+
 export const PRESETS = {
     "Neat": NEAT_PRESET,
     "Time": TIME_PRESET,
@@ -2103,10 +2149,10 @@ export const PRESETS = {
     "Cosmic Vortex": COSMIC_VORTEX_PRESET,
     "Bloom": BLOOM_PRESET,
     "Night Dunes": NIGHT_DUNES,
-    "Forest": FOREST_PRESET,
     "Bubble Gum": BUBBLE_GUM,
     "Oceans Eleven": OCEANS_ELEVEN_PRESET,
     "Coral": CORAL_PRESET,
+    "Oil Slick": OIL_SLICK_PRESET,
 };
 
 export const fontMap = {
@@ -2132,4 +2178,5 @@ export const fontMap = {
     Oceanic: 'font-libre-baskerville',
     "Oceans Eleven": 'font-source-serif-pro',
     "Bubble Gum": 'font-fredoka',
+    "Oil Slick": 'font-poppins',
 };
