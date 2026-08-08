@@ -497,10 +497,18 @@ noticed. The three leaders are close enough that on a struggling device it is wo
 trying all of them.
 
 **Why grain costs what it does.** It is fractal noise — two 3D simplex evaluations
-per pixel — and each of those runs three nested hash rounds built on `sin()`, so the
-effect alone is roughly 24 transcendental calls per pixel per frame. There is no way
-to make it cheaper without changing how it looks, so if you are fill-bound and can
-live without it, turning it off is the largest single saving available.
+per pixel — so it is the heaviest thing in the fragment shader by some margin. If you
+are fill-bound and can live without it, turning it off is still the largest single
+saving available.
+
+Grain uses its own copy of the simplex noise that differs from the shared one in a
+single respect: it hashes with the algorithm's canonical polynomial rather than a
+`sin()`-based one, which removes 24 transcendental calls per pixel and makes grain
+about a quarter cheaper. Because only the hash changes — same lattice, same gradients,
+same frequency response — grain keeps its exact character at every `grainScale` and
+drifts over time as before; the pattern is a different draw of the same distribution.
+Cheaper lattice noise was tried and rejected: its variance falls off differently with
+scale, so grain thinned out at mid scales in a way no single gain corrects.
 
 ---
 
