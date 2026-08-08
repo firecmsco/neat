@@ -1,3 +1,8 @@
 allowBuilds:
+  # Reads FIREBASE_WEBAPP_CONFIG and, when it is set, fetches the web config over
+  # the network and bakes it into the package. This project does not use that
+  # variable and ships its config in source, so the script has nothing to do — and
+  # the package already ships the stub it would otherwise generate.
+  '@firebase/util': false
   esbuild: true
   protobufjs: true

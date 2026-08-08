@@ -34,7 +34,11 @@ export interface LicenseResult {
 /**
  * Decodes a base64url string to a Uint8Array.
  */
-function base64urlToBytes(b64url: string): Uint8Array {
+// Uint8Array is generic over its backing store since TypeScript 5.7 and defaults
+// to ArrayBufferLike, which admits SharedArrayBuffer and so is not a BufferSource.
+// This one is always backed by a plain ArrayBuffer, so say so and it can be passed
+// straight to TextDecoder and WebCrypto.
+function base64urlToBytes(b64url: string): Uint8Array<ArrayBuffer> {
     // Restore standard base64 characters
     let b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
     // Add padding if needed
@@ -111,9 +115,12 @@ export async function verifyLicenseKey(licenseKey: string): Promise<LicenseResul
         if (!payloadB64 || !signatureB64) return { valid: false, reason: "Invalid key format: empty payload or signature" };
 
         // Decode payload
+        // base64urlToBytes allocates a Uint8Array that exactly owns its buffer, so
+        // the bytes can be handed to TextDecoder and WebCrypto directly. Copying out
+        // .buffer was redundant, and its type widened to ArrayBufferLike — which
+        // includes SharedArrayBuffer and so is not assignable to BufferSource.
         const payloadBytes = base64urlToBytes(payloadB64);
-        const payloadBuffer = payloadBytes.buffer.slice(0);
-        const payloadJson = new TextDecoder().decode(payloadBuffer);
+        const payloadJson = new TextDecoder().decode(payloadBytes);
         const payload: LicensePayload = JSON.parse(payloadJson);
 
         // Validate payload structure
@@ -127,7 +134,6 @@ export async function verifyLicenseKey(licenseKey: string): Promise<LicenseResul
 
         // Decode signature
         const signatureBytes = base64urlToBytes(signatureB64);
-        const signatureBuffer = signatureBytes.buffer.slice(0);
 
         // Import public key
         const publicKey = await crypto.subtle.importKey(
@@ -142,8 +148,8 @@ export async function verifyLicenseKey(licenseKey: string): Promise<LicenseResul
         const valid = await crypto.subtle.verify(
             { name: "ECDSA", hash: "SHA-256" },
             publicKey,
-            signatureBuffer,
-            payloadBuffer
+            signatureBytes,
+            payloadBytes
         );
 
         return valid ? { valid: true, payload } : { valid: false, reason: "Signature verification failed" };
