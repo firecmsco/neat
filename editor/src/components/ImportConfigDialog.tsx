@@ -6,6 +6,9 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { TextareaAutosize } from "./ui/textarea";
 import { NEAT_PRESET } from "./presets";
+import { parseConfigInput } from "../utils/parse-config";
+
+const CONFIG_KEYS = [...Object.keys(NEAT_PRESET), "licenseKey"];
 
 export function ImportConfigDialog({
     open,
@@ -21,13 +24,8 @@ export function ImportConfigDialog({
 
     const handleImport = () => {
         try {
-            // Parse the JSON input
-            const parsedConfig = JSON5.parse(jsonInput);
-
-            // Validate basic structure
-            if (typeof parsedConfig !== 'object' || parsedConfig === null) {
-                throw new Error("Invalid configuration: must be an object");
-            }
+            // Accepts JSON, JSON5 and TypeScript/JavaScript config objects
+            const parsedConfig = parseConfigInput(jsonInput, CONFIG_KEYS);
 
             // Create complete config by applying defaults from NEAT_PRESET for missing values
             const completeConfig: NeatConfig = {
@@ -50,7 +48,7 @@ export function ImportConfigDialog({
             setJsonInput("");
             onOpenChange(false);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Invalid JSON format");
+            setError(e instanceof Error ? e.message : "Could not read that configuration");
         }
     };
 
@@ -67,14 +65,17 @@ export function ImportConfigDialog({
             <DialogContent>
                 <div className={"space-y-4 text-white"}>
                     <p>
-                        Paste a valid NEAT configuration JSON to import. Any missing fields will use default values.
+                        Paste a NEAT configuration to import: JSON, or a TypeScript/JavaScript
+                        config object (<code className={"text-white/70"}>as const</code>, comments and a
+                        surrounding <code className={"text-white/70"}>const config = ...</code> declaration are all fine).
+                        Any missing fields will use default values.
                     </p>
 
                     <TextareaAutosize
                         className={"w-full h-64 p-3 font-mono text-sm rounded-md bg-black/40 text-white placeholder:text-white/50 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"}
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
-                        placeholder={`Paste your configuration here...\n\nExample:\n${JSON5.stringify(NEAT_PRESET, null, 2)}`}
+                        placeholder={`Paste your configuration here...\n\nExample:\nconst config = ${JSON5.stringify(NEAT_PRESET, null, 2)};`}
                     />
 
                     {error && (
