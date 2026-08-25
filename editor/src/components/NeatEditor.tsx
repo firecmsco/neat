@@ -15,15 +15,30 @@ import { getComplementaryColor, isDarkColor, hslToHex, extractColorsFromImage } 
 import { GetCodeDialog } from "./GetCodeDialog";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "./ui/dialog";
 import { Analytics } from "@firebase/analytics";
-import { logEvent } from "firebase/analytics";
+import { logEvent as firebaseLogEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
 import { ImportConfigDialog } from "./ImportConfigDialog";
 import { LicenseDialog } from "./LicenseDialog";
 import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
-import { trackCheckoutCancelled } from "../utils/analytics";
+import { trackCheckoutCancelled, trackEvent } from "../utils/analytics";
 import { isShowcaseMode, SHOWCASE_MODES, Showcase, ShowcaseMode } from "./showcase/Showcase";
 import { ContextSwitcher } from "./showcase/ContextSwitcher";
 import { GitHubStars } from "./GitHubStars";
+
+/**
+ * Null-safe wrapper around Firebase's logEvent.
+ *
+ * Analytics initialises asynchronously and is routinely blocked outright by
+ * content blockers, so the editor renders before (and without) it. Metrics must
+ * never be the reason the editor fails to draw.
+ */
+const logEvent = (
+    analytics: Analytics | null,
+    name: string,
+    params?: Record<string, any>
+) => {
+    if (analytics) firebaseLogEvent(analytics, name, params);
+};
 
 // Algorithmic smart palette generator — infinite variety with color theory rules per archetype
 function generateSmartPalette(archetype: string): { colors: string[], background: string } {
@@ -454,7 +469,7 @@ function generateSmartConfig(archetype: string): NeatConfig {
 const defaultConfig: NeatConfig = NEAT_PRESET as NeatConfig;
 
 export type NeatEditorProps = {
-    analytics: Analytics;
+    analytics: Analytics | null;
 };
 
 const TWEEN_DURATION = 400; // ms
@@ -1771,6 +1786,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         }
     }
 
+    // Deep link from the static preset pages: /?preset=Oil%20Slick opens the
+    // editor with that preset already applied. Unknown names fall through to the
+    // default rather than erroring. The homepage canonical tag points at "/", so
+    // these variants never get indexed separately.
+    useEffect(() => {
+        const requested = new URLSearchParams(window.location.search).get("preset");
+        if (requested && allPresets[requested]) {
+            setPreset(requested);
+            trackEvent("open_preset_deeplink", { preset: requested });
+        }
+        // Intentionally mount-only: this seeds initial state from the URL.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const fontClass = fontMap[selectedPreset as keyof typeof fontMap] || 'font-sans';
 
     const prevPreset = () => {
@@ -2184,6 +2213,18 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                             onDark={uiOnDark}
                             onClick={() => logEvent(analytics, 'click_github_link', { location: 'footer' })}
                         />
+                        {/* Crawlable entry point into the static gradient pages, and a
+                            browsable gallery for anyone who wants a starting point. */}
+                        <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
+                            <a
+                                href="/gradients/"
+                                className="hover:underline"
+                                style={{ color: uiOnDark ? "white" : "black" }}
+                                onClick={() => logEvent(analytics, 'click_gallery_link', { location: 'footer' })}
+                            >
+                                Gallery
+                            </a>
+                        </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
                             <a
                                 href="https://firecms.co"

@@ -32,12 +32,10 @@ function App() {
         return <LicenseSuccessPage />;
     }
 
-    return (
-        <>
-            {analytics && <NeatEditor analytics={analytics}/>}
-        </>
-
-    );
+    // Render immediately. Analytics initialises asynchronously and is often
+    // blocked outright, and gating the editor on it meant a blocked request left
+    // the page blank — for users and for crawlers alike.
+    return <NeatEditor analytics={analytics}/>;
 }
 
 export default App;
