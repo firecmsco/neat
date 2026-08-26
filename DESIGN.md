@@ -3,8 +3,8 @@ name: Neat
 description: Animated 3D gradient backgrounds — editor and static content pages
 colors:
   ground: "#0a0a0a"
-  panel: "rgba(23,23,23,0.82)"
-  panel-inner: "rgba(255,255,255,0.05)"
+  surface: "rgba(10,10,12,0.955)"
+  raised: "rgba(255,255,255,0.055)"
   hairline: "rgba(255,255,255,0.1)"
   hairline-strong: "rgba(255,255,255,0.2)"
   fg: "#ffffff"
@@ -13,13 +13,13 @@ colors:
 typography:
   display:
     fontFamily: "Sofia Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-    fontSize: "clamp(2rem, 5vw, 3.25rem)"
+    fontSize: "clamp(2.6rem, 7.5vw, 5.25rem)"
     fontWeight: 700
-    lineHeight: 1.06
-    letterSpacing: "-0.02em"
+    lineHeight: 1.02
+    letterSpacing: "-0.03em"
   headline:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "clamp(1.35rem, 2.4vw, 1.75rem)"
+    fontSize: "clamp(1.65rem, 3.2vw, 2.35rem)"
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "-0.01em"
@@ -39,7 +39,7 @@ typography:
     fontWeight: 400
 rounded:
   pill: "9999px"
-  lg: "1rem"
+  lg: "1.25rem"
   md: "0.75rem"
   sm: "0.375rem"
 spacing:
@@ -59,16 +59,12 @@ components:
     rounded: "{rounded.sm}"
     height: "2.5rem"
     padding: "0 1.15rem"
-  panel:
-    backgroundColor: "{colors.panel}"
+  reading-column:
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
     padding: "{spacing.panel-pad}"
-  panel-inner:
-    backgroundColor: "{colors.panel-inner}"
-    textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
-    padding: "1rem 1.15rem"
+    width: "62rem"
   nav-pill:
     backgroundColor: "rgba(0,0,0,0.42)"
     textColor: "{colors.fg}"
@@ -80,38 +76,42 @@ components:
 
 ## Overview
 
-**One rule generates the whole system: the gradient is the ground, and
-everything else floats on it.** A fixed full-bleed WebGL canvas sits behind every
-surface at full intensity; all UI is translucent dark panels with white hairline
-borders and generous corner radii, lifted above it. This is the editor's own
-language, and the static content pages inherit it rather than inventing a
-parallel one.
+**The gradient is the ground; one near-black column sits on it.** A fixed
+full-bleed WebGL canvas runs behind every surface at full intensity. Reading
+content lives on a single continuous column, nearly opaque, capped at `62rem` and
+centred so the gradient frames it at the page edges. The hero puts large type
+directly on the gradient over a bottom-anchored fade, and full-bleed *breathers*
+between sections let the gradient return at full width.
 
-Two anti-references, both tried and rejected on this project:
+Three anti-references, all built and rejected on this project:
 
-1. **Never scrim the gradient.** An earlier build dimmed it to 46–72% black to
-   make room for text. For a product whose entire value is how the gradient
-   looks, dimming it is backwards. Contrast is bought by putting content on a
-   panel, never by veiling the artifact.
-2. **Never invent a second design language.** A build that used square corners,
+1. **Never scrim the gradient.** The first build dimmed it to 46–72% black to
+   make room for text. For a product whose value is how the gradient looks,
+   dimming it is backwards.
+2. **Never invent a second design language.** A build using square corners,
    hairline-ruled card stock and condensed uppercase type read as a different
-   product entirely, even with the palette corrected. Radius, translucency and
-   Sofia Sans are the family bond.
+   product even with the palette corrected.
+3. **Never spread mid-alpha grey across a page.** `rgba(23,23,23,0.82)` over a
+   saturated gradient turns olive-brown. The editor survives that alpha because
+   its panels are a small toolbar and a sidebar; at page scale it is mud. Go
+   nearly opaque, or leave the gradient alone entirely.
+
+And structurally: a page built as a vertical stack of identical rounded boxes has
+no rhythm and reads as a template. One surface, punctuated by gradient.
 
 ## Colors
 
 Strategy: **restrained achromatic chrome over unrestrained chroma**. The
-interface is white-on-dark at varying alpha; every colour on screen comes from
-the gradient itself.
+interface is white-on-near-black; every colour on screen comes from the gradient.
 
-Surfaces are expressed as alpha over the gradient, not as opaque fills:
-`rgba(23,23,23,0.82)` for content panels, `rgba(255,255,255,0.05)` for groups
-nested inside them, `rgba(0,0,0,0.42)` for the floating nav. Borders are always
-`1px` of `rgba(255,255,255,0.1)`, stepping to `0.2` on hover.
+The reading surface is `rgba(10,10,12,0.955)` — high enough alpha that no
+gradient tints it, so it reads as clean black rather than mud, while the gradient
+stays vivid everywhere it is allowed to show. Raised elements inside it use
+`rgba(255,255,255,0.055)`; borders are `1px` of `rgba(255,255,255,0.1)`, stepping
+to `0.22` on hover. The nav pill is the one genuinely translucent surface at
+`rgba(0,0,0,0.4)` with blur, because it is small.
 
-Text is `#fff`, `rgba(255,255,255,0.72)` for secondary, `rgba(255,255,255,0.5)`
-for faint labels. Against the worst-case panel composite (a panel over a pure
-white gradient frame) body text measures 10.2:1.
+Text is `#fff`, `rgba(255,255,255,0.7)` secondary, `rgba(255,255,255,0.45)` faint.
 
 ## Typography
 
@@ -125,30 +125,32 @@ and the panel width elsewhere.
 
 ## Layout
 
-Content is a **vertical stack of discrete panels**, `1.25rem` apart, centred and
-capped at `52rem` (`68rem` for panels holding a grid). There is no page-wide
-content sheet: each section is its own floating object, which is both the
-editor's model and what keeps a blurred surface small enough to composite
-cheaply over an animating canvas.
+**One column, not a card stack.** `.sheet` is a single continuous surface capped
+at `62rem` (`76rem` where it holds a grid), rounded at the top where it meets the
+hero. Sections are spacing inside it, never separate boxes.
 
-- Nav: a floating pill, fixed top-centre, never a full-width bar.
-- Hero: `min-height: min(88vh, 52rem)`, panel bottom-left, gradient uninterrupted.
+- Nav: a floating pill, fixed top-centre. Never a full-width bar.
+- Hero: `min-height: min(94vh, 54rem)` with type bottom-left. A `70%`-height
+  bottom fade gives the type ground; the top third of the gradient is untouched.
+- Breather: `clamp(7rem, 18vh, 12rem)` where the column stops and the gradient
+  shows full width. One before the FAQ on guides, one before each grid.
 - Preview format: every gradient thumbnail is `560/294`, matching the captured
   frames and the OG images.
 
-Breakpoints: **860px** stacks the gallery's spec card above its grid and drops
-sticky positioning; **640px** collapses the hero's min-height and hides three of
-five nav links, all of which still ship in the colophon.
+Measure caps at `68ch` for prose. Breakpoints: **860px** stacks the gallery's
+spec card; **640px** shortens the hero and hides three of five nav links, all of
+which still ship in the colophon.
 
 ## Elevation & Depth
 
-Depth comes from translucency and blur, not from heavy shadow. Panels carry
-`backdrop-filter: blur(12px)` and `0 20px 40px -12px rgba(0,0,0,.5)`.
+Depth is mostly tonal: a near-black column against a vivid gradient needs no
+shadow to separate. Only two things lift — the nav pill
+(`0 10px 30px -10px rgba(0,0,0,.6)` with `blur(14px)`) and preview tiles on hover
+(`translateY(-4px)`, `0 18px 34px -16px rgba(0,0,0,.8)`).
 
-One hard-won constraint: **blur only small and medium surfaces.** A tall blurred
-element over an animating canvas forces a full-viewport composite every frame and
-visibly stalls scrolling. The panel stack exists partly to keep every blurred
-surface short.
+One hard constraint: **blur only small surfaces.** A tall blurred element over an
+animating canvas forces a full-viewport composite every frame and visibly stalls
+scrolling. The nav pill is the only blurred element on the page.
 
 ## Shapes
 
@@ -158,8 +160,8 @@ is square.** Borders are `1px`, always, and never carry colour as decoration.
 
 ## Components
 
-- **Panel** — the only surface content sits on. Translucent, hairline border,
-  `1rem` radius, blurred. Nested groups use `panel-inner` at `0.75rem`.
+- **Reading column** — the single surface content sits on. Near-opaque, top
+  corners rounded at `1.25rem`, capped at `62rem`. Not repeated per section.
 - **Button** — `2.5rem` tall, `0.375rem` radius, weight 500. Primary is white on
   black text; outline is `rgba(255,255,255,0.4)` border filling to white/10 on
   hover. Transitions are `0.2s`.
@@ -191,7 +193,9 @@ movement stops.
 
 - Don't scrim, tint or overlay the gradient to make text readable.
 - Don't introduce square corners, ruled sheets, or condensed/uppercase display
-  type. Both were tried and both broke the bond with the editor.
+  type; they broke the bond with the editor.
+- Don't build the page as a stack of identical rounded boxes.
 - Don't fake a gradient with CSS `linear-gradient` where a real frame belongs.
-- Don't blur a tall surface over the canvas.
+- Don't blur a tall surface over the canvas, and don't spread mid-alpha grey
+  across a page — both were tried and both looked cheap.
 - Don't add a second accent colour; the gradient is the colour.

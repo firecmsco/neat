@@ -142,193 +142,203 @@ const round = (v) => (typeof v === "number" ? Math.round(v * 100) / 100 : v);
 /* -------------------------------------------------------------------- layout */
 
 const CSS = String.raw`
-/* The editor's own language: a full-bleed gradient with translucent rounded
-   panels floating over it. Panel, radius, border and button values are taken
-   from src/components/NeatEditor.tsx and src/components/ui/button.tsx. */
+/* One near-black reading column, framed by the live gradient. Translucent grey
+   over saturated colour makes mud, so the column is nearly opaque and the
+   gradient stays vivid where it shows: the hero, the page edges, the breathers. */
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 
 :root{
-  --panel:rgba(23,23,23,.82);
-  --panel-inner:rgba(255,255,255,.05);
+  --surface:rgba(10,10,12,.955);
+  --raised:rgba(255,255,255,.055);
   --hair:rgba(255,255,255,.1);
-  --hair-2:rgba(255,255,255,.2);
+  --hair-2:rgba(255,255,255,.22);
   --fg:#fff;
-  --fg-2:rgba(255,255,255,.72);
-  --fg-3:rgba(255,255,255,.5);
-  --accent:#fff;
-  --r-lg:1rem;      /* rounded-2xl */
-  --r-md:.75rem;    /* rounded-xl  */
-  --r-sm:.375rem;   /* rounded-md  */
-  --gutter:clamp(1rem,4vw,2.5rem);
+  --fg-2:rgba(255,255,255,.7);
+  --fg-3:rgba(255,255,255,.45);
+  --r-lg:1.25rem;
+  --r-md:.75rem;
+  --r-sm:.375rem;
+  --gutter:clamp(1rem,4vw,3rem);
+  --col:62rem;
   --sans:'Sofia Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 body{margin:0;font-family:var(--sans);color:var(--fg);background:#0a0a0a;
-  font-size:1rem;line-height:1.6;-webkit-font-smoothing:antialiased}
+  font-size:1.0625rem;line-height:1.7;-webkit-font-smoothing:antialiased}
 
-/* the gradient sits behind the whole page, exactly as in the editor */
 #gradient{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;
   background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772)}
 .page{position:relative;z-index:1}
 
 /* ---------------------------------------------------------------- nav pill */
 .rail{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:30;
-  display:flex;align-items:center;gap:.35rem;max-width:calc(100% - 2rem);
-  background:rgba(0,0,0,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,.08);border-radius:9999px;
-  padding:.3rem .4rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.5)}
-.mark{font-weight:700;font-size:.95rem;letter-spacing:.12em;color:#fff;
-  text-decoration:none;padding:.35rem .75rem;white-space:nowrap}
-.rail nav{display:flex;gap:.15rem;overflow-x:auto;scrollbar-width:none}
+  display:flex;align-items:center;gap:.35rem;max-width:calc(100% - 1.5rem);
+  background:rgba(0,0,0,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);border-radius:9999px;
+  padding:.3rem .4rem;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
+.mark{font-weight:700;font-size:.95rem;letter-spacing:.14em;color:#fff;
+  text-decoration:none;padding:.35rem .8rem;white-space:nowrap}
+.rail nav{display:flex;gap:.1rem;overflow-x:auto;scrollbar-width:none}
 .rail nav::-webkit-scrollbar{display:none}
-.rail nav a{font-size:.72rem;font-weight:500;color:rgba(255,255,255,.7);
-  text-decoration:none;white-space:nowrap;padding:.4rem .7rem;border-radius:9999px;
+.rail nav a{font-size:.75rem;font-weight:500;color:rgba(255,255,255,.65);
+  text-decoration:none;white-space:nowrap;padding:.42rem .75rem;border-radius:9999px;
   transition:background .2s,color .2s}
-.rail nav a:hover,.rail nav a:focus-visible{background:rgba(255,255,255,.1);color:#fff}
+.rail nav a:hover,.rail nav a:focus-visible{background:rgba(255,255,255,.12);color:#fff}
 
 /* -------------------------------------------------------------------- hero */
-.hero{min-height:min(88vh,52rem);display:flex;align-items:flex-end;
-  padding:7rem var(--gutter) 2.5rem}
-.hero-panel{width:min(44rem,100%);background:var(--panel);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid var(--hair);border-radius:var(--r-lg);
-  padding:clamp(1.5rem,3vw,2.25rem);box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
-.crumbs{margin:0 0 .9rem;font-size:.75rem;color:var(--fg-3)}
+/* The gradient runs clean; only the lower band darkens, the way a title card
+   sits over footage. The top two thirds are never touched. */
+.hero{position:relative;min-height:min(94vh,54rem);display:flex;align-items:flex-end}
+.hero::after{content:"";position:absolute;inset:auto 0 0;height:70%;pointer-events:none;
+  background:linear-gradient(to top,rgba(10,10,12,.94) 0%,rgba(10,10,12,.72) 34%,
+    rgba(10,10,12,.32) 62%,transparent 100%)}
+.hero-inner{position:relative;z-index:1;width:100%;max-width:var(--col);
+  margin:0 auto;padding:0 var(--gutter) clamp(3rem,7vw,5.5rem)}
+.crumbs{margin:0 0 1.1rem;font-size:.8rem;color:var(--fg-3)}
 .crumbs a{color:var(--fg-3);text-decoration:none}
 .crumbs a:hover{color:#fff}
-.crumbs span{margin:0 .4em;opacity:.6}
+.crumbs span{margin:0 .45em;opacity:.6}
 
-h1{font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:1.06;
-  letter-spacing:-.02em;margin:0;text-wrap:balance}
-.deck{margin:.9rem 0 0;font-size:clamp(1rem,1.4vw,1.125rem);color:var(--fg-2);
-  line-height:1.55;max-width:46ch}
-.actions{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.5rem 0 0}
+h1{font-weight:700;font-size:clamp(2.6rem,7.5vw,5.25rem);line-height:1.02;
+  letter-spacing:-.03em;margin:0;text-wrap:balance;max-width:16ch}
+.deck{margin:1.35rem 0 0;font-size:clamp(1.08rem,1.6vw,1.3rem);color:var(--fg-2);
+  line-height:1.55;max-width:44ch}
+.actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:2rem 0 0}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;font-weight:500;
-  font-size:.9375rem;text-decoration:none;height:2.5rem;padding:0 1.15rem;
+  font-size:.9375rem;text-decoration:none;height:2.75rem;padding:0 1.35rem;
   border-radius:var(--r-sm);background:#fff;color:#000;border:1px solid transparent;
-  transition:background .2s,color .2s}
-.btn:hover,.btn:focus-visible{background:rgba(255,255,255,.9)}
-.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
-.btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(255,255,255,.1)}
+  transition:background .2s,color .2s,border-color .2s}
+.btn:hover,.btn:focus-visible{background:rgba(255,255,255,.88)}
+.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border-color:rgba(255,255,255,.28)}
+.btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.5)}
 
-/* ------------------------------------------------------------ panel stack */
-.sheet{padding:0 var(--gutter) 4rem;display:flex;flex-direction:column;
-  gap:1.25rem;align-items:center}
-.panel{width:min(52rem,100%);background:var(--panel);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid var(--hair);border-radius:var(--r-lg);
-  padding:clamp(1.35rem,3vw,2.25rem);box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
-.panel.wide{width:min(68rem,100%)}
+/* --------------------------------------------------------- reading column */
+/* One continuous surface, not a stack of cards. The gradient frames it at the
+   page edges on wide screens. */
+.sheet{background:var(--surface);border-top:1px solid var(--hair);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:var(--col);margin:0 auto;
+  padding:clamp(2.5rem,5vw,4rem) var(--gutter) clamp(3rem,6vw,4.5rem)}
+.sheet.wide{max-width:76rem}
+.panel{margin:0 0 clamp(2.75rem,5vw,4rem)}
+.panel:last-child{margin-bottom:0}
 
-h2{font-weight:700;font-size:clamp(1.35rem,2.4vw,1.75rem);line-height:1.2;
-  letter-spacing:-.01em;margin:0 0 1rem;text-wrap:balance}
-h3{font-weight:600;font-size:1.05rem;margin:1.75rem 0 .5rem}
-p{margin:0 0 1rem;color:var(--fg-2)}
-.panel>p:last-child,.panel>ul:last-child,.panel>pre:last-child{margin-bottom:0}
-ul{margin:0 0 1rem;padding-left:1.15rem}
-li{margin-bottom:.55rem;color:var(--fg-2)}
-li::marker{color:rgba(255,255,255,.35)}
+h2{font-weight:700;font-size:clamp(1.65rem,3.2vw,2.35rem);line-height:1.14;
+  letter-spacing:-.022em;margin:0 0 1.15rem;text-wrap:balance;max-width:24ch}
+h3{font-weight:600;font-size:1.1rem;margin:2rem 0 .6rem}
+p{margin:0 0 1.15rem;color:var(--fg-2);max-width:68ch}
+ul{margin:0 0 1.25rem;padding-left:1.2rem;max-width:68ch}
+li{margin-bottom:.7rem;color:var(--fg-2)}
+li::marker{color:rgba(255,255,255,.3)}
 strong{color:#fff;font-weight:600}
-a{color:#fff;text-decoration:underline;text-underline-offset:.16em;
-  text-decoration-color:rgba(255,255,255,.35)}
+a{color:#fff;text-decoration:underline;text-underline-offset:.18em;
+  text-decoration-color:rgba(255,255,255,.32)}
 a:hover{text-decoration-color:#fff}
 
-code{font-family:var(--mono);font-size:.85em;background:rgba(255,255,255,.1);
-  border-radius:.25rem;padding:.12em .38em;word-break:break-word}
-pre{background:rgba(0,0,0,.45);border:1px solid var(--hair);border-radius:var(--r-md);
-  padding:1.1rem 1.25rem;overflow-x:auto;margin:0 0 1rem;font-size:.8125rem;
-  line-height:1.65;color:rgba(255,255,255,.9)}
+code{font-family:var(--mono);font-size:.86em;background:rgba(255,255,255,.09);
+  border-radius:.25rem;padding:.14em .4em;word-break:break-word}
+pre{background:rgba(255,255,255,.04);border:1px solid var(--hair);
+  border-radius:var(--r-md);padding:1.25rem 1.4rem;overflow-x:auto;margin:0 0 1.25rem;
+  font-size:.8125rem;line-height:1.7;color:rgba(255,255,255,.92);max-width:100%}
 pre code{background:none;padding:0;font-size:inherit;white-space:pre;color:inherit}
 
-.note{background:var(--panel-inner);border:1px solid var(--hair);
-  border-radius:var(--r-md);padding:1rem 1.15rem;margin:0 0 1rem}
-.note h3{margin:0 0 .35rem;font-size:.95rem}
-.note p{margin:0;font-size:.95rem}
+.note{border-left:1px solid var(--hair-2);padding:.15rem 0 .15rem 1.15rem;
+  margin:1.5rem 0}
+.note h3{margin:0 0 .3rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--fg-3)}
+.note p{margin:0}
+
+/* ------------------------------------------------------------- breathers */
+/* The surface stops and the live gradient shows full width. Rhythm, and the
+   product punctuating its own documentation. */
+.breather{height:clamp(7rem,18vh,12rem)}
 
 /* ----------------------------------------------------------------- palette */
-.chips{display:flex;flex-wrap:wrap;gap:.75rem;margin:0 0 1.25rem;padding:0;list-style:none}
+.chips{display:flex;flex-wrap:wrap;gap:.85rem;margin:0 0 1.75rem;padding:0;list-style:none;
+  max-width:none}
 .chips li{margin:0}
-.swatch{display:block;width:4rem;height:4rem;border-radius:var(--r-md);
+.swatch{display:block;width:4.5rem;height:4.5rem;border-radius:var(--r-md);
   border:1px solid var(--hair-2)}
-.chips code{display:block;margin-top:.45rem;background:none;padding:0;
-  font-size:.68rem;color:var(--fg-3);text-align:center}
+.chips code{display:block;margin-top:.5rem;background:none;padding:0;
+  font-size:.68rem;color:var(--fg-3);text-align:center;letter-spacing:.02em}
 
 /* -------------------------------------------------------------------- spec */
-table.spec{width:100%;border-collapse:collapse;margin:0}
-table.spec th,table.spec td{padding:.6rem .25rem;border-bottom:1px solid var(--hair)}
+table.spec{width:100%;max-width:32rem;border-collapse:collapse;margin:0}
+table.spec th,table.spec td{padding:.7rem .25rem;border-bottom:1px solid var(--hair)}
 table.spec tr:last-child th,table.spec tr:last-child td{border-bottom:none}
-table.spec th{text-align:left;font-weight:400;font-size:.9rem;color:var(--fg-3)}
-table.spec td{text-align:right;font-family:var(--mono);font-size:.9rem;
+table.spec th{text-align:left;font-weight:400;font-size:.95rem;color:var(--fg-3)}
+table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   font-variant-numeric:tabular-nums;color:#fff}
 
 /* ----------------------------------------------------------------- fandeck */
-.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));
-  gap:1rem;padding:0;margin:0;list-style:none}
+.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));
+  gap:1.1rem;padding:0;margin:0;list-style:none;max-width:none}
 .chip a{display:block;text-decoration:none;color:inherit;border-radius:var(--r-md);
-  overflow:hidden;border:1px solid var(--hair);background:var(--panel-inner);
-  transition:transform .25s cubic-bezier(.2,.7,.3,1),border-color .25s,box-shadow .25s}
-.chip a:hover,.chip a:focus-visible{transform:translateY(-3px);border-color:var(--hair-2);
-  box-shadow:0 14px 28px -12px rgba(0,0,0,.6)}
+  overflow:hidden;background:var(--raised);border:1px solid var(--hair);
+  transition:transform .28s cubic-bezier(.2,.7,.3,1),border-color .28s,box-shadow .28s}
+.chip a:hover,.chip a:focus-visible{transform:translateY(-4px);
+  border-color:var(--hair-2);box-shadow:0 18px 34px -16px rgba(0,0,0,.8)}
 .chip img{display:block;width:100%;height:auto;aspect-ratio:560/294;object-fit:cover;
   background:rgba(255,255,255,.04)}
-.chip-label{display:block;padding:.65rem .8rem .75rem}
-.chip-name{display:block;font-weight:600;font-size:.9rem}
+.chip-label{display:block;padding:.7rem .85rem .8rem}
+.chip-name{display:block;font-weight:600;font-size:.95rem}
 .chip-form{display:block;font-family:var(--mono);font-size:.62rem;color:var(--fg-3);
-  margin-top:.15rem}
+  margin-top:.2rem}
 
-/* -------------------------------------------------------------- held chip */
-.deckwrap{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);
-  gap:1.25rem;align-items:start}
-.held{position:sticky;top:5.5rem;background:var(--panel-inner);
-  border:1px solid var(--hair);border-radius:var(--r-md);padding:1.25rem}
-.held-meta{padding-top:0}
-.held-meta h2{font-size:1.35rem;margin:0 0 .2rem}
-.viewer-tag{margin:0 0 1rem;color:var(--fg-2);font-size:.9rem;min-height:2.6em}
-.held-meta .btn{width:100%;margin-top:1rem}
-.viewer-hint{font-size:.72rem;color:var(--fg-3);margin:0 0 .75rem}
+/* -------------------------------------------------------------- held card */
+.deckwrap{display:grid;grid-template-columns:minmax(0,16rem) minmax(0,1fr);
+  gap:clamp(1.5rem,3vw,2.5rem);align-items:start}
+.held{position:sticky;top:5.75rem}
+.held-meta h2{font-size:1.55rem;margin:0 0 .25rem;max-width:none}
+.viewer-tag{margin:0 0 1.25rem;color:var(--fg-2);font-size:.95rem;min-height:3em}
+.held-meta .btn{width:100%;margin-top:1.25rem}
+.viewer-hint{font-size:.75rem;color:var(--fg-3);margin:0 0 .6rem}
 @media (hover:none){.viewer-hint{display:none}}
 
 /* --------------------------------------------------------------------- faq */
 .faq details{border-bottom:1px solid var(--hair)}
-.faq details:last-child{border-bottom:none}
-.faq summary{cursor:pointer;list-style:none;padding:.9rem 2rem .9rem 0;position:relative;
-  font-weight:600;font-size:1rem}
+.faq details:first-of-type{border-top:1px solid var(--hair)}
+.faq summary{cursor:pointer;list-style:none;padding:1.15rem 2.25rem 1.15rem 0;
+  position:relative;font-weight:600;font-size:1.05rem}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary::before,.faq summary::after{content:"";position:absolute;right:.35rem;top:50%;
-  width:.7rem;height:1px;background:rgba(255,255,255,.6);
+  width:.75rem;height:1px;background:rgba(255,255,255,.55);
   transition:transform .22s cubic-bezier(.2,.7,.3,1)}
 .faq summary::after{transform:rotate(90deg)}
 .faq details[open] summary::after{transform:rotate(0)}
-.faq details p{margin:0 0 1rem;font-size:.95rem}
+.faq details p{margin:0 0 1.25rem;font-size:1rem}
 
 /* ------------------------------------------------------------------ onward */
-.onward{display:flex;flex-wrap:wrap;gap:.5rem;padding:0;margin:0;list-style:none}
+.onward{display:flex;flex-wrap:wrap;gap:.55rem;padding:0;margin:0;list-style:none;
+  max-width:none}
 .onward li{margin:0}
-.onward a{display:inline-block;font-size:.875rem;font-weight:500;text-decoration:none;
-  padding:.5rem .9rem;border-radius:9999px;border:1px solid rgba(255,255,255,.2);
+.onward a{display:inline-block;font-size:.9rem;font-weight:500;text-decoration:none;
+  padding:.55rem 1rem;border-radius:9999px;border:1px solid rgba(255,255,255,.2);
   color:#fff;transition:background .2s,border-color .2s}
-.onward a:hover,.onward a:focus-visible{background:rgba(255,255,255,.1);
-  border-color:rgba(255,255,255,.4)}
+.onward a:hover,.onward a:focus-visible{background:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.45)}
 
 /* --------------------------------------------------------------- colophon */
-.colophon{width:min(68rem,100%);margin:1.25rem auto 0;padding:0 var(--gutter) 3rem}
-.colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));
-  gap:1.5rem;background:var(--panel);backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);border:1px solid var(--hair);
-  border-radius:var(--r-lg);padding:1.75rem}
-.colophon h2{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--fg-3);margin:0 0 .6rem}
-.colophon ul{list-style:none;padding:0;margin:0}
-.colophon li{margin-bottom:.4rem}
-.colophon a{color:var(--fg-2);text-decoration:none;font-size:.875rem}
+.colophon{background:var(--surface);border-top:1px solid var(--hair);
+  max-width:var(--col);margin:0 auto;padding:2.75rem var(--gutter) 1.5rem}
+.colophon.wide{max-width:76rem}
+.colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+  gap:1.75rem}
+.colophon h2{font-size:.72rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--fg-3);margin:0 0 .7rem;max-width:none}
+.colophon ul{list-style:none;padding:0;margin:0;max-width:none}
+.colophon li{margin-bottom:.45rem}
+.colophon a{color:var(--fg-2);text-decoration:none;font-size:.9rem}
 .colophon a:hover{color:#fff}
-.colophon-note{margin:1rem auto 0;width:min(68rem,100%);padding:0 var(--gutter);
-  font-size:.72rem;color:var(--fg-3);line-height:1.6}
+.colophon-note{background:var(--surface);max-width:var(--col);margin:0 auto;
+  padding:1.25rem var(--gutter) 2.5rem;font-size:.75rem;color:var(--fg-3);
+  line-height:1.65;border-top:1px solid var(--hair)}
+.colophon-note.wide{max-width:76rem}
 
-:where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.6);
+:where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.65);
   outline-offset:2px}
 
 @media (max-width:860px){
@@ -337,12 +347,16 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.9rem;
   .viewer-tag{min-height:0}
 }
 @media (max-width:640px){
-  .hero{min-height:auto;padding:6rem var(--gutter) 1.5rem}
-  .rail{top:.75rem}
-  .mark{font-size:.85rem;padding:.3rem .55rem}
+  body{font-size:1rem;line-height:1.65}
+  .hero{min-height:min(88vh,44rem)}
+  .rail{top:.65rem}
+  .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
-  .fandeck{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr));gap:.75rem}
-  .swatch{width:3.25rem;height:3.25rem}
+  .sheet,.colophon,.colophon-note{border-radius:var(--r-lg) var(--r-lg) 0 0}
+  .colophon,.colophon-note{border-radius:0}
+  .fandeck{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.85rem}
+  .swatch{width:3.5rem;height:3.5rem}
+  .breather{height:5rem}
 }
 `.trim();
 
@@ -375,7 +389,7 @@ FORM: Specimen/fandeck structure rendered in the editor's language; candidate 3
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;
 
-function shell({ title, description, canonical, bodyHtml, jsonLd, accent, ogImage, script }) {
+function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, script, wide }) {
     const og = ogImage || `${ORIGIN}/og_image_v3.png`;
     return `<!DOCTYPE html>
 <html lang="en">
@@ -420,7 +434,7 @@ ${NAV.map(([href, label, optional]) => `    <a href="${href}"${optional ? " data
   </nav>
 </header>
 ${bodyHtml}
-<footer class="colophon">
+<footer class="colophon${wide ? " wide" : ""}">
   <div class="colophon-in">
     <div>
       <h2>Explore</h2>
@@ -456,7 +470,7 @@ ${bodyHtml}
     </div>
   </div>
 </footer>
-<p class="colophon-note">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
+<p class="colophon-note${wide ? " wide" : ""}">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
 </div>
 <script src="/neat.umd.js"></script>
 <script>
@@ -483,7 +497,7 @@ const SINGLE_CANVAS_SCRIPT = (cfg) => `(function () {
 
 function hero({ crumbs, h1, deck, actions }) {
     return `<section class="hero">
-  <div class="hero-panel">
+  <div class="hero-inner">
     <nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>
     <h1>${esc(h1)}</h1>
     <p class="deck">${deck}</p>
@@ -541,6 +555,9 @@ function renderGuide(guide, presets, allTitles) {
     })}
 <main class="sheet">
 ${sections}
+</main>
+<div class="breather" aria-hidden="true"></div>
+<main class="sheet">
 ${faqSection(guide.faq)}
 ${onwardSection(guide.related, allTitles)}
 </main>`;
@@ -583,7 +600,6 @@ ${onwardSection(guide.related, allTitles)}
         canonical,
         bodyHtml,
         jsonLd,
-        accent: accentFor(cfg, GROUND_LUM),
         ogImage: `${ORIGIN}/gradient-previews/${slugify(guide.preset)}.jpg`,
         script: SINGLE_CANVAS_SCRIPT(cfg),
     });
@@ -660,8 +676,10 @@ ${swatches}
         name
     )}">in the editor</a> and export a PNG still or an MP4 loop &mdash; see the <a href="/gradient-video-background/">gradient video guide</a>.</p>
   </section>
-
-  <section class="panel wide">
+</main>
+<div class="breather" aria-hidden="true"></div>
+<main class="sheet">
+  <section class="panel">
     <h2>More presets</h2>
     <ul class="fandeck">
 ${neighbours.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
@@ -699,8 +717,7 @@ ${neighbours.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
             canonical,
             bodyHtml,
             jsonLd,
-            accent: accentFor(cfg, GROUND_LUM),
-            ogImage: `${ORIGIN}/gradient-previews/${slug}.jpg`,
+                ogImage: `${ORIGIN}/gradient-previews/${slug}.jpg`,
             script: SINGLE_CANVAS_SCRIPT(cfg),
         }),
     };
@@ -735,7 +752,7 @@ function renderHub(presets, meta) {
     );
 
     const bodyHtml = `<section class="hero">
-  <div class="hero-panel">
+  <div class="hero-inner">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Neat</a><span>/</span>Gradients</nav>
     <h1>Gradient gallery</h1>
     <p class="deck">Every built-in Neat preset. Hover one to load it behind the page, then take its palette, its parameters and the code to use it.</p>
@@ -745,8 +762,8 @@ function renderHub(presets, meta) {
     </p>
   </div>
 </section>
-<main class="sheet">
-  <section class="panel wide">
+<main class="sheet wide">
+  <section class="panel">
     <div class="deckwrap">
       <div class="held">
         <div class="held-meta">
@@ -765,7 +782,9 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
       </div>
     </div>
   </section>
-
+</main>
+<div class="breather" aria-hidden="true"></div>
+<main class="sheet wide">
   <section class="panel">
     <h2>Picking a starting point</h2>
     <p>The parameter space is large enough that starting from scratch is rarely productive. Start from whichever preset is closest to the mood you want, then change colours first and motion second &mdash; motion is what people notice, and it is the easiest thing to overdo.</p>
@@ -878,7 +897,7 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
         canonical,
         bodyHtml,
         jsonLd,
-        accent: accentFor(presets[first], GROUND_LUM),
+        wide: true,
         ogImage: `${ORIGIN}/gradient-previews/neat.jpg`,
         script,
     });
