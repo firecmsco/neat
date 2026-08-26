@@ -130,8 +130,12 @@ at `62rem` (`76rem` where it holds a grid), rounded at the top where it meets th
 hero. Sections are spacing inside it, never separate boxes.
 
 - Nav: a floating pill, fixed top-centre. Never a full-width bar.
-- Hero: `min-height: min(94vh, 54rem)` with type bottom-left. A `70%`-height
-  bottom fade gives the type ground; the top third of the gradient is untouched.
+- Hero: `min-height: min(94vh, 54rem)` with type bottom-left. **The fade belongs
+  to the column, not the viewport.** It runs from transparent at the top of the
+  hero to the full surface colour, at the column's own width, so the dark shape
+  is continuous from hero to footer. A full-bleed fade above a capped column
+  produces a hard horizontal seam with the gradient popping back in at both
+  sides — that was shipped once and it looked broken.
 - Breather: `clamp(7rem, 18vh, 12rem)` where the column stops and the gradient
   shows full width. One before the FAQ on guides, one before each grid.
 - Preview format: every gradient thumbnail is `560/294`, matching the captured
@@ -160,8 +164,12 @@ is square.** Borders are `1px`, always, and never carry colour as decoration.
 
 ## Components
 
-- **Reading column** — the single surface content sits on. Near-opaque, top
-  corners rounded at `1.25rem`, capped at `62rem`. Not repeated per section.
+- **Reading column** — the single surface content sits on. Near-opaque, capped
+  at `62rem`, not repeated per section. It has no top edge of its own: it grows
+  out of the hero fade. Corners appear only where a breather cuts it.
+- **Config block** — presets show only their shaping parameters; the full
+  ~60-key config sits under a disclosure. Dumping every key buries the handful
+  anyone reads and swamps the page.
 - **Button** — `2.5rem` tall, `0.375rem` radius, weight 500. Primary is white on
   black text; outline is `rgba(255,255,255,0.4)` border filling to white/10 on
   hover. Transitions are `0.2s`.
@@ -195,6 +203,8 @@ movement stops.
 - Don't introduce square corners, ruled sheets, or condensed/uppercase display
   type; they broke the bond with the editor.
 - Don't build the page as a stack of identical rounded boxes.
+- Don't let a dark region change width mid-page. Any fade or surface that meets
+  the column must share its width.
 - Don't fake a gradient with CSS `linear-gradient` where a real frame belongs.
 - Don't blur a tall surface over the canvas, and don't spread mid-alpha grey
   across a page — both were tried and both looked cheap.

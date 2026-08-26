@@ -139,6 +139,37 @@ function presetChip(name, cfg, i) {
 
 const round = (v) => (typeof v === "number" ? Math.round(v * 100) / 100 : v);
 
+/**
+ * The parameters that actually shape a preset's look.
+ *
+ * A full Neat config carries around sixty keys — texture, flow, prism, domain
+ * warp, camera — and dumping all of them buries the handful anyone reads. The
+ * rest sit at their defaults and stay available under the disclosure.
+ */
+const SHAPING_KEYS = [
+    "colors", "speed", "horizontalPressure", "verticalPressure",
+    "waveFrequencyX", "waveFrequencyY", "waveAmplitude",
+    "shadows", "highlights", "colorBrightness", "colorSaturation",
+    "wireframe", "colorBlending", "backgroundColor", "backgroundAlpha",
+    "resolution", "grainScale", "grainSparsity", "grainIntensity", "grainSpeed",
+];
+
+/** Renders a config the way someone would write it by hand. */
+function formatConfig(cfg, keys) {
+    const wanted = keys ? keys.filter((k) => cfg[k] !== undefined) : Object.keys(cfg);
+    const lines = wanted.map((k) => {
+        const v = cfg[k];
+        if (k === "colors") {
+            const list = keys ? v.filter((c) => c.enabled) : v;
+            return "  colors: [\n" +
+                list.map((c) => `    { color: "${c.color}", enabled: ${c.enabled} },`).join("\n") +
+                "\n  ],";
+        }
+        return `  ${k}: ${typeof v === "string" ? `"${v}"` : round(v)},`;
+    });
+    return lines.join("\n").replace(/,$/, "");
+}
+
 /* -------------------------------------------------------------------- layout */
 
 const CSS = String.raw`
@@ -191,11 +222,10 @@ body{margin:0;font-family:var(--sans);color:var(--fg);background:#0a0a0a;
 /* The gradient runs clean; only the lower band darkens, the way a title card
    sits over footage. The top two thirds are never touched. */
 .hero{position:relative;min-height:min(94vh,54rem);display:flex;align-items:flex-end}
-.hero::after{content:"";position:absolute;inset:auto 0 0;height:70%;pointer-events:none;
-  background:linear-gradient(to top,rgba(10,10,12,.94) 0%,rgba(10,10,12,.72) 34%,
-    rgba(10,10,12,.32) 62%,transparent 100%)}
-.hero-inner{position:relative;z-index:1;width:100%;max-width:var(--col);
-  margin:0 auto;padding:0 var(--gutter) clamp(3rem,7vw,5.5rem)}
+.hero-inner{position:relative;z-index:1;width:100%;max-width:var(--col);margin:0 auto;
+  padding:clamp(7rem,16vh,11rem) var(--gutter) clamp(2.75rem,6vw,4rem);
+  background:linear-gradient(to top,var(--surface) 0%,var(--surface) 42%,
+    rgba(10,10,12,.82) 64%,rgba(10,10,12,.42) 82%,transparent 100%)}
 .crumbs{margin:0 0 1.1rem;font-size:.8rem;color:var(--fg-3)}
 .crumbs a{color:var(--fg-3);text-decoration:none}
 .crumbs a:hover{color:#fff}
@@ -219,9 +249,14 @@ h1{font-weight:700;font-size:clamp(2.6rem,7.5vw,5.25rem);line-height:1.02;
 /* --------------------------------------------------------- reading column */
 /* One continuous surface, not a stack of cards. The gradient frames it at the
    page edges on wide screens. */
-.sheet{background:var(--surface);border-top:1px solid var(--hair);
-  border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:var(--col);margin:0 auto;
-  padding:clamp(2.5rem,5vw,4rem) var(--gutter) clamp(3rem,6vw,4.5rem)}
+.sheet{background:var(--surface);max-width:var(--col);margin:0 auto;border-radius:0;
+  padding:clamp(2.25rem,4.5vw,3.5rem) var(--gutter) clamp(3rem,6vw,4.5rem)}
+.hero + .sheet{padding-top:0}
+.breather + .sheet{border-top-left-radius:var(--r-lg);border-top-right-radius:var(--r-lg)}
+.sheet:has(+ .breather){border-bottom-left-radius:var(--r-lg);
+  border-bottom-right-radius:var(--r-lg)}
+.colophon-note{border-bottom-left-radius:var(--r-lg);
+  border-bottom-right-radius:var(--r-lg)}
 .sheet.wide{max-width:76rem}
 .panel{margin:0 0 clamp(2.75rem,5vw,4rem)}
 .panel:last-child{margin-bottom:0}
@@ -324,6 +359,8 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
 /* --------------------------------------------------------------- colophon */
 .colophon{background:var(--surface);border-top:1px solid var(--hair);
   max-width:var(--col);margin:0 auto;padding:2.75rem var(--gutter) 1.5rem}
+.breather + .colophon{border-top-left-radius:var(--r-lg);
+  border-top-right-radius:var(--r-lg);border-top:none}
 .colophon.wide{max-width:76rem}
 .colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
   gap:1.75rem}
@@ -352,8 +389,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   .rail{top:.65rem}
   .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
-  .sheet,.colophon,.colophon-note{border-radius:var(--r-lg) var(--r-lg) 0 0}
-  .colophon,.colophon-note{border-radius:0}
+  .colophon-note{border-radius:0}
   .fandeck{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.85rem}
   .swatch{width:3.5rem;height:3.5rem}
   .breather{height:5rem}
@@ -628,17 +664,16 @@ function renderPreset(name, cfg, meta, presets, neighbours) {
     const title = `${name} – Animated Gradient Preset | NEAT`;
     const description = `${meta.tagline}. ${colors.length} colours, speed ${round(cfg.speed)}, wave amplitude ${round(cfg.waveAmplitude)}. Open it in the free Neat gradient editor or copy the config.`;
 
-    const configBody = JSON.stringify(cfg, null, 2)
-        .split("\n")
-        .slice(1, -1)
-        .join("\n")
-        .replace(/^(\s*)"([A-Za-z_$][A-Za-z0-9_$]*)":/gm, "$1$2:");
-
     const configSnippet = `import { NeatGradient } from "@firecms/neat";
 
 const gradient = new NeatGradient({
   ref: document.getElementById("gradient"),
-${configBody}
+${formatConfig(cfg, SHAPING_KEYS)}
+});`;
+
+    const fullConfigSnippet = `new NeatGradient({
+  ref: document.getElementById("gradient"),
+${formatConfig(cfg)}
 });`;
 
     const swatches = colors
@@ -669,9 +704,15 @@ ${swatches}
 
   <section class="panel">
     <h2>Use this preset</h2>
-    <p>Install the package and pass the config straight to the constructor. No build step and no dependencies:</p>
+    <p>Install the package and pass the config straight to the constructor. These are the values that shape this preset; everything else stays at its default.</p>
     <pre><code>npm install @firecms/neat</code></pre>
     <pre><code>${esc(configSnippet)}</code></pre>
+    <div class="faq">
+      <details>
+        <summary>Every value, for an exact match</summary>
+        <pre><code>${esc(fullConfigSnippet)}</code></pre>
+      </details>
+    </div>
     <p>Prefer a file? Open it <a href="/?preset=${encodeURIComponent(
         name
     )}">in the editor</a> and export a PNG still or an MP4 loop &mdash; see the <a href="/gradient-video-background/">gradient video guide</a>.</p>
