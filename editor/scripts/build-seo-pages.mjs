@@ -236,7 +236,9 @@ body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
 .hero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:140px 140px}
-.hero .wrap{position:relative;z-index:3}
+/* A flex item shrink-wraps to its content, so max-width + auto margins would
+   centre a narrower box than the container below. Fill first, then cap. */
+.hero .wrap{position:relative;z-index:3;width:100%}
 
 .crumbs{margin:0 0 1.1rem;font-size:.8rem;color:var(--fg-3)}
 .crumbs a{color:var(--fg-3);text-decoration:none}
