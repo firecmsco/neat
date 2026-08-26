@@ -42,7 +42,7 @@ rounded:
   sm: "0.375rem"
 spacing:
   gutter: "clamp(1.25rem, 5vw, 2.5rem)"
-  column: "46rem"
+  column: "68rem"
   section: "clamp(3rem, 6vh, 4.5rem)"
 components:
   button-primary:
@@ -131,21 +131,12 @@ Ramp: display `clamp(2.5rem, 7vw, 4.75rem)` → headline `clamp(1.6rem, 3vw,
 
 ## Layout
 
-**The column is the measure.** One centred container at `46rem` (736px) with a
-`clamp(1.25rem, 5vw, 2.5rem)` gutter, and *nothing inside sets a narrower
-max-width of its own*. Deck, paragraphs, headings and code all resolve to the
-same 656px and share one right edge; body type at `1.1875rem` lands at 73
-characters per line there.
-
-This replaced a 64rem container where every element carried its own cap — deck
-46ch, prose 68ch, headings 24ch — so each wrapped at a different point, none
-filled the column, and the page read as though the text was breaking early with
-dead space to the right. If a measure needs changing, change the container, not
-the elements.
-
-The gallery holds a grid, so it widens the column to `68rem` for the whole page
-via a class on `<body>` — every element on that page moves together rather than
-one section breaking out of alignment.
+**One column, one width, every page.** A centred container at `68rem` with a
+`clamp(1.25rem, 5vw, 2.5rem)` gutter, and nothing inside sets a narrower
+max-width of its own. Deck, paragraphs, headings, code, grids and footer all
+resolve to the same width and share one edge, on every page — guides, presets
+and gallery alike. If a measure needs changing, change the container, not the
+elements, and change it for every page at once.
 
 - Nav: a fixed pill, top-centre. Never a full-width bar.
 - Hero: `min-height: min(80vh, 46rem)`, content bottom-aligned. Its `.wrap`

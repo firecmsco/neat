@@ -190,16 +190,13 @@ html{-webkit-text-size-adjust:100%}
   --r-md:.75rem;
   --r-sm:.375rem;
   --gutter:clamp(1.25rem,5vw,2.5rem);
-  --col:46rem;
+  --col:68rem;
   --sans:'Sofia Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
   font-size:1.1875rem;line-height:1.65;-webkit-font-smoothing:antialiased}
-/* The gallery holds a grid, so it widens the column for every element on the
-   page at once rather than letting one section break out of alignment. */
-body.gallery{--col:68rem}
 .wrap{max-width:var(--col);margin:0 auto;padding:0 var(--gutter)}
 
 /* ---------------------------------------------------------------- nav pill */
@@ -310,7 +307,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   font-variant-numeric:tabular-nums;color:#fff}
 
 /* ----------------------------------------------------------------- fandeck */
-.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));
+.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));
   gap:1.1rem;padding:0;margin:0;list-style:none;max-width:none}
 .chip a{display:block;text-decoration:none;color:inherit;border-radius:var(--r-md);
   overflow:hidden;background:var(--raised);border:1px solid var(--hair);
