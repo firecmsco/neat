@@ -215,8 +215,11 @@ body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
 
 /* -------------------------------------------------------------------- hero */
 /* The canvas lives inside this section and scrolls away with it. */
-.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;
-  min-height:min(80vh,46rem);padding:7rem 0 clamp(3rem,7vh,5rem)}
+/* Content runs from a fixed top padding, never bottom-aligned: bottom-aligning
+   lets a longer deck push the heading up, so the title lands at a different
+   height on every page. */
+.hero{position:relative;isolation:isolate;overflow:hidden;
+  padding:clamp(8rem,22vh,12.5rem) 0 clamp(3.5rem,8vh,5.5rem)}
 
 /* Full strength — the gradient is the product, so it is never dimmed as a whole. */
 .hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
@@ -383,7 +386,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   .rail{top:.65rem}
   .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
-  .hero{min-height:min(72vh,34rem);padding:5.5rem 0 2.5rem}
+  .hero{padding:6.5rem 0 2.5rem}
   .fandeck{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.85rem}
   .swatch{width:3.5rem;height:3.5rem}
 }

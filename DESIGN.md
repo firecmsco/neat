@@ -139,9 +139,10 @@ and gallery alike. If a measure needs changing, change the container, not the
 elements, and change it for every page at once.
 
 - Nav: a fixed pill, top-centre. Never a full-width bar.
-- Hero: `min-height: min(80vh, 46rem)`, content bottom-aligned. Its `.wrap`
-  needs `width: 100%`: the hero is a flex container, and a flex item shrink-wraps
-  to its content, which would centre a narrower box than the column below.
+- Hero: content runs from a fixed top padding, `clamp(8rem, 22vh, 12.5rem)`.
+  Never bottom-aligned — a longer deck then pushes the heading up and the title
+  lands at a different height on each page. Verified: h1 top is identical across
+  guides, presets and the gallery at both 1440px and 390px.
 - Sections: `clamp(3rem, 6vh, 4.5rem)` apart. No surfaces, no boxes — spacing
   and headings carry the structure.
 - Preview format: every gradient thumbnail is `560/294`, matching the captured
