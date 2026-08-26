@@ -47,7 +47,8 @@
     "dev": "vite",
     "build": "vite build && npm run build:seo",
     "deploy": "npm run build && firebase deploy --only=hosting --project=neat-co",
-    "build:seo": "node scripts/build-seo-pages.mjs"
+    "build:seo": "node scripts/build-seo-pages.mjs",
+    "previews": "node scripts/capture-previews.mjs"
   },
   "eslintConfig": {
     "extends": [

@@ -65,6 +65,23 @@ function write(relPath, contents) {
     return relPath;
 }
 
+/**
+ * A gallery card showing a real captured frame.
+ *
+ * These used to be a CSS linear-gradient built from the palette, which turned a
+ * displaced, lit, grain-textured surface into a two-stop ramp — it undersold the
+ * product badly. scripts/capture-previews.mjs renders the actual engine instead.
+ */
+function presetCard(name) {
+    const slug = slugify(name);
+    const tagline = (PRESET_META_REF[name] && PRESET_META_REF[name].tagline) || "";
+    return `  <li><a class="card" href="/gradients/${slug}/">
+    <img class="sw" src="/gradient-previews/${slug}.webp" width="560" height="294" loading="lazy" decoding="async"
+         alt="${esc(name)} gradient — ${esc(tagline.toLowerCase())}" />
+    <span class="meta"><span class="nm">${esc(name)}</span><span class="tg">${esc(tagline)}</span></span>
+  </a></li>`;
+}
+
 /* -------------------------------------------------------------------- layout */
 
 const CSS = `
@@ -127,13 +144,13 @@ pre code{background:none;padding:0;font-size:inherit;white-space:pre}
 .specs .k{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.55)}
 .specs .v{display:block;font-size:1.35rem;font-weight:700;margin-top:2px}
 
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;
   margin:0 0 32px;padding:0;list-style:none}
 .gallery li{margin:0}
 .card{display:block;text-decoration:none;color:inherit;border-radius:12px;overflow:hidden;
   border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);height:100%}
 .card:hover{border-color:rgba(255,255,255,.36)}
-.card .sw{height:96px;display:block}
+.card .sw{display:block;width:100%;height:132px;object-fit:cover;background:#15151a}
 .card .meta{padding:12px 14px}
 .card .nm{font-weight:700;font-size:15px;display:block}
 .card .tg{font-size:13px;color:rgba(255,255,255,.62);display:block;margin-top:2px}
@@ -192,6 +209,8 @@ function shell({ title, description, canonical, bodyHtml, jsonLd, presetConfig, 
 <meta property="og:title" content="${esc(title)}" />
 <meta property="og:description" content="${esc(description)}" />
 <meta property="og:image" content="${esc(og)}" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(title)}" />
 <meta name="twitter:description" content="${esc(description)}" />
@@ -349,6 +368,7 @@ ${relatedSection(guide.related, allTitles)}
         bodyHtml,
         jsonLd,
         presetConfig: cfg,
+        ogImage: `${ORIGIN}/gradient-previews/${slugify(guide.preset)}.jpg`,
     });
 }
 
@@ -397,18 +417,7 @@ ${configBody}
         )
         .join("\n");
 
-    const cards = neighbours
-        .map(([n, c]) => {
-            const cs = enabledColors(c);
-            const grad = `linear-gradient(135deg,${cs.join(",")})`;
-            return `  <li><a class="card" href="/gradients/${slugify(n)}/">
-    <span class="sw" style="background:${esc(grad)}"></span>
-    <span class="meta"><span class="nm">${esc(n)}</span><span class="tg">${esc(
-                (PRESET_META_REF[n] && PRESET_META_REF[n].tagline) || ""
-            )}</span></span>
-  </a></li>`;
-        })
-        .join("\n");
+    const cards = neighbours.map(([n]) => presetCard(n)).join("\n");
 
     const bodyHtml = `<div class="wrap crumbs"><a href="/">Neat</a> › <a href="/gradients/">Gradients</a> › ${esc(name)}</div>
 <section class="hero"><div class="wrap">
@@ -469,25 +478,20 @@ ${cards}
         },
     ];
 
-    return { slug, html: shell({ title, description, canonical, bodyHtml, jsonLd, presetConfig: cfg }) };
+    return {
+        slug,
+        html: shell({
+            title, description, canonical, bodyHtml, jsonLd, presetConfig: cfg,
+            ogImage: `${ORIGIN}/gradient-previews/${slug}.jpg`,
+        }),
+    };
 }
 
 function renderHub(presets, meta) {
     const canonical = `${ORIGIN}/gradients/`;
     const entries = Object.entries(presets);
 
-    const cards = entries
-        .map(([n, c]) => {
-            const cs = enabledColors(c);
-            const grad = `linear-gradient(135deg,${cs.join(",")})`;
-            return `  <li><a class="card" href="/gradients/${slugify(n)}/">
-    <span class="sw" style="background:${esc(grad)}"></span>
-    <span class="meta"><span class="nm">${esc(n)}</span><span class="tg">${esc(
-                (meta[n] && meta[n].tagline) || ""
-            )}</span></span>
-  </a></li>`;
-        })
-        .join("\n");
+    const cards = entries.map(([n]) => presetCard(n)).join("\n");
 
     const bodyHtml = `<div class="wrap crumbs"><a href="/">Neat</a> › Gradients</div>
 <section class="hero"><div class="wrap">
@@ -560,6 +564,7 @@ ${cards}
         bodyHtml,
         jsonLd,
         presetConfig: presets["Neat"],
+        ogImage: `${ORIGIN}/gradient-previews/neat.jpg`,
     });
 }
 
@@ -637,6 +642,17 @@ async function main() {
         console.warn("[seo] warning: ../lib/dist is older than ../lib/src — run `npm run build` in ../lib");
     }
     fs.copyFileSync(umd, path.join(DIST, "neat.umd.js"));
+
+    const previewDir = path.join(ROOT, "public/gradient-previews");
+    const missing = Object.keys(presets).flatMap((n) =>
+        ["webp", "jpg"]
+            .map((ext) => `${slugify(n)}.${ext}`)
+            .filter((f) => !fs.existsSync(path.join(previewDir, f)))
+    );
+    if (missing.length) {
+        console.error(`[seo] missing preset previews (run \`npm run previews\`):\n  ${missing.join("\n  ")}`);
+        process.exit(1);
+    }
 
     const written = [];
     const urls = [{ loc: `${ORIGIN}/`, priority: "1.0", changefreq: "weekly" }];
