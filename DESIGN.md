@@ -24,9 +24,9 @@ typography:
     letterSpacing: "-0.022em"
   body:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "1.0625rem"
+    fontSize: "1.1875rem"
     fontWeight: 400
-    lineHeight: 1.7
+    lineHeight: 1.65
   deck:
     fontFamily: "Sofia Sans, sans-serif"
     fontSize: "clamp(1.08rem, 1.6vw, 1.28rem)"
@@ -42,7 +42,7 @@ rounded:
   sm: "0.375rem"
 spacing:
   gutter: "clamp(1.25rem, 5vw, 2.5rem)"
-  column: "64rem"
+  column: "46rem"
   section: "clamp(3rem, 6vh, 4.5rem)"
 components:
   button-primary:
@@ -131,14 +131,26 @@ Ramp: display `clamp(2.5rem, 7vw, 4.75rem)` → headline `clamp(1.6rem, 3vw,
 
 ## Layout
 
-One centred container at `64rem` with a `clamp(1.25rem, 5vw, 2.5rem)` gutter,
-used by the hero, the content and the footer alike, so everything shares an
-edge.
+**The column is the measure.** One centred container at `46rem` (736px) with a
+`clamp(1.25rem, 5vw, 2.5rem)` gutter, and *nothing inside sets a narrower
+max-width of its own*. Deck, paragraphs, headings and code all resolve to the
+same 656px and share one right edge; body type at `1.1875rem` lands at 73
+characters per line there.
+
+This replaced a 64rem container where every element carried its own cap — deck
+46ch, prose 68ch, headings 24ch — so each wrapped at a different point, none
+filled the column, and the page read as though the text was breaking early with
+dead space to the right. If a measure needs changing, change the container, not
+the elements.
+
+The gallery holds a grid, so it widens the column to `68rem` for the whole page
+via a class on `<body>` — every element on that page moves together rather than
+one section breaking out of alignment.
 
 - Nav: a fixed pill, top-centre. Never a full-width bar.
-- Hero: `padding: clamp(8rem, 20vh, 12rem) 0 clamp(4rem, 9vh, 7rem)`, with
-  `position: relative; isolation: isolate; overflow: hidden` so the canvas is
-  clipped to it.
+- Hero: `min-height: min(80vh, 46rem)`, content bottom-aligned. Its `.wrap`
+  needs `width: 100%`: the hero is a flex container, and a flex item shrink-wraps
+  to its content, which would centre a narrower box than the column below.
 - Sections: `clamp(3rem, 6vh, 4.5rem)` apart. No surfaces, no boxes — spacing
   and headings carry the structure.
 - Preview format: every gradient thumbnail is `560/294`, matching the captured
@@ -200,4 +212,5 @@ stays, the movement stops.
 - Don't fade across a viewport with a two-stop ramp; it bands. Use many stops
   and dither.
 - Don't build the page as a stack of identical boxes; spacing is the structure.
+- Don't give elements their own max-width inside the column. One measure, one edge.
 - Don't introduce square corners or condensed/uppercase display type.

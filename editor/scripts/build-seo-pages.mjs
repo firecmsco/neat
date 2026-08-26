@@ -190,13 +190,16 @@ html{-webkit-text-size-adjust:100%}
   --r-md:.75rem;
   --r-sm:.375rem;
   --gutter:clamp(1.25rem,5vw,2.5rem);
-  --col:64rem;
+  --col:46rem;
   --sans:'Sofia Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
-  font-size:1.0625rem;line-height:1.7;-webkit-font-smoothing:antialiased}
+  font-size:1.1875rem;line-height:1.65;-webkit-font-smoothing:antialiased}
+/* The gallery holds a grid, so it widens the column for every element on the
+   page at once rather than letting one section break out of alignment. */
+body.gallery{--col:68rem}
 .wrap{max-width:var(--col);margin:0 auto;padding:0 var(--gutter)}
 
 /* ---------------------------------------------------------------- nav pill */
@@ -245,10 +248,10 @@ body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
 .crumbs a:hover{color:#fff}
 .crumbs span{margin:0 .45em;opacity:.6}
 
-h1{font-weight:700;font-size:clamp(2.5rem,7vw,4.75rem);line-height:1.03;
-  letter-spacing:-.03em;margin:0;color:#fff;text-wrap:balance;max-width:17ch}
-.deck{margin:1.3rem 0 0;font-size:clamp(1.08rem,1.6vw,1.28rem);color:var(--fg-2);
-  line-height:1.55;max-width:46ch}
+h1{font-weight:700;font-size:clamp(2.5rem,6.5vw,4.5rem);line-height:1.04;
+  letter-spacing:-.03em;margin:0;color:#fff;text-wrap:balance}
+.deck{margin:1.3rem 0 0;font-size:clamp(1.12rem,1.5vw,1.3rem);color:var(--fg-2);
+  line-height:1.55}
 .actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:2rem 0 0}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;font-weight:500;
@@ -265,11 +268,11 @@ h1{font-weight:700;font-size:clamp(2.5rem,7vw,4.75rem);line-height:1.03;
 .panel{margin:0 0 clamp(3rem,6vh,4.5rem)}
 .panel:last-child{margin-bottom:0}
 
-h2{font-weight:700;font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.16;color:#fff;
-  letter-spacing:-.022em;margin:0 0 1.15rem;text-wrap:balance;max-width:24ch}
+h2{font-weight:700;font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.16;color:#fff;
+  letter-spacing:-.022em;margin:0 0 1.15rem;text-wrap:balance}
 h3{font-weight:600;font-size:1.1rem;color:#fff;margin:2rem 0 .6rem}
-p{margin:0 0 1.15rem;max-width:68ch}
-ul{margin:0 0 1.25rem;padding-left:1.2rem;max-width:68ch}
+p{margin:0 0 1.15rem}
+ul{margin:0 0 1.25rem;padding-left:1.2rem}
 li{margin-bottom:.7rem}
 li::marker{color:rgba(255,255,255,.3)}
 strong{color:#fff;font-weight:600}
@@ -307,7 +310,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   font-variant-numeric:tabular-nums;color:#fff}
 
 /* ----------------------------------------------------------------- fandeck */
-.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));
+.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));
   gap:1.1rem;padding:0;margin:0;list-style:none;max-width:none}
 .chip a{display:block;text-decoration:none;color:inherit;border-radius:var(--r-md);
   overflow:hidden;background:var(--raised);border:1px solid var(--hair);
@@ -368,8 +371,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
 .colophon li{margin-bottom:.45rem}
 .colophon a{color:var(--fg-2);text-decoration:none;font-size:.9rem}
 .colophon a:hover{color:#fff}
-.colophon-note{margin:1.6rem 0 0;max-width:72ch;font-size:.75rem;color:var(--fg-3);
-  line-height:1.65}
+.colophon-note{margin:1.6rem 0 0;font-size:.78rem;color:var(--fg-3);line-height:1.65}
 
 :where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.65);
   outline-offset:2px}
@@ -380,7 +382,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   .viewer-tag{min-height:0}
 }
 @media (max-width:640px){
-  body{font-size:1rem;line-height:1.65}
+  body{font-size:1.0625rem;line-height:1.6}
   .rail{top:.65rem}
   .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
@@ -419,7 +421,7 @@ FORM: Specimen/fandeck structure rendered in the editor's language; candidate 3
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;
 
-function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, script }) {
+function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, script, bodyClass }) {
     const og = ogImage || `${ORIGIN}/og_image_v3.png`;
     return `<!DOCTYPE html>
 <html lang="en">
@@ -453,7 +455,7 @@ function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, scrip
 <style>${CSS}</style>
 ${jsonLd.map((b) => `<script type="application/ld+json">\n${JSON.stringify(b, null, 2)}\n</script>`).join("\n")}
 </head>
-<body>
+<body${bodyClass ? ` class="${bodyClass}"` : ""}>
 ${CONTRACT}
 <header class="rail">
   <a class="mark" href="/">NEAT</a>
@@ -936,6 +938,7 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
         canonical,
         bodyHtml,
         jsonLd,
+        bodyClass: "gallery",
         ogImage: `${ORIGIN}/gradient-previews/neat.jpg`,
         script,
     });
