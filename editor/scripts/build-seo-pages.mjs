@@ -340,16 +340,18 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   border-color:rgba(255,255,255,.45)}
 
 /* --------------------------------------------------------------- colophon */
-.colophon{border-top:1px solid var(--hair);padding:2.75rem 0 1.25rem}
+.colophon{border-top:1px solid var(--hair);margin-top:clamp(2rem,5vh,3.5rem);
+  padding:2.75rem 0 3rem}
 .colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
-  gap:1.75rem}
+  gap:1.75rem;padding-bottom:2.25rem;border-bottom:1px solid var(--hair)}
 .colophon h2{font-size:.72rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
   color:var(--fg-3);margin:0 0 .7rem;max-width:none}
 .colophon ul{list-style:none;padding:0;margin:0;max-width:none}
 .colophon li{margin-bottom:.45rem}
 .colophon a{color:var(--fg-2);text-decoration:none;font-size:.9rem}
 .colophon a:hover{color:#fff}
-.colophon-note{padding:0 0 2.5rem;font-size:.75rem;color:var(--fg-3);line-height:1.65}
+.colophon-note{margin:1.6rem 0 0;max-width:72ch;font-size:.75rem;color:var(--fg-3);
+  line-height:1.65}
 
 :where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.65);
   outline-offset:2px}
@@ -399,7 +401,7 @@ FORM: Specimen/fandeck structure rendered in the editor's language; candidate 3
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;
 
-function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, script, wide }) {
+function shell({ title, description, canonical, bodyHtml, jsonLd, ogImage, script }) {
     const og = ogImage || `${ORIGIN}/og_image_v3.png`;
     return `<!DOCTYPE html>
 <html lang="en">
@@ -442,7 +444,7 @@ ${NAV.map(([href, label, optional]) => `    <a href="${href}"${optional ? " data
   </nav>
 </header>
 ${bodyHtml}
-<footer class="colophon${wide ? " wide" : ""}">
+<footer class="colophon"><div class="wrap">
   <div class="colophon-in">
     <div>
       <h2>Explore</h2>
@@ -477,8 +479,7 @@ ${bodyHtml}
       </ul>
     </div>
   </div>
-</footer>
-<p class="colophon-note${wide ? " wide" : ""}">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
+  <p class="colophon-note">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
 </div></footer>
 <script src="/neat.umd.js"></script>
 <script>
@@ -917,7 +918,6 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
         canonical,
         bodyHtml,
         jsonLd,
-        wide: true,
         ogImage: `${ORIGIN}/gradient-previews/neat.jpg`,
         script,
     });
