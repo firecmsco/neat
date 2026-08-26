@@ -215,12 +215,28 @@ body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
 
 /* -------------------------------------------------------------------- hero */
 /* The canvas lives inside this section and scrolls away with it. */
-.hero{position:relative;isolation:isolate;overflow:hidden;
-  padding:clamp(8rem,20vh,12rem) 0 clamp(4rem,9vh,7rem)}
-.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:-1;
-  opacity:.6;background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772);
-  -webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 100%);
-  mask-image:linear-gradient(to bottom,#000 62%,transparent 100%)}
+.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;
+  min-height:min(80vh,46rem);padding:7rem 0 clamp(3rem,7vh,5rem)}
+
+/* Full strength — the gradient is the product, so it is never dimmed as a whole. */
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
+  background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772)}
+
+/* Darkening is confined to the band the type sits in: the top half stays clean,
+   the bottom resolves into the page. Many stops rather than two, because a long
+   two-stop ramp bands badly at 8 bits. */
+.hero::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(to top,
+    #000 0%,rgba(0,0,0,.96) 14%,rgba(0,0,0,.88) 26%,rgba(0,0,0,.76) 38%,
+    rgba(0,0,0,.6) 50%,rgba(0,0,0,.42) 61%,rgba(0,0,0,.26) 71%,
+    rgba(0,0,0,.14) 80%,rgba(0,0,0,.06) 88%,transparent 96%)}
+
+/* A dither pass over the whole hero. Eight-bit alpha ramps step visibly across a
+   viewport-sized fade; a little noise breaks the bands up. */
+.hero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:140px 140px}
+.hero .wrap{position:relative;z-index:3}
 
 .crumbs{margin:0 0 1.1rem;font-size:.8rem;color:var(--fg-3)}
 .crumbs a{color:var(--fg-3);text-decoration:none}
@@ -366,7 +382,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   .rail{top:.65rem}
   .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
-  .hero{padding:6.5rem 0 3rem}
+  .hero{min-height:min(72vh,34rem);padding:5.5rem 0 2.5rem}
   .fandeck{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.85rem}
   .swatch{width:3.5rem;height:3.5rem}
 }

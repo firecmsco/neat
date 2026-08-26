@@ -79,10 +79,18 @@ pattern: `body` is solid black, the WebGL canvas is absolutely positioned
 *inside the hero section only*, and every section below is ordinary content on
 black.
 
-The canvas sits at `opacity: .6` with a mask fading it out over the last third
-of the hero, so it resolves into the page background instead of ending on a hard
-edge. It scrolls away with its own section — nothing about the gradient is
-fixed, and nothing fades independently of what is behind it.
+The canvas runs at **full opacity** — the gradient is the product and is never
+dimmed as a whole. Darkening is confined to the band the type sits in: an
+overlay inside the hero that is transparent across the top half and resolves to
+black at the bottom, so the page background continues seamlessly. The hero
+scrolls away with its own section; nothing about the gradient is fixed, and
+nothing fades independently of what is behind it.
+
+Two things that overlay has to get right. It carries **ten stops rather than
+two**, because a viewport-length two-stop ramp bands visibly at 8-bit alpha. And
+a **dither pass** sits over the whole hero — an inline `feTurbulence` tile at
+`opacity: .05` — which breaks up what banding survives. Without it, a flat pale
+preset like Clouds shows clear steps down the fade.
 
 Four approaches were built and rejected before this one. They are recorded here
 because each looked reasonable while being written:
@@ -153,8 +161,10 @@ tags. Borders are `1px`, always.
 
 ## Components
 
-- **Hero** — the only place a gradient appears. Canvas `absolute; inset: 0` at
-  `opacity: .6`, masked to transparent over the last third.
+- **Hero** — the only place a gradient appears. `min-height: min(80vh, 46rem)`,
+  content bottom-aligned. Canvas `absolute; inset: 0` at full opacity (z 0), a
+  ten-stop darkening overlay (z 1), a noise dither tile (z 2), content (z 3).
+  Measured on the palest preset, white headlines land at 8.5:1.
 - **Button** — `2.75rem` tall, `0.375rem` radius, weight 500. Primary is white
   with black text; ghost is a `rgba(255,255,255,0.28)` outline.
 - **Nav pill** — fixed, centred, blurred, `9999px`.
@@ -185,6 +195,9 @@ stays, the movement stops.
 - Don't make the canvas `position: fixed` or run it behind the whole page.
 - Don't draw a fade on scrolling content over a stationary gradient.
 - Don't let a dark region change width mid-page.
-- Don't scrim the gradient, or spread mid-alpha grey across a page.
+- Don't scrim the gradient, or spread mid-alpha grey across a page, or lower the
+  canvas opacity to buy contrast — darken the type's own band instead.
+- Don't fade across a viewport with a two-stop ramp; it bands. Use many stops
+  and dither.
 - Don't build the page as a stack of identical boxes; spacing is the structure.
 - Don't introduce square corners or condensed/uppercase display type.
