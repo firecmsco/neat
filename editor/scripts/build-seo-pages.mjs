@@ -173,123 +173,103 @@ function formatConfig(cfg, keys) {
 /* -------------------------------------------------------------------- layout */
 
 const CSS = String.raw`
-/* One near-black reading column, framed by the live gradient. Translucent grey
-   over saturated colour makes mud, so the column is nearly opaque and the
-   gradient stays vivid where it shows: the hero, the page edges, the breathers. */
+/* Same shape as the dataki landing page: the body is solid black, the gradient
+   canvas is absolutely positioned inside the hero section only, and everything
+   below is plain content on black. No fixed canvas, no page-wide fade. */
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 
 :root{
-  --surface:rgba(10,10,12,.955);
-  --raised:rgba(255,255,255,.055);
+  --bg:#000;
+  --raised:rgba(255,255,255,.04);
   --hair:rgba(255,255,255,.1);
   --hair-2:rgba(255,255,255,.22);
   --fg:#fff;
-  --fg-2:rgba(255,255,255,.7);
+  --fg-2:rgba(255,255,255,.68);
   --fg-3:rgba(255,255,255,.45);
-  --r-lg:1.25rem;
   --r-md:.75rem;
   --r-sm:.375rem;
-  --gutter:clamp(1rem,4vw,3rem);
-  --col:62rem;
+  --gutter:clamp(1.25rem,5vw,2.5rem);
+  --col:64rem;
   --sans:'Sofia Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
-body{margin:0;font-family:var(--sans);color:var(--fg);background:#0a0a0a;
+body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--fg-2);
   font-size:1.0625rem;line-height:1.7;-webkit-font-smoothing:antialiased}
-
-#gradient{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;
-  background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772)}
-.page{position:relative;z-index:1}
+.wrap{max-width:var(--col);margin:0 auto;padding:0 var(--gutter)}
 
 /* ---------------------------------------------------------------- nav pill */
 .rail{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:30;
   display:flex;align-items:center;gap:.35rem;max-width:calc(100% - 1.5rem);
-  background:rgba(0,0,0,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border:1px solid rgba(255,255,255,.1);border-radius:9999px;
-  padding:.3rem .4rem;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
+  background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.12);border-radius:9999px;padding:.3rem .4rem}
 .mark{font-weight:700;font-size:.95rem;letter-spacing:.14em;color:#fff;
   text-decoration:none;padding:.35rem .8rem;white-space:nowrap}
 .rail nav{display:flex;gap:.1rem;overflow-x:auto;scrollbar-width:none}
 .rail nav::-webkit-scrollbar{display:none}
-.rail nav a{font-size:.75rem;font-weight:500;color:rgba(255,255,255,.65);
+.rail nav a{font-size:.75rem;font-weight:500;color:rgba(255,255,255,.62);
   text-decoration:none;white-space:nowrap;padding:.42rem .75rem;border-radius:9999px;
   transition:background .2s,color .2s}
 .rail nav a:hover,.rail nav a:focus-visible{background:rgba(255,255,255,.12);color:#fff}
 
 /* -------------------------------------------------------------------- hero */
-/* The gradient runs clean; only the lower band darkens, the way a title card
-   sits over footage. The top two thirds are never touched. */
-.hero{position:relative;min-height:min(94vh,54rem);display:flex;align-items:flex-end}
-.hero-inner{position:relative;z-index:1;width:100%;max-width:var(--col);margin:0 auto;
-  padding:clamp(7rem,16vh,11rem) var(--gutter) clamp(2.75rem,6vw,4rem);
-  background:linear-gradient(to top,var(--surface) 0%,var(--surface) 42%,
-    rgba(10,10,12,.82) 64%,rgba(10,10,12,.42) 82%,transparent 100%)}
+/* The canvas lives inside this section and scrolls away with it. */
+.hero{position:relative;isolation:isolate;overflow:hidden;
+  padding:clamp(8rem,20vh,12rem) 0 clamp(4rem,9vh,7rem)}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:-1;
+  opacity:.6;background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772);
+  -webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 62%,transparent 100%)}
+
 .crumbs{margin:0 0 1.1rem;font-size:.8rem;color:var(--fg-3)}
 .crumbs a{color:var(--fg-3);text-decoration:none}
 .crumbs a:hover{color:#fff}
 .crumbs span{margin:0 .45em;opacity:.6}
 
-h1{font-weight:700;font-size:clamp(2.6rem,7.5vw,5.25rem);line-height:1.02;
-  letter-spacing:-.03em;margin:0;text-wrap:balance;max-width:16ch}
-.deck{margin:1.35rem 0 0;font-size:clamp(1.08rem,1.6vw,1.3rem);color:var(--fg-2);
-  line-height:1.55;max-width:44ch}
+h1{font-weight:700;font-size:clamp(2.5rem,7vw,4.75rem);line-height:1.03;
+  letter-spacing:-.03em;margin:0;color:#fff;text-wrap:balance;max-width:17ch}
+.deck{margin:1.3rem 0 0;font-size:clamp(1.08rem,1.6vw,1.28rem);color:var(--fg-2);
+  line-height:1.55;max-width:46ch}
 .actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:2rem 0 0}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;font-weight:500;
   font-size:.9375rem;text-decoration:none;height:2.75rem;padding:0 1.35rem;
   border-radius:var(--r-sm);background:#fff;color:#000;border:1px solid transparent;
-  transition:background .2s,color .2s,border-color .2s}
-.btn:hover,.btn:focus-visible{background:rgba(255,255,255,.88)}
-.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border-color:rgba(255,255,255,.28)}
-.btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(255,255,255,.14);
+  transition:background .2s,border-color .2s}
+.btn:hover,.btn:focus-visible{background:rgba(255,255,255,.86)}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.28)}
+.btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(255,255,255,.1);
   border-color:rgba(255,255,255,.5)}
 
-/* --------------------------------------------------------- reading column */
-/* One continuous surface, not a stack of cards. The gradient frames it at the
-   page edges on wide screens. */
-.sheet{background:var(--surface);max-width:var(--col);margin:0 auto;border-radius:0;
-  padding:clamp(2.25rem,4.5vw,3.5rem) var(--gutter) clamp(3rem,6vw,4.5rem)}
-.hero + .sheet{padding-top:0}
-.breather + .sheet{border-top-left-radius:var(--r-lg);border-top-right-radius:var(--r-lg)}
-.sheet:has(+ .breather){border-bottom-left-radius:var(--r-lg);
-  border-bottom-right-radius:var(--r-lg)}
-.colophon-note{border-bottom-left-radius:var(--r-lg);
-  border-bottom-right-radius:var(--r-lg)}
-.sheet.wide{max-width:76rem}
-.panel{margin:0 0 clamp(2.75rem,5vw,4rem)}
+/* ----------------------------------------------------------------- content */
+.sheet{padding:clamp(1rem,3vh,2rem) 0 clamp(3rem,7vh,5rem)}
+.panel{margin:0 0 clamp(3rem,6vh,4.5rem)}
 .panel:last-child{margin-bottom:0}
 
-h2{font-weight:700;font-size:clamp(1.65rem,3.2vw,2.35rem);line-height:1.14;
+h2{font-weight:700;font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.16;color:#fff;
   letter-spacing:-.022em;margin:0 0 1.15rem;text-wrap:balance;max-width:24ch}
-h3{font-weight:600;font-size:1.1rem;margin:2rem 0 .6rem}
-p{margin:0 0 1.15rem;color:var(--fg-2);max-width:68ch}
+h3{font-weight:600;font-size:1.1rem;color:#fff;margin:2rem 0 .6rem}
+p{margin:0 0 1.15rem;max-width:68ch}
 ul{margin:0 0 1.25rem;padding-left:1.2rem;max-width:68ch}
-li{margin-bottom:.7rem;color:var(--fg-2)}
+li{margin-bottom:.7rem}
 li::marker{color:rgba(255,255,255,.3)}
 strong{color:#fff;font-weight:600}
 a{color:#fff;text-decoration:underline;text-underline-offset:.18em;
   text-decoration-color:rgba(255,255,255,.32)}
 a:hover{text-decoration-color:#fff}
 
-code{font-family:var(--mono);font-size:.86em;background:rgba(255,255,255,.09);
-  border-radius:.25rem;padding:.14em .4em;word-break:break-word}
-pre{background:rgba(255,255,255,.04);border:1px solid var(--hair);
-  border-radius:var(--r-md);padding:1.25rem 1.4rem;overflow-x:auto;margin:0 0 1.25rem;
-  font-size:.8125rem;line-height:1.7;color:rgba(255,255,255,.92);max-width:100%}
+code{font-family:var(--mono);font-size:.86em;background:rgba(255,255,255,.08);
+  border-radius:.25rem;padding:.14em .4em;word-break:break-word;color:#fff}
+pre{background:var(--raised);border:1px solid var(--hair);border-radius:var(--r-md);
+  padding:1.25rem 1.4rem;overflow-x:auto;margin:0 0 1.25rem;font-size:.8125rem;
+  line-height:1.7;color:rgba(255,255,255,.9)}
 pre code{background:none;padding:0;font-size:inherit;white-space:pre;color:inherit}
 
-.note{border-left:1px solid var(--hair-2);padding:.15rem 0 .15rem 1.15rem;
-  margin:1.5rem 0}
-.note h3{margin:0 0 .3rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;
+.note{border-left:1px solid var(--hair-2);padding:.15rem 0 .15rem 1.15rem;margin:1.5rem 0}
+.note h3{margin:0 0 .3rem;font-size:.78rem;font-weight:600;letter-spacing:.09em;
   text-transform:uppercase;color:var(--fg-3)}
 .note p{margin:0}
-
-/* ------------------------------------------------------------- breathers */
-/* The surface stops and the live gradient shows full width. Rhythm, and the
-   product punctuating its own documentation. */
-.breather{height:clamp(7rem,18vh,12rem)}
 
 /* ----------------------------------------------------------------- palette */
 .chips{display:flex;flex-wrap:wrap;gap:.85rem;margin:0 0 1.75rem;padding:0;list-style:none;
@@ -297,8 +277,8 @@ pre code{background:none;padding:0;font-size:inherit;white-space:pre;color:inher
 .chips li{margin:0}
 .swatch{display:block;width:4.5rem;height:4.5rem;border-radius:var(--r-md);
   border:1px solid var(--hair-2)}
-.chips code{display:block;margin-top:.5rem;background:none;padding:0;
-  font-size:.68rem;color:var(--fg-3);text-align:center;letter-spacing:.02em}
+.chips code{display:block;margin-top:.5rem;background:none;padding:0;font-size:.68rem;
+  color:var(--fg-3);text-align:center}
 
 /* -------------------------------------------------------------------- spec */
 table.spec{width:100%;max-width:32rem;border-collapse:collapse;margin:0}
@@ -313,31 +293,34 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
   gap:1.1rem;padding:0;margin:0;list-style:none;max-width:none}
 .chip a{display:block;text-decoration:none;color:inherit;border-radius:var(--r-md);
   overflow:hidden;background:var(--raised);border:1px solid var(--hair);
-  transition:transform .28s cubic-bezier(.2,.7,.3,1),border-color .28s,box-shadow .28s}
-.chip a:hover,.chip a:focus-visible{transform:translateY(-4px);
-  border-color:var(--hair-2);box-shadow:0 18px 34px -16px rgba(0,0,0,.8)}
+  transition:transform .28s cubic-bezier(.2,.7,.3,1),border-color .28s}
+.chip a:hover,.chip a:focus-visible{transform:translateY(-4px);border-color:var(--hair-2)}
 .chip img{display:block;width:100%;height:auto;aspect-ratio:560/294;object-fit:cover;
   background:rgba(255,255,255,.04)}
 .chip-label{display:block;padding:.7rem .85rem .8rem}
-.chip-name{display:block;font-weight:600;font-size:.95rem}
+.chip-name{display:block;font-weight:600;font-size:.95rem;color:#fff}
 .chip-form{display:block;font-family:var(--mono);font-size:.62rem;color:var(--fg-3);
   margin-top:.2rem}
 
 /* -------------------------------------------------------------- held card */
-.deckwrap{display:grid;grid-template-columns:minmax(0,16rem) minmax(0,1fr);
+.deckwrap{display:grid;grid-template-columns:minmax(0,17rem) minmax(0,1fr);
   gap:clamp(1.5rem,3vw,2.5rem);align-items:start}
-.held{position:sticky;top:5.75rem}
-.held-meta h2{font-size:1.55rem;margin:0 0 .25rem;max-width:none}
-.viewer-tag{margin:0 0 1.25rem;color:var(--fg-2);font-size:.95rem;min-height:3em}
-.held-meta .btn{width:100%;margin-top:1.25rem}
-.viewer-hint{font-size:.75rem;color:var(--fg-3);margin:0 0 .6rem}
+.held{position:sticky;top:5.5rem;background:var(--raised);border:1px solid var(--hair);
+  border-radius:var(--r-md);padding:1rem}
+.held-stage{position:relative;aspect-ratio:560/294;border-radius:.5rem;overflow:hidden;
+  background:rgba(255,255,255,.04);margin:0 0 1rem}
+.held-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.held-meta h2{font-size:1.45rem;margin:0 0 .25rem;max-width:none}
+.viewer-tag{margin:0 0 1.15rem;font-size:.92rem;min-height:3em}
+.held-meta .btn{width:100%;margin-top:1.15rem}
+.viewer-hint{font-size:.72rem;color:var(--fg-3);margin:0 0 .55rem}
 @media (hover:none){.viewer-hint{display:none}}
 
 /* --------------------------------------------------------------------- faq */
 .faq details{border-bottom:1px solid var(--hair)}
 .faq details:first-of-type{border-top:1px solid var(--hair)}
 .faq summary{cursor:pointer;list-style:none;padding:1.15rem 2.25rem 1.15rem 0;
-  position:relative;font-weight:600;font-size:1.05rem}
+  position:relative;font-weight:600;font-size:1.05rem;color:#fff}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary::before,.faq summary::after{content:"";position:absolute;right:.35rem;top:50%;
   width:.75rem;height:1px;background:rgba(255,255,255,.55);
@@ -353,15 +336,11 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
 .onward a{display:inline-block;font-size:.9rem;font-weight:500;text-decoration:none;
   padding:.55rem 1rem;border-radius:9999px;border:1px solid rgba(255,255,255,.2);
   color:#fff;transition:background .2s,border-color .2s}
-.onward a:hover,.onward a:focus-visible{background:rgba(255,255,255,.12);
+.onward a:hover,.onward a:focus-visible{background:rgba(255,255,255,.1);
   border-color:rgba(255,255,255,.45)}
 
 /* --------------------------------------------------------------- colophon */
-.colophon{background:var(--surface);border-top:1px solid var(--hair);
-  max-width:var(--col);margin:0 auto;padding:2.75rem var(--gutter) 1.5rem}
-.breather + .colophon{border-top-left-radius:var(--r-lg);
-  border-top-right-radius:var(--r-lg);border-top:none}
-.colophon.wide{max-width:76rem}
+.colophon{border-top:1px solid var(--hair);padding:2.75rem 0 1.25rem}
 .colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
   gap:1.75rem}
 .colophon h2{font-size:.72rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
@@ -370,10 +349,7 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
 .colophon li{margin-bottom:.45rem}
 .colophon a{color:var(--fg-2);text-decoration:none;font-size:.9rem}
 .colophon a:hover{color:#fff}
-.colophon-note{background:var(--surface);max-width:var(--col);margin:0 auto;
-  padding:1.25rem var(--gutter) 2.5rem;font-size:.75rem;color:var(--fg-3);
-  line-height:1.65;border-top:1px solid var(--hair)}
-.colophon-note.wide{max-width:76rem}
+.colophon-note{padding:0 0 2.5rem;font-size:.75rem;color:var(--fg-3);line-height:1.65}
 
 :where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.65);
   outline-offset:2px}
@@ -385,14 +361,12 @@ table.spec td{text-align:right;font-family:var(--mono);font-size:.95rem;
 }
 @media (max-width:640px){
   body{font-size:1rem;line-height:1.65}
-  .hero{min-height:min(88vh,44rem)}
   .rail{top:.65rem}
   .mark{font-size:.85rem;padding:.3rem .6rem}
   .rail nav a[data-optional]{display:none}
-  .colophon-note{border-radius:0}
+  .hero{padding:6.5rem 0 3rem}
   .fandeck{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.85rem}
   .swatch{width:3.5rem;height:3.5rem}
-  .breather{height:5rem}
 }
 `.trim();
 
@@ -461,8 +435,6 @@ ${jsonLd.map((b) => `<script type="application/ld+json">\n${JSON.stringify(b, nu
 </head>
 <body>
 ${CONTRACT}
-<canvas id="gradient" aria-hidden="true"></canvas>
-<div class="page">
 <header class="rail">
   <a class="mark" href="/">NEAT</a>
   <nav aria-label="Main">
@@ -507,7 +479,7 @@ ${bodyHtml}
   </div>
 </footer>
 <p class="colophon-note${wide ? " wide" : ""}">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
-</div>
+</div></footer>
 <script src="/neat.umd.js"></script>
 <script>
 ${script}
@@ -533,7 +505,8 @@ const SINGLE_CANVAS_SCRIPT = (cfg) => `(function () {
 
 function hero({ crumbs, h1, deck, actions }) {
     return `<section class="hero">
-  <div class="hero-inner">
+  <canvas id="gradient" aria-hidden="true"></canvas>
+  <div class="wrap">
     <nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>
     <h1>${esc(h1)}</h1>
     <p class="deck">${deck}</p>
@@ -589,14 +562,11 @@ function renderGuide(guide, presets, allTitles) {
         actions: `<a class="btn" href="/?preset=${encodeURIComponent(guide.preset)}">Open the editor</a>
       <a class="btn ghost" href="/gradients/">${Object.keys(presets).length} presets</a>`,
     })}
-<main class="sheet">
+<main class="sheet"><div class="wrap">
 ${sections}
-</main>
-<div class="breather" aria-hidden="true"></div>
-<main class="sheet">
 ${faqSection(guide.faq)}
 ${onwardSection(guide.related, allTitles)}
-</main>`;
+</div></main>`;
 
     const jsonLd = [
         {
@@ -687,7 +657,7 @@ ${formatConfig(cfg)}
         actions: `<a class="btn" href="/?preset=${encodeURIComponent(name)}">Open in the editor</a>
       <a class="btn ghost" href="/gradients/">All presets</a>`,
     })}
-<main class="sheet">
+<main class="sheet"><div class="wrap">
   <section class="panel">
     <h2>What it is</h2>
     <p>${esc(meta.description)}</p>
@@ -717,9 +687,7 @@ ${swatches}
         name
     )}">in the editor</a> and export a PNG still or an MP4 loop &mdash; see the <a href="/gradient-video-background/">gradient video guide</a>.</p>
   </section>
-</main>
-<div class="breather" aria-hidden="true"></div>
-<main class="sheet">
+
   <section class="panel">
     <h2>More presets</h2>
     <ul class="fandeck">
@@ -727,7 +695,7 @@ ${neighbours.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
     </ul>
     <p style="margin:1.25rem 0 0"><a href="/gradients/">See all ${Object.keys(presets).length} presets</a></p>
   </section>
-</main>`;
+</div></main>`;
 
     const jsonLd = [
         {
@@ -793,22 +761,25 @@ function renderHub(presets, meta) {
     );
 
     const bodyHtml = `<section class="hero">
-  <div class="hero-inner">
+  <canvas id="gradient" aria-hidden="true"></canvas>
+  <div class="wrap">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Neat</a><span>/</span>Gradients</nav>
     <h1>Gradient gallery</h1>
-    <p class="deck">Every built-in Neat preset. Hover one to load it behind the page, then take its palette, its parameters and the code to use it.</p>
+    <p class="deck">Every built-in Neat preset, rendered by the real engine. Hover one to preview it running live, then take its palette, its parameters and the code to use it.</p>
     <p class="actions">
       <a class="btn" href="/">Open the editor</a>
       <a class="btn ghost" href="/gradient-generator/">How the generator works</a>
     </p>
   </div>
 </section>
-<main class="sheet wide">
+<main class="sheet"><div class="wrap">
   <section class="panel">
     <div class="deckwrap">
       <div class="held">
+        <div class="held-stage"><canvas id="heldCanvas" role="img"
+             aria-label="Live preview of the ${esc(first)} gradient"></canvas></div>
         <div class="held-meta">
-          <p class="viewer-hint">Hover a preset to load it behind the page</p>
+          <p class="viewer-hint">Hover a preset to preview it</p>
           <h2 id="heldName">${esc(first)}</h2>
           <p class="viewer-tag" id="heldTag">${esc((meta[first] && meta[first].tagline) || "")}</p>
           <table class="spec"><tbody id="heldSpec"></tbody></table>
@@ -823,9 +794,7 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
       </div>
     </div>
   </section>
-</main>
-<div class="breather" aria-hidden="true"></div>
-<main class="sheet wide">
+
   <section class="panel">
     <h2>Picking a starting point</h2>
     <p>The parameter space is large enough that starting from scratch is rarely productive. Start from whichever preset is closest to the mood you want, then change colours first and motion second &mdash; motion is what people notice, and it is the easiest thing to overdo.</p>
@@ -849,7 +818,7 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
       <li><a href="/animated-3d-background-for-websites/">3D backgrounds</a></li>
     </ul>
   </section>
-</main>`;
+</div></main>`;
 
     const jsonLd = [
         {
@@ -885,8 +854,18 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
   var tagEl = document.getElementById("heldTag");
   var specEl = document.getElementById("heldSpec");
   var openEl = document.getElementById("heldOpen");
-  var canvas = document.getElementById("gradient");
+  var canvas = document.getElementById("heldCanvas");
   if (!canvas || !window.neat || !window.neat.NeatGradient) return;
+
+  // The hero runs its own instance and never changes; only the card follows hover.
+  var heroEl = document.getElementById("gradient");
+  if (heroEl) {
+    try {
+      var heroCfg = Object.assign({}, DATA[${JSON.stringify(first)}].cfg);
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) heroCfg.speed = 0;
+      new window.neat.NeatGradient(Object.assign({ ref: heroEl }, heroCfg));
+    } catch (e) {}
+  }
 
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var current = null, gradient = null, timer = null;

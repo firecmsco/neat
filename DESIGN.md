@@ -2,71 +2,68 @@
 name: Neat
 description: Animated 3D gradient backgrounds — editor and static content pages
 colors:
-  ground: "#0a0a0a"
-  surface: "rgba(10,10,12,0.955)"
-  raised: "rgba(255,255,255,0.055)"
+  bg: "#000000"
+  raised: "rgba(255,255,255,0.04)"
   hairline: "rgba(255,255,255,0.1)"
-  hairline-strong: "rgba(255,255,255,0.2)"
+  hairline-strong: "rgba(255,255,255,0.22)"
   fg: "#ffffff"
-  fg-muted: "rgba(255,255,255,0.72)"
-  fg-faint: "rgba(255,255,255,0.5)"
+  fg-muted: "rgba(255,255,255,0.68)"
+  fg-faint: "rgba(255,255,255,0.45)"
 typography:
   display:
     fontFamily: "Sofia Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-    fontSize: "clamp(2.6rem, 7.5vw, 5.25rem)"
+    fontSize: "clamp(2.5rem, 7vw, 4.75rem)"
     fontWeight: 700
-    lineHeight: 1.02
+    lineHeight: 1.03
     letterSpacing: "-0.03em"
   headline:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "clamp(1.65rem, 3.2vw, 2.35rem)"
+    fontSize: "clamp(1.6rem, 3vw, 2.2rem)"
     fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
+    lineHeight: 1.16
+    letterSpacing: "-0.022em"
   body:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "1rem"
+    fontSize: "1.0625rem"
     fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.7
   deck:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "clamp(1rem, 1.4vw, 1.125rem)"
+    fontSize: "clamp(1.08rem, 1.6vw, 1.28rem)"
     fontWeight: 400
     lineHeight: 1.55
   data:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
-    fontSize: "0.9rem"
+    fontSize: "0.95rem"
     fontWeight: 400
 rounded:
   pill: "9999px"
-  lg: "1.25rem"
   md: "0.75rem"
   sm: "0.375rem"
 spacing:
-  gutter: "clamp(1rem, 4vw, 2.5rem)"
-  panel-pad: "clamp(1.35rem, 3vw, 2.25rem)"
-  stack: "1.25rem"
+  gutter: "clamp(1.25rem, 5vw, 2.5rem)"
+  column: "64rem"
+  section: "clamp(3rem, 6vh, 4.5rem)"
 components:
   button-primary:
     backgroundColor: "{colors.fg}"
     textColor: "#000000"
     rounded: "{rounded.sm}"
-    height: "2.5rem"
-    padding: "0 1.15rem"
-  button-outline:
+    height: "2.75rem"
+    padding: "0 1.35rem"
+  button-ghost:
     backgroundColor: "transparent"
     textColor: "{colors.fg}"
     rounded: "{rounded.sm}"
-    height: "2.5rem"
-    padding: "0 1.15rem"
-  reading-column:
-    backgroundColor: "{colors.surface}"
+    height: "2.75rem"
+    padding: "0 1.35rem"
+  card:
+    backgroundColor: "{colors.raised}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.panel-pad}"
-    width: "62rem"
+    rounded: "{rounded.md}"
+    padding: "1rem"
   nav-pill:
-    backgroundColor: "rgba(0,0,0,0.42)"
+    backgroundColor: "rgba(0,0,0,0.55)"
     textColor: "{colors.fg}"
     rounded: "{rounded.pill}"
     padding: "0.3rem 0.4rem"
@@ -76,136 +73,118 @@ components:
 
 ## Overview
 
-**The gradient is the ground; one near-black column sits on it.** A fixed
-full-bleed WebGL canvas runs behind every surface at full intensity. Reading
-content lives on a single continuous column, nearly opaque, capped at `62rem` and
-centred so the gradient frames it at the page edges. The hero puts large type
-directly on the gradient over a bottom-anchored fade, and full-bleed *breathers*
-between sections let the gradient return at full width.
+**A gradient hero at the top, then plain content on black.** This is the same
+shape as the dataki landing page (`~/dataki/landing`), which is the house
+pattern: `body` is solid black, the WebGL canvas is absolutely positioned
+*inside the hero section only*, and every section below is ordinary content on
+black.
 
-Three anti-references, all built and rejected on this project:
+The canvas sits at `opacity: .6` with a mask fading it out over the last third
+of the hero, so it resolves into the page background instead of ending on a hard
+edge. It scrolls away with its own section — nothing about the gradient is
+fixed, and nothing fades independently of what is behind it.
 
-1. **Never scrim the gradient.** The first build dimmed it to 46–72% black to
-   make room for text. For a product whose value is how the gradient looks,
-   dimming it is backwards.
-2. **Never invent a second design language.** A build using square corners,
-   hairline-ruled card stock and condensed uppercase type read as a different
-   product even with the palette corrected.
-3. **Never spread mid-alpha grey across a page.** `rgba(23,23,23,0.82)` over a
-   saturated gradient turns olive-brown. The editor survives that alpha because
-   its panels are a small toolbar and a sidebar; at page scale it is mud. Go
-   nearly opaque, or leave the gradient alone entirely.
+Four approaches were built and rejected before this one. They are recorded here
+because each looked reasonable while being written:
 
-And structurally: a page built as a vertical stack of identical rounded boxes has
-no rhythm and reads as a template. One surface, punctuated by gradient.
+1. **A scrimmed full-page gradient.** Dimming the product to 46–72% black to make
+   room for text is backwards for a product whose value is how the gradient looks.
+2. **A separate design language.** Square corners, hairline-ruled card stock and
+   condensed uppercase type read as a different product entirely.
+3. **Mid-alpha panels at page scale.** `rgba(23,23,23,.82)` over a saturated
+   gradient turns olive-brown. The editor survives that alpha only because its
+   panels are a small toolbar and a sidebar.
+4. **A fixed canvas behind a scrolling column.** Any fade drawn on the scrolling
+   content slides across a stationary gradient, which reads as broken; and a
+   full-bleed fade meeting a width-capped column leaves a hard horizontal seam.
+
+The through-line: **contain the gradient in a section and leave everything else
+alone.**
 
 ## Colors
 
-Strategy: **restrained achromatic chrome over unrestrained chroma**. The
-interface is white-on-near-black; every colour on screen comes from the gradient.
+Strategy: **restrained**. Pure black ground, white type, and one contained
+gradient carrying all the colour.
 
-The reading surface is `rgba(10,10,12,0.955)` — high enough alpha that no
-gradient tints it, so it reads as clean black rather than mud, while the gradient
-stays vivid everywhere it is allowed to show. Raised elements inside it use
-`rgba(255,255,255,0.055)`; borders are `1px` of `rgba(255,255,255,0.1)`, stepping
-to `0.22` on hover. The nav pill is the one genuinely translucent surface at
-`rgba(0,0,0,0.4)` with blur, because it is small.
-
-Text is `#fff`, `rgba(255,255,255,0.7)` secondary, `rgba(255,255,255,0.45)` faint.
+Surfaces are `rgba(255,255,255,0.04)` with a `1px` `rgba(255,255,255,0.1)`
+border, stepping to `0.22` on hover. Type is `#fff` for headings and emphasis,
+`rgba(255,255,255,0.68)` for body, `rgba(255,255,255,0.45)` for faint labels —
+all far above 4.5:1 on black. The nav pill is the only translucent surface, at
+`rgba(0,0,0,0.55)` with blur, because it is small.
 
 ## Typography
 
-**Sofia Sans throughout**, at 400/500/600/700. Headings are weight 700 with
-negative tracking; the step between levels is size, not face. Monospace appears
-only for hex values, numeric parameters and code — never as a texture.
+**Sofia Sans throughout**, 400/500/600/700, inherited from the editor. Headings
+are weight 700 with negative tracking. Monospace is only for hex values, numeric
+parameters and code.
 
-Ramp: display `clamp(2rem, 5vw, 3.25rem)` → headline `clamp(1.35rem, 2.4vw,
-1.75rem)` → body `1rem` → data `0.9rem`. Prose measure caps around 46ch in decks
-and the panel width elsewhere.
+Ramp: display `clamp(2.5rem, 7vw, 4.75rem)` → headline `clamp(1.6rem, 3vw,
+2.2rem)` → body `1.0625rem` → data `0.95rem`. Prose measure caps at `68ch`.
 
 ## Layout
 
-**One column, not a card stack.** `.sheet` is a single continuous surface capped
-at `62rem` (`76rem` where it holds a grid), rounded at the top where it meets the
-hero. Sections are spacing inside it, never separate boxes.
+One centred container at `64rem` with a `clamp(1.25rem, 5vw, 2.5rem)` gutter,
+used by the hero, the content and the footer alike, so everything shares an
+edge.
 
-- Nav: a floating pill, fixed top-centre. Never a full-width bar.
-- Hero: `min-height: min(94vh, 54rem)` with type bottom-left. **The fade belongs
-  to the column, not the viewport.** It runs from transparent at the top of the
-  hero to the full surface colour, at the column's own width, so the dark shape
-  is continuous from hero to footer. A full-bleed fade above a capped column
-  produces a hard horizontal seam with the gradient popping back in at both
-  sides — that was shipped once and it looked broken.
-- Breather: `clamp(7rem, 18vh, 12rem)` where the column stops and the gradient
-  shows full width. One before the FAQ on guides, one before each grid.
+- Nav: a fixed pill, top-centre. Never a full-width bar.
+- Hero: `padding: clamp(8rem, 20vh, 12rem) 0 clamp(4rem, 9vh, 7rem)`, with
+  `position: relative; isolation: isolate; overflow: hidden` so the canvas is
+  clipped to it.
+- Sections: `clamp(3rem, 6vh, 4.5rem)` apart. No surfaces, no boxes — spacing
+  and headings carry the structure.
 - Preview format: every gradient thumbnail is `560/294`, matching the captured
   frames and the OG images.
 
-Measure caps at `68ch` for prose. Breakpoints: **860px** stacks the gallery's
-spec card; **640px** shortens the hero and hides three of five nav links, all of
-which still ship in the colophon.
+Breakpoints: **860px** stacks the gallery's preview card above its grid;
+**640px** shortens the hero and hides three of five nav links, all of which still
+ship in the footer.
 
 ## Elevation & Depth
 
-Depth is mostly tonal: a near-black column against a vivid gradient needs no
-shadow to separate. Only two things lift — the nav pill
-(`0 10px 30px -10px rgba(0,0,0,.6)` with `blur(14px)`) and preview tiles on hover
-(`translateY(-4px)`, `0 18px 34px -16px rgba(0,0,0,.8)`).
-
-One hard constraint: **blur only small surfaces.** A tall blurred element over an
-animating canvas forces a full-viewport composite every frame and visibly stalls
-scrolling. The nav pill is the only blurred element on the page.
+Almost none. Cards are a `0.04` white wash with a hairline; the only movement is
+a `4px` lift on preview tiles. The nav pill is the single blurred element —
+blurring a tall surface over an animating canvas stalls scrolling.
 
 ## Shapes
 
-Radius is the family signature: `1rem` panels, `0.75rem` nested groups and
-previews, `0.375rem` buttons, `9999px` pills and tags. **Nothing in this system
-is square.** Borders are `1px`, always, and never carry colour as decoration.
+`0.75rem` on cards and previews, `0.375rem` on buttons, `9999px` on pills and
+tags. Borders are `1px`, always.
 
 ## Components
 
-- **Reading column** — the single surface content sits on. Near-opaque, capped
-  at `62rem`, not repeated per section. It has no top edge of its own: it grows
-  out of the hero fade. Corners appear only where a breather cuts it.
-- **Config block** — presets show only their shaping parameters; the full
-  ~60-key config sits under a disclosure. Dumping every key buries the handful
-  anyone reads and swamps the page.
-- **Button** — `2.5rem` tall, `0.375rem` radius, weight 500. Primary is white on
-  black text; outline is `rgba(255,255,255,0.4)` border filling to white/10 on
-  hover. Transitions are `0.2s`.
-- **Nav pill** — fixed, centred, blurred, `9999px`. Links are pill-shaped on
-  hover.
+- **Hero** — the only place a gradient appears. Canvas `absolute; inset: 0` at
+  `opacity: .6`, masked to transparent over the last third.
+- **Button** — `2.75rem` tall, `0.375rem` radius, weight 500. Primary is white
+  with black text; ghost is a `rgba(255,255,255,0.28)` outline.
+- **Nav pill** — fixed, centred, blurred, `9999px`.
 - **Preview tile** — a captured frame at `560/294` with name and a mono formula
-  line. Lifts `3px` on hover with the border stepping up.
+  line; lifts `4px` on hover.
 - **Spec table** — a real `<table>`; label left in faint text, value right in
   mono with `tabular-nums`, hairline rule per row.
-- **Tag row** — pill-shaped outline links for onward navigation.
+- **Preview card (gallery)** — a sticky card holding its own small live canvas,
+  which follows whichever tile is hovered or focused.
+- **Config block** — presets show only their shaping parameters; the full
+  ~60-key config sits under a disclosure.
 
-Motion: one curve, `cubic-bezier(.2,.7,.3,1)`, `0.2s` on controls and `0.25s` on
-tiles. The gallery's authored moment is hovering a preset to load it behind the
-whole page — the same gesture as the editor's preset switcher.
-`prefers-reduced-motion` sets gradient `speed` to `0`: the gradient stays, the
-movement stops.
+Motion: one curve, `cubic-bezier(.2,.7,.3,1)`, `0.2s` on controls, `0.28s` on
+tiles. `prefers-reduced-motion` sets gradient `speed` to `0` — the gradient
+stays, the movement stops.
 
 ## Do's and Don'ts
 
 **Do**
 
-- Run the gradient full-bleed and at full intensity behind every page.
-- Put content on a translucent panel when it must sit over the gradient.
-- Keep radius on everything; it is the strongest family signal after the gradient.
-- Use a real captured frame or live canvas for any gradient preview.
+- Put the gradient in the hero, contained, and leave the rest of the page black.
+- Use a real captured frame or a live canvas for any gradient preview.
+- Keep one container width across hero, content and footer.
 - Check text against the brightest frame the animation can produce.
 
 **Don't**
 
-- Don't scrim, tint or overlay the gradient to make text readable.
-- Don't introduce square corners, ruled sheets, or condensed/uppercase display
-  type; they broke the bond with the editor.
-- Don't build the page as a stack of identical rounded boxes.
-- Don't let a dark region change width mid-page. Any fade or surface that meets
-  the column must share its width.
-- Don't fake a gradient with CSS `linear-gradient` where a real frame belongs.
-- Don't blur a tall surface over the canvas, and don't spread mid-alpha grey
-  across a page — both were tried and both looked cheap.
-- Don't add a second accent colour; the gradient is the colour.
+- Don't make the canvas `position: fixed` or run it behind the whole page.
+- Don't draw a fade on scrolling content over a stationary gradient.
+- Don't let a dark region change width mid-page.
+- Don't scrim the gradient, or spread mid-alpha grey across a page.
+- Don't build the page as a stack of identical boxes; spacing is the structure.
+- Don't introduce square corners or condensed/uppercase display type.
