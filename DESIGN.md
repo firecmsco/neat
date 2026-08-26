@@ -1,233 +1,197 @@
 ---
-name: Neat Specimen Sheets
-description: The static gradient guide, gallery and preset pages at neat.firecms.co
+name: Neat
+description: Animated 3D gradient backgrounds — editor and static content pages
 colors:
-  sheet: "#0E0F12"
-  plate: "#191A1F"
-  well: "#08090B"
-  rail: "#0A0B0D"
-  stage: "#141519"
-  ink: "#ECECE8"
-  ink-muted: "#9EA0A8"
-  rule: "rgba(236,236,232,0.16)"
-  rule-strong: "rgba(236,236,232,0.34)"
+  ground: "#0a0a0a"
+  panel: "rgba(23,23,23,0.82)"
+  panel-inner: "rgba(255,255,255,0.05)"
+  hairline: "rgba(255,255,255,0.1)"
+  hairline-strong: "rgba(255,255,255,0.2)"
+  fg: "#ffffff"
+  fg-muted: "rgba(255,255,255,0.72)"
+  fg-faint: "rgba(255,255,255,0.5)"
 typography:
   display:
-    fontFamily: "Sofia Sans Extra Condensed, Sofia Sans, sans-serif"
-    fontSize: "clamp(2.75rem, 7.5vw, 5.25rem)"
-    fontWeight: 800
-    lineHeight: 0.94
+    fontFamily: "Sofia Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
+    fontSize: "clamp(2rem, 5vw, 3.25rem)"
+    fontWeight: 700
+    lineHeight: 1.06
     letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Sofia Sans Extra Condensed, Sofia Sans, sans-serif"
-    fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)"
-    fontWeight: 800
-    lineHeight: 1.02
-    letterSpacing: "-0.012em"
-  title:
-    fontFamily: "Sofia Sans Extra Condensed, Sofia Sans, sans-serif"
-    fontSize: "1.45rem"
+    fontFamily: "Sofia Sans, sans-serif"
+    fontSize: "clamp(1.35rem, 2.4vw, 1.75rem)"
     fontWeight: 700
-    lineHeight: 1.3
+    lineHeight: 1.2
+    letterSpacing: "-0.01em"
   body:
-    fontFamily: "Sofia Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-    fontSize: "1.0625rem"
+    fontFamily: "Sofia Sans, sans-serif"
+    fontSize: "1rem"
     fontWeight: 400
-    lineHeight: 1.65
+    lineHeight: 1.6
   deck:
     fontFamily: "Sofia Sans, sans-serif"
-    fontSize: "clamp(1.05rem, 1.5vw, 1.24rem)"
+    fontSize: "clamp(1rem, 1.4vw, 1.125rem)"
     fontWeight: 400
-    lineHeight: 1.5
-  label:
-    fontFamily: "Spline Sans Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
-    fontSize: "0.7rem"
+    lineHeight: 1.55
+  data:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
+    fontSize: "0.9rem"
     fontWeight: 400
-    letterSpacing: "0.11em"
 rounded:
-  square: "0"
+  pill: "9999px"
+  lg: "1rem"
+  md: "0.75rem"
+  sm: "0.375rem"
 spacing:
-  rail: "3.5rem"
-  gutter: "clamp(1.25rem, 5vw, 4.5rem)"
-  pad: "clamp(1.25rem, 4vw, 4rem)"
-  section: "4.5rem"
+  gutter: "clamp(1rem, 4vw, 2.5rem)"
+  panel-pad: "clamp(1.35rem, 3vw, 2.25rem)"
+  stack: "1.25rem"
 components:
   button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.sheet}"
-    rounded: "{rounded.square}"
-    padding: "0.85rem 1.6rem"
-  button-primary-hover:
+    backgroundColor: "{colors.fg}"
+    textColor: "#000000"
+    rounded: "{rounded.sm}"
+    height: "2.5rem"
+    padding: "0 1.15rem"
+  button-outline:
     backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "0.85rem 1.6rem"
-  button-ghost-hover:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.sheet}"
-  label-plate:
-    backgroundColor: "{colors.plate}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "clamp(1.5rem, 3.5vw, 2.75rem)"
-  code-well:
-    backgroundColor: "{colors.well}"
-    textColor: "#D8D9D4"
-    rounded: "{rounded.square}"
-    padding: "1.5rem clamp(1.1rem, 2.5vw, 1.75rem)"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.sm}"
+    height: "2.5rem"
+    padding: "0 1.15rem"
+  panel:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.panel-pad}"
+  panel-inner:
+    backgroundColor: "{colors.panel-inner}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.md}"
+    padding: "1rem 1.15rem"
+  nav-pill:
+    backgroundColor: "rgba(0,0,0,0.42)"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.pill}"
+    padding: "0.3rem 0.4rem"
 ---
 
-# Design System: Neat Specimen Sheets
+# Design System: Neat
 
 ## Overview
 
-**Creative north star: the lighting-gel swatch book.** Black card, colour samples
-that read true against it, and a stamped formula under every chip. The pages
-treat a gradient as a material with a recipe — reproduce the material at full
-strength, then print its numbers beside it.
+**One rule generates the whole system: the gradient is the ground, and
+everything else floats on it.** A fixed full-bleed WebGL canvas sits behind every
+surface at full intensity; all UI is translucent dark panels with white hairline
+borders and generous corner radii, lifted above it. This is the editor's own
+language, and the static content pages inherit it rather than inventing a
+parallel one.
 
-Two rules generate most of the system. First, **the gradient is never dimmed**:
-no scrim, no tint, no overlay lies between the visitor and the artifact. Second,
-**contrast is bought with objects, not veils**: where type must sit over a
-gradient, it rides on an opaque plate with its own edge and shadow. The earlier
-iteration of these pages violated both, muting the product to 46–72% black to
-make room for text, and it is the explicit anti-reference for this system.
+Two anti-references, both tried and rejected on this project:
 
-The register is technical rather than decorative — hairline rules, square
-corners, tabular numbers, stamped mono labels — because the audience is
-designers comparing options, and comparison wants a neutral, calibrated mount.
+1. **Never scrim the gradient.** An earlier build dimmed it to 46–72% black to
+   make room for text. For a product whose entire value is how the gradient
+   looks, dimming it is backwards. Contrast is bought by putting content on a
+   panel, never by veiling the artifact.
+2. **Never invent a second design language.** A build that used square corners,
+   hairline-ruled card stock and condensed uppercase type read as a different
+   product entirely, even with the palette corrected. Radius, translucency and
+   Sofia Sans are the family bond.
 
 ## Colors
 
-Strategy: **restrained**. The system is achromatic on purpose. All chroma on any
-page comes from the specimen itself, so the palette is a black sheet, a lifted
-plate, a recessed well, and two levels of ink.
+Strategy: **restrained achromatic chrome over unrestrained chroma**. The
+interface is white-on-dark at varying alpha; every colour on screen comes from
+the gradient itself.
 
-| Token | Value | Role |
-|---|---|---|
-| `sheet` | `#0E0F12` | The card everything is mounted on. |
-| `plate` | `#191A1F` | Label plates and lifted surfaces. |
-| `well` | `#08090B` | Code, recessed below the sheet. |
-| `rail` | `#0A0B0D` | Top binding and colophon. |
-| `stage` | `#141519` | Placeholder behind a canvas or chip before it paints. |
-| `ink` | `#ECECE8` | Primary type, 16.2:1 on `sheet`. |
-| `ink-muted` | `#9EA0A8` | Secondary type, 6.7:1 on `plate`. |
+Surfaces are expressed as alpha over the gradient, not as opaque fills:
+`rgba(23,23,23,0.82)` for content panels, `rgba(255,255,255,0.05)` for groups
+nested inside them, `rgba(0,0,0,0.42)` for the floating nav. Borders are always
+`1px` of `rgba(255,255,255,0.1)`, stepping to `0.2` on hover.
 
-**The accent is computed, not chosen.** Each page tabs itself in one colour
-sampled from the specimen it records: the most saturated palette entry that
-clears 4.5:1 against `sheet`, falling back to `ink` when none does (Monterey and
-Dark Mode both fall back). It marks prose bullets and focus rings only. Never
-hard-code an accent; derive it, and never lower the 4.5:1 gate to keep a
-prettier colour.
+Text is `#fff`, `rgba(255,255,255,0.72)` for secondary, `rgba(255,255,255,0.5)`
+for faint labels. Against the worst-case panel composite (a panel over a pure
+white gradient frame) body text measures 10.2:1.
 
 ## Typography
 
-Three faces, each with one job:
+**Sofia Sans throughout**, at 400/500/600/700. Headings are weight 700 with
+negative tracking; the step between levels is size, not face. Monospace appears
+only for hex values, numeric parameters and code — never as a texture.
 
-- **Sofia Sans Extra Condensed** (800/700) — every heading, button and chip name.
-  The condensed width is what lets a heading run large without a line break.
-- **Sofia Sans** (400) — body and deck. Inherited from the editor.
-- **Spline Sans Mono** (400) — hex values, formula numbers, breadcrumbs, code.
-  Monospace here is for data and measurement, never as a technical costume.
-
-Ramp: display `clamp(2.75rem, 7.5vw, 5.25rem)` → headline `clamp(1.9rem, 3.6vw,
-2.9rem)` → title `1.45rem` → body `1.0625rem` → label `0.7rem`. Display and
-headline both sit at weight 800 with negative tracking; the step between them is
-size, not weight.
-
-Measure is capped at `68ch` for prose and `22ch` for headings, so a heading
-breaks into two or three deliberate lines rather than running the column width.
+Ramp: display `clamp(2rem, 5vw, 3.25rem)` → headline `clamp(1.35rem, 2.4vw,
+1.75rem)` → body `1rem` → data `0.9rem`. Prose measure caps around 46ch in decks
+and the panel width elsewhere.
 
 ## Layout
 
-A single left spine organises every page. `.sheet-in` carries a 1px left rule and
-`--pad` of padding; section rules extend back past that spine into the margin, so
-the page reads as a ruled sheet rather than a stack of cards.
+Content is a **vertical stack of discrete panels**, `1.25rem` apart, centred and
+capped at `52rem` (`68rem` for panels holding a grid). There is no page-wide
+content sheet: each section is its own floating object, which is both the
+editor's model and what keeps a blurred surface small enough to composite
+cheaply over an animating canvas.
 
-- Page frame: sticky `rail` at `3.5rem`, content max-width `74rem`.
-- Chip field: `clamp(26rem, 72vh, 46rem)` of undimmed gradient, with the label
-  plate anchored bottom-left and overlapping the sheet edge by `3.25rem`.
-- Sections: `4.5rem` top margin, `2.75rem` above the heading — always more space
-  above a heading than below it.
-- Specimen format: every chip and stage is `560/294`, the same proportion as the
-  captured frames and the OG images. One format across the whole system.
+- Nav: a floating pill, fixed top-centre, never a full-width bar.
+- Hero: `min-height: min(88vh, 52rem)`, panel bottom-left, gradient uninterrupted.
+- Preview format: every gradient thumbnail is `560/294`, matching the captured
+  frames and the OG images.
 
-Breakpoints: **960px** stacks the gallery's held chip above the deck and drops
-its sticky positioning; **720px** takes the label plate out of the overlay and
-into the flow (the chip field must become `height:auto` and its canvas
-`position:relative`, or the absolute canvas paints over the plate); **600px**
-hides three of five rail links, which all still ship in the colophon.
+Breakpoints: **860px** stacks the gallery's spec card above its grid and drops
+sticky positioning; **640px** collapses the hero's min-height and hides three of
+five nav links, all of which still ship in the colophon.
 
 ## Elevation & Depth
 
-Depth is reserved for objects that are physically on top of something else —
-label plates over a gradient, and a chip lifted on hover. Everything else is
-flat, separated by hairline rules.
+Depth comes from translucency and blur, not from heavy shadow. Panels carry
+`backdrop-filter: blur(12px)` and `0 20px 40px -12px rgba(0,0,0,.5)`.
 
-- Label plate: `0 26px 60px -18px rgba(0,0,0,.75), 0 2px 8px rgba(0,0,0,.4)`
-  plus a `1px` edge. On a dark specimen the edge does the separating, not the
-  shadow.
-- Chip hover: `translateY(-5px)` with `0 18px 34px -14px rgba(0,0,0,.8)` and the
-  border stepping up to `rule-strong`.
-
-Every shadow carries an offset and a soft blur. No zero-offset halos.
+One hard-won constraint: **blur only small and medium surfaces.** A tall blurred
+element over an animating canvas forces a full-viewport composite every frame and
+visibly stalls scrolling. The panel stack exists partly to keep every blurred
+surface short.
 
 ## Shapes
 
-**Everything is square.** Radius is `0` across buttons, plates, chips, code
-wells, swatches and tables — the printed-specimen language has no rounded
-corners, and a rounded element anywhere in this system reads as imported from
-somewhere else.
-
-Borders are `1px` hairlines at `rule` or `rule-strong`. No border is thicker than
-1px, and no border carries colour as decoration.
+Radius is the family signature: `1rem` panels, `0.75rem` nested groups and
+previews, `0.375rem` buttons, `9999px` pills and tags. **Nothing in this system
+is square.** Borders are `1px`, always, and never carry colour as decoration.
 
 ## Components
 
-- **Label plate** — the only way type sits over a gradient. Opaque `plate`
-  background, hairline edge, real shadow. Never translucent, never blurred: a
-  veil would dim the specimen, which is the one thing this system forbids.
-- **Button** — condensed uppercase at `0.09em` tracking, square, `0.85rem 1.6rem`.
-  Primary is `ink` fill on `sheet` text and inverts to outline on hover; ghost is
-  the reverse. The transition is `0.18s cubic-bezier(.2,.7,.3,1)`.
-- **Spec table** — a real `<table>`: label left in condensed uppercase `ink-muted`,
-  value right in mono with `tabular-nums`, hairline rule under each row. Formula
-  data is tabular, so it is a table, not a row of stat cards.
-- **Swatch** — a `5.25rem` square of the raw colour with the hex stamped beneath
-  in mono. The swatch is the colour; nothing tints or rounds it.
-- **Chip** — a captured frame at `560/294` with the name and a stamped formula
-  line beneath. Lifts on hover and focus.
-- **Held chip (gallery)** — one large live canvas that swaps to whichever chip is
-  hovered or focused, with a fresh canvas element per swap so the WebGL context
-  is always clean. Sticky above 960px. This is the system's one authored motion
-  moment.
-- **FAQ row** — hairline-ruled `<details>` with a marker drawn from two
-  pseudo-element bars that rotate into a minus. Drawn geometry, not a glyph.
+- **Panel** — the only surface content sits on. Translucent, hairline border,
+  `1rem` radius, blurred. Nested groups use `panel-inner` at `0.75rem`.
+- **Button** — `2.5rem` tall, `0.375rem` radius, weight 500. Primary is white on
+  black text; outline is `rgba(255,255,255,0.4)` border filling to white/10 on
+  hover. Transitions are `0.2s`.
+- **Nav pill** — fixed, centred, blurred, `9999px`. Links are pill-shaped on
+  hover.
+- **Preview tile** — a captured frame at `560/294` with name and a mono formula
+  line. Lifts `3px` on hover with the border stepping up.
+- **Spec table** — a real `<table>`; label left in faint text, value right in
+  mono with `tabular-nums`, hairline rule per row.
+- **Tag row** — pill-shaped outline links for onward navigation.
 
-Motion: one easing curve, `cubic-bezier(.2,.7,.3,1)`, at `0.18s` for controls and
-`0.3s` for chips. `prefers-reduced-motion` sets gradient `speed` to `0` — the
-gradient stays, the movement stops.
+Motion: one curve, `cubic-bezier(.2,.7,.3,1)`, `0.2s` on controls and `0.25s` on
+tiles. The gallery's authored moment is hovering a preset to load it behind the
+whole page — the same gesture as the editor's preset switcher.
+`prefers-reduced-motion` sets gradient `speed` to `0`: the gradient stays, the
+movement stops.
 
 ## Do's and Don'ts
 
 **Do**
 
-- Reproduce the gradient at 100% intensity, always.
-- Buy contrast with an opaque plate, and check type against the brightest and
-  darkest frame the animation produces, not a favourable one.
-- Derive the page accent from the specimen and gate it at 4.5:1.
-- Keep one specimen proportion, `560/294`, everywhere.
-- Put formula data in a table with tabular numerals.
+- Run the gradient full-bleed and at full intensity behind every page.
+- Put content on a translucent panel when it must sit over the gradient.
+- Keep radius on everything; it is the strongest family signal after the gradient.
+- Use a real captured frame or live canvas for any gradient preview.
+- Check text against the brightest frame the animation can produce.
 
 **Don't**
 
-- Don't scrim, tint, blur or overlay the gradient. This is the anti-reference.
-- Don't round a corner. The system is square throughout.
-- Don't fake a gradient with CSS `linear-gradient` where a real captured frame or
-  live canvas belongs — that flattens a lit 3D surface into a two-stop ramp.
-- Don't put text directly on a gradient without a plate behind it.
-- Don't add a second accent. One page, one borrowed colour.
-- Don't use monospace for emphasis or atmosphere; it is for data, hex and code.
+- Don't scrim, tint or overlay the gradient to make text readable.
+- Don't introduce square corners, ruled sheets, or condensed/uppercase display
+  type. Both were tried and both broke the bond with the editor.
+- Don't fake a gradient with CSS `linear-gradient` where a real frame belongs.
+- Don't blur a tall surface over the canvas.
+- Don't add a second accent colour; the gradient is the colour.

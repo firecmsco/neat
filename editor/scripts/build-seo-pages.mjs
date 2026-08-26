@@ -142,229 +142,207 @@ const round = (v) => (typeof v === "number" ? Math.round(v * 100) / 100 : v);
 /* -------------------------------------------------------------------- layout */
 
 const CSS = String.raw`
+/* The editor's own language: a full-bleed gradient with translucent rounded
+   panels floating over it. Panel, radius, border and button values are taken
+   from src/components/NeatEditor.tsx and src/components/ui/button.tsx. */
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+html{-webkit-text-size-adjust:100%}
 
 :root{
-  --card:#0E0F12;        /* the sheet: black swatch-book card */
-  --plate:#191A1F;       /* label plates, lifted off the sheet */
-  --well:#08090B;        /* code plates, recessed into it */
-  --ink:#ECECE8;
-  --ink-2:#9EA0A8;
-  --rule:rgba(236,236,232,.16);
-  --rule-2:rgba(236,236,232,.34);
-  --accent:#ECECE8;
-  --gutter:clamp(1.25rem,5vw,4.5rem);
-  --pad:clamp(1.25rem,4vw,4rem);
-  --rail:3.5rem;
+  --panel:rgba(23,23,23,.82);
+  --panel-inner:rgba(255,255,255,.05);
+  --hair:rgba(255,255,255,.1);
+  --hair-2:rgba(255,255,255,.2);
+  --fg:#fff;
+  --fg-2:rgba(255,255,255,.72);
+  --fg-3:rgba(255,255,255,.5);
+  --accent:#fff;
+  --r-lg:1rem;      /* rounded-2xl */
+  --r-md:.75rem;    /* rounded-xl  */
+  --r-sm:.375rem;   /* rounded-md  */
+  --gutter:clamp(1rem,4vw,2.5rem);
   --sans:'Sofia Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  --cond:'Sofia Sans Extra Condensed',var(--sans);
-  --mono:'Spline Sans Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
-body{margin:0;background:var(--card);color:var(--ink);font-family:var(--sans);
-  font-size:1.0625rem;line-height:1.65;-webkit-font-smoothing:antialiased}
+body{margin:0;font-family:var(--sans);color:var(--fg);background:#0a0a0a;
+  font-size:1rem;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-/* ------------------------------------------------------------------- binding */
-.rail{position:sticky;top:0;z-index:40;background:#0A0B0D;color:var(--ink);
-  height:var(--rail);display:flex;align-items:center;gap:1.5rem;
-  padding:0 var(--gutter);border-bottom:1px solid rgba(236,236,232,.12)}
-.mark{font-family:var(--cond);font-weight:800;font-size:1.5rem;letter-spacing:.14em;
-  color:#fff;text-decoration:none;line-height:1}
-.rail nav{margin-left:auto;display:flex;gap:1.4rem;overflow-x:auto;scrollbar-width:none}
-.rail nav::-webkit-scrollbar{display:none}
-.rail nav a{font-family:var(--cond);font-weight:600;font-size:1rem;letter-spacing:.1em;
-  text-transform:uppercase;color:rgba(255,255,255,.72);text-decoration:none;white-space:nowrap;
-  padding:.15rem 0;border-bottom:1px solid transparent}
-.rail nav a:hover,.rail nav a:focus-visible{color:#fff;border-bottom-color:#fff}
-
-/* ---------------------------------------------------------------- chip field */
-.chipfield{position:relative;height:clamp(26rem,72vh,46rem);background:#141519}
-.chipfield canvas{position:absolute;inset:0;width:100%;height:100%;display:block;
+/* the gradient sits behind the whole page, exactly as in the editor */
+#gradient{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;
   background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772)}
+.page{position:relative;z-index:1}
 
-.plate{position:absolute;left:var(--gutter);bottom:-3.25rem;z-index:5;
-  width:min(46rem,calc(100% - var(--gutter) * 2));background:var(--plate);
-  border:1px solid rgba(236,236,232,.14);
-  padding:clamp(1.5rem,3.5vw,2.75rem);
-  box-shadow:0 26px 60px -18px rgba(0,0,0,.75),0 2px 8px rgba(0,0,0,.4)}
-.crumbs{margin:0 0 1rem;font-family:var(--mono);font-size:.7rem;letter-spacing:.11em;
-  text-transform:uppercase;color:var(--ink-2)}
-.crumbs a{color:var(--ink-2);text-decoration:none}
-.crumbs a:hover{color:var(--ink);text-decoration:underline}
-.crumbs span{opacity:.5;margin:0 .45em}
+/* ---------------------------------------------------------------- nav pill */
+.rail{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:30;
+  display:flex;align-items:center;gap:.35rem;max-width:calc(100% - 2rem);
+  background:rgba(0,0,0,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.08);border-radius:9999px;
+  padding:.3rem .4rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.5)}
+.mark{font-weight:700;font-size:.95rem;letter-spacing:.12em;color:#fff;
+  text-decoration:none;padding:.35rem .75rem;white-space:nowrap}
+.rail nav{display:flex;gap:.15rem;overflow-x:auto;scrollbar-width:none}
+.rail nav::-webkit-scrollbar{display:none}
+.rail nav a{font-size:.72rem;font-weight:500;color:rgba(255,255,255,.7);
+  text-decoration:none;white-space:nowrap;padding:.4rem .7rem;border-radius:9999px;
+  transition:background .2s,color .2s}
+.rail nav a:hover,.rail nav a:focus-visible{background:rgba(255,255,255,.1);color:#fff}
 
-h1{font-family:var(--cond);font-weight:800;font-size:clamp(2.75rem,7.5vw,5.25rem);
-  line-height:.94;letter-spacing:-.02em;margin:0;text-wrap:balance}
-.deck{margin:1.1rem 0 0;font-size:clamp(1.05rem,1.5vw,1.24rem);line-height:1.5;
-  color:var(--ink-2);max-width:44ch}
-.actions{display:flex;flex-wrap:wrap;gap:.75rem;margin:1.75rem 0 0}
+/* -------------------------------------------------------------------- hero */
+.hero{min-height:min(88vh,52rem);display:flex;align-items:flex-end;
+  padding:7rem var(--gutter) 2.5rem}
+.hero-panel{width:min(44rem,100%);background:var(--panel);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--hair);border-radius:var(--r-lg);
+  padding:clamp(1.5rem,3vw,2.25rem);box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
+.crumbs{margin:0 0 .9rem;font-size:.75rem;color:var(--fg-3)}
+.crumbs a{color:var(--fg-3);text-decoration:none}
+.crumbs a:hover{color:#fff}
+.crumbs span{margin:0 .4em;opacity:.6}
 
-.btn{display:inline-block;font-family:var(--cond);font-weight:700;font-size:1.0625rem;
-  letter-spacing:.09em;text-transform:uppercase;text-decoration:none;
-  padding:.85rem 1.6rem;border:1px solid var(--ink);background:var(--ink);color:#0E0F12;
-  transition:background .18s cubic-bezier(.2,.7,.3,1),color .18s cubic-bezier(.2,.7,.3,1)}
-.btn:hover,.btn:focus-visible{background:transparent;color:var(--ink)}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule-2)}
-.btn.ghost:hover,.btn.ghost:focus-visible{background:var(--ink);color:#0E0F12;border-color:var(--ink)}
+h1{font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:1.06;
+  letter-spacing:-.02em;margin:0;text-wrap:balance}
+.deck{margin:.9rem 0 0;font-size:clamp(1rem,1.4vw,1.125rem);color:var(--fg-2);
+  line-height:1.55;max-width:46ch}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.5rem 0 0}
 
-/* -------------------------------------------------------------------- sheet */
-.sheet{background:var(--card);padding:7.5rem 0 0}
-.sheet-in{max-width:74rem;margin:0 auto;padding:0 var(--gutter) 0 0;
-  margin-left:var(--gutter);border-left:1px solid var(--rule);padding-left:var(--pad)}
-.col{max-width:68ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;font-weight:500;
+  font-size:.9375rem;text-decoration:none;height:2.5rem;padding:0 1.15rem;
+  border-radius:var(--r-sm);background:#fff;color:#000;border:1px solid transparent;
+  transition:background .2s,color .2s}
+.btn:hover,.btn:focus-visible{background:rgba(255,255,255,.9)}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(255,255,255,.1)}
 
-.sect{margin-top:4.5rem;padding-top:2.75rem;position:relative}
-.sect::before{content:"";position:absolute;top:0;left:calc(-1 * var(--pad) - 1px);right:0;
-  height:1px;background:var(--rule)}
-.sect:first-child{margin-top:0;padding-top:0}
-.sect:first-child::before{display:none}
+/* ------------------------------------------------------------ panel stack */
+.sheet{padding:0 var(--gutter) 4rem;display:flex;flex-direction:column;
+  gap:1.25rem;align-items:center}
+.panel{width:min(52rem,100%);background:var(--panel);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--hair);border-radius:var(--r-lg);
+  padding:clamp(1.35rem,3vw,2.25rem);box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
+.panel.wide{width:min(68rem,100%)}
 
-h2{font-family:var(--cond);font-weight:800;font-size:clamp(1.9rem,3.6vw,2.9rem);
-  line-height:1.02;letter-spacing:-.012em;margin:0 0 1.5rem;max-width:22ch;text-wrap:balance}
-h3{font-family:var(--cond);font-weight:700;font-size:1.45rem;letter-spacing:.01em;
-  margin:2.5rem 0 .75rem}
-p{margin:0 0 1.15rem}
-.col ul:not(.chips):not(.onward):not(.fandeck){margin:0 0 1.4rem;padding-left:0;list-style:none}
-.col ul:not(.chips):not(.onward):not(.fandeck) li{position:relative;padding-left:1.5rem;
-  margin-bottom:.85rem}
-.col ul:not(.chips):not(.onward):not(.fandeck) li::before{content:"";position:absolute;left:0;
-  top:.72em;width:.6rem;height:1px;background:var(--accent)}
-strong{font-weight:700}
-a{color:var(--ink);text-decoration:underline;text-underline-offset:.18em;
-  text-decoration-thickness:1px;text-decoration-color:var(--rule-2)}
-a:hover{text-decoration-color:var(--ink)}
+h2{font-weight:700;font-size:clamp(1.35rem,2.4vw,1.75rem);line-height:1.2;
+  letter-spacing:-.01em;margin:0 0 1rem;text-wrap:balance}
+h3{font-weight:600;font-size:1.05rem;margin:1.75rem 0 .5rem}
+p{margin:0 0 1rem;color:var(--fg-2)}
+.panel>p:last-child,.panel>ul:last-child,.panel>pre:last-child{margin-bottom:0}
+ul{margin:0 0 1rem;padding-left:1.15rem}
+li{margin-bottom:.55rem;color:var(--fg-2)}
+li::marker{color:rgba(255,255,255,.35)}
+strong{color:#fff;font-weight:600}
+a{color:#fff;text-decoration:underline;text-underline-offset:.16em;
+  text-decoration-color:rgba(255,255,255,.35)}
+a:hover{text-decoration-color:#fff}
 
-code{font-family:var(--mono);font-size:.86em;background:rgba(236,236,232,.1);
-  padding:.12em .38em;word-break:break-word}
-pre{background:var(--well);color:#D8D9D4;border:1px solid var(--rule);
-  padding:1.5rem clamp(1.1rem,2.5vw,1.75rem);
-  overflow-x:auto;margin:0 0 1.5rem;font-size:.875rem;line-height:1.7}
+code{font-family:var(--mono);font-size:.85em;background:rgba(255,255,255,.1);
+  border-radius:.25rem;padding:.12em .38em;word-break:break-word}
+pre{background:rgba(0,0,0,.45);border:1px solid var(--hair);border-radius:var(--r-md);
+  padding:1.1rem 1.25rem;overflow-x:auto;margin:0 0 1rem;font-size:.8125rem;
+  line-height:1.65;color:rgba(255,255,255,.9)}
 pre code{background:none;padding:0;font-size:inherit;white-space:pre;color:inherit}
 
-/* ------------------------------------------------------------------- palette */
-.chips{display:flex;flex-wrap:wrap;gap:1rem 1.15rem;margin:0 0 1.75rem;padding:0;list-style:none}
+.note{background:var(--panel-inner);border:1px solid var(--hair);
+  border-radius:var(--r-md);padding:1rem 1.15rem;margin:0 0 1rem}
+.note h3{margin:0 0 .35rem;font-size:.95rem}
+.note p{margin:0;font-size:.95rem}
+
+/* ----------------------------------------------------------------- palette */
+.chips{display:flex;flex-wrap:wrap;gap:.75rem;margin:0 0 1.25rem;padding:0;list-style:none}
 .chips li{margin:0}
-.swatch{display:block;width:5.25rem;height:5.25rem;border:1px solid var(--rule-2)}
-.chips code{display:block;margin-top:.55rem;background:none;padding:0;font-size:.72rem;
-  letter-spacing:.06em;color:var(--ink-2)}
+.swatch{display:block;width:4rem;height:4rem;border-radius:var(--r-md);
+  border:1px solid var(--hair-2)}
+.chips code{display:block;margin-top:.45rem;background:none;padding:0;
+  font-size:.68rem;color:var(--fg-3);text-align:center}
 
-/* --------------------------------------------------------------------- spec */
-table.spec{width:100%;max-width:34rem;border-collapse:collapse;margin:0 0 1.75rem}
-table.spec th,table.spec td{padding:.8rem 0;border-bottom:1px solid var(--rule);vertical-align:baseline}
-table.spec th{text-align:left;font-family:var(--cond);font-weight:600;font-size:.95rem;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
-table.spec td{text-align:right;font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
-table.spec tr:first-child th,table.spec tr:first-child td{border-top:1px solid var(--rule-2)}
+/* -------------------------------------------------------------------- spec */
+table.spec{width:100%;border-collapse:collapse;margin:0}
+table.spec th,table.spec td{padding:.6rem .25rem;border-bottom:1px solid var(--hair)}
+table.spec tr:last-child th,table.spec tr:last-child td{border-bottom:none}
+table.spec th{text-align:left;font-weight:400;font-size:.9rem;color:var(--fg-3)}
+table.spec td{text-align:right;font-family:var(--mono);font-size:.9rem;
+  font-variant-numeric:tabular-nums;color:#fff}
 
-/* ------------------------------------------------------------------- fandeck */
-.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));
-  gap:1.75rem 1.5rem;padding:0;margin:0;list-style:none}
-.chip a{display:block;text-decoration:none;color:inherit}
+/* ----------------------------------------------------------------- fandeck */
+.fandeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));
+  gap:1rem;padding:0;margin:0;list-style:none}
+.chip a{display:block;text-decoration:none;color:inherit;border-radius:var(--r-md);
+  overflow:hidden;border:1px solid var(--hair);background:var(--panel-inner);
+  transition:transform .25s cubic-bezier(.2,.7,.3,1),border-color .25s,box-shadow .25s}
+.chip a:hover,.chip a:focus-visible{transform:translateY(-3px);border-color:var(--hair-2);
+  box-shadow:0 14px 28px -12px rgba(0,0,0,.6)}
 .chip img{display:block;width:100%;height:auto;aspect-ratio:560/294;object-fit:cover;
-  background:#141519;border:1px solid var(--rule);
-  transition:transform .3s cubic-bezier(.2,.7,.3,1),box-shadow .3s cubic-bezier(.2,.7,.3,1)}
-.chip a:hover img,.chip a:focus-visible img{transform:translateY(-5px);
-  box-shadow:0 18px 34px -14px rgba(0,0,0,.8);border-color:var(--rule-2)}
-.chip-label{display:block;padding-top:.7rem}
-.chip-name{display:block;font-family:var(--cond);font-weight:700;font-size:1.2rem;letter-spacing:.01em}
-.chip-form{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;
-  color:var(--ink-2);margin-top:.15rem}
-.chip a:hover .chip-name{text-decoration:underline;text-underline-offset:.18em}
+  background:rgba(255,255,255,.04)}
+.chip-label{display:block;padding:.65rem .8rem .75rem}
+.chip-name{display:block;font-weight:600;font-size:.9rem}
+.chip-form{display:block;font-family:var(--mono);font-size:.62rem;color:var(--fg-3);
+  margin-top:.15rem}
 
-/* ----------------------------------------------------- the held chip (hub) */
-.sheet--hub{padding-top:clamp(2.5rem,5vw,4rem)}
-.sheet--hub h1{margin-bottom:0}
-.sheet--hub .deck{max-width:52ch}
-.sheet--hub .actions{margin-top:1.5rem}
-
-.deckwrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
-  gap:clamp(1.5rem,3vw,3rem);align-items:start}
-.held{position:sticky;top:calc(var(--rail) + 1.5rem)}
-.held-stage{position:relative;aspect-ratio:560/294;background:#141519;
-  border:1px solid var(--rule)}
-.held-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;
-  background:linear-gradient(140deg,#2E0EC7,#4CB4BB,#FF5772)}
-.held-meta{padding-top:1.25rem}
-.held-meta h2{font-size:clamp(1.75rem,3vw,2.4rem);margin:0 0 .3rem;max-width:none}
-.viewer-tag{margin:0 0 1.25rem;color:var(--ink-2);font-size:.95rem;line-height:1.45;min-height:2.8em}
-.held-meta table.spec{margin:0 0 1.5rem;max-width:none}
-.held-meta table.spec th,.held-meta table.spec td{padding:.5rem 0;font-size:.85rem}
-.held-meta table.spec td{font-size:.95rem}
-.held-meta .btn{display:block;text-align:center}
-.viewer-hint{font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ink-2);margin:0 0 1rem}
+/* -------------------------------------------------------------- held chip */
+.deckwrap{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);
+  gap:1.25rem;align-items:start}
+.held{position:sticky;top:5.5rem;background:var(--panel-inner);
+  border:1px solid var(--hair);border-radius:var(--r-md);padding:1.25rem}
+.held-meta{padding-top:0}
+.held-meta h2{font-size:1.35rem;margin:0 0 .2rem}
+.viewer-tag{margin:0 0 1rem;color:var(--fg-2);font-size:.9rem;min-height:2.6em}
+.held-meta .btn{width:100%;margin-top:1rem}
+.viewer-hint{font-size:.72rem;color:var(--fg-3);margin:0 0 .75rem}
 @media (hover:none){.viewer-hint{display:none}}
 
-/* ---------------------------------------------------------------------- faq */
-.faq{margin:0}
-.faq details{border-bottom:1px solid var(--rule)}
-.faq details:first-of-type{border-top:1px solid var(--rule-2)}
-.faq summary{cursor:pointer;list-style:none;padding:1.15rem 2.5rem 1.15rem 0;position:relative;
-  font-family:var(--cond);font-weight:700;font-size:1.3rem;letter-spacing:.005em}
+/* --------------------------------------------------------------------- faq */
+.faq details{border-bottom:1px solid var(--hair)}
+.faq details:last-child{border-bottom:none}
+.faq summary{cursor:pointer;list-style:none;padding:.9rem 2rem .9rem 0;position:relative;
+  font-weight:600;font-size:1rem}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::before,.faq summary::after{content:"";position:absolute;right:.3rem;top:50%;
-  width:.85rem;height:1px;background:var(--ink);transition:transform .22s cubic-bezier(.2,.7,.3,1)}
+.faq summary::before,.faq summary::after{content:"";position:absolute;right:.35rem;top:50%;
+  width:.7rem;height:1px;background:rgba(255,255,255,.6);
+  transition:transform .22s cubic-bezier(.2,.7,.3,1)}
 .faq summary::after{transform:rotate(90deg)}
-.faq details[open] summary::after{transform:rotate(0deg)}
-.faq details p{margin:0 0 1.35rem;color:var(--ink-2);max-width:64ch}
+.faq details[open] summary::after{transform:rotate(0)}
+.faq details p{margin:0 0 1rem;font-size:.95rem}
 
-/* -------------------------------------------------------------------- onward */
-.onward{display:flex;flex-wrap:wrap;gap:.6rem;padding:0;margin:0;list-style:none}
-.onward a{display:inline-block;font-family:var(--cond);font-weight:600;font-size:1.05rem;
-  letter-spacing:.05em;text-decoration:none;padding:.6rem 1.1rem;border:1px solid var(--rule-2);
-  transition:background .18s ease,color .18s ease,border-color .18s ease}
-.onward a:hover,.onward a:focus-visible{background:var(--ink);color:var(--plate);border-color:var(--ink)}
+/* ------------------------------------------------------------------ onward */
+.onward{display:flex;flex-wrap:wrap;gap:.5rem;padding:0;margin:0;list-style:none}
+.onward li{margin:0}
+.onward a{display:inline-block;font-size:.875rem;font-weight:500;text-decoration:none;
+  padding:.5rem .9rem;border-radius:9999px;border:1px solid rgba(255,255,255,.2);
+  color:#fff;transition:background .2s,border-color .2s}
+.onward a:hover,.onward a:focus-visible{background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.4)}
 
-/* ----------------------------------------------------------------- colophon */
-.colophon{background:#0A0B0D;color:var(--ink-2);margin-top:7rem;
-  border-top:1px solid var(--rule);padding:3.5rem var(--gutter) 4rem}
-.colophon-in{max-width:74rem;margin:0 auto;display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:2.5rem}
-.colophon h2{font-family:var(--cond);font-weight:600;font-size:.9rem;letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(236,236,232,.5);margin:0 0 .9rem;max-width:none}
+/* --------------------------------------------------------------- colophon */
+.colophon{width:min(68rem,100%);margin:1.25rem auto 0;padding:0 var(--gutter) 3rem}
+.colophon-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));
+  gap:1.5rem;background:var(--panel);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);border:1px solid var(--hair);
+  border-radius:var(--r-lg);padding:1.75rem}
+.colophon h2{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--fg-3);margin:0 0 .6rem}
 .colophon ul{list-style:none;padding:0;margin:0}
-.colophon li{margin-bottom:.5rem}
-.colophon a{color:rgba(236,236,232,.86);text-decoration:none;font-size:.95rem}
-.colophon a:hover{color:#fff;text-decoration:underline}
-.colophon-note{max-width:74rem;margin:2.75rem auto 0;padding-top:1.75rem;
-  border-top:1px solid rgba(236,236,232,.14);font-family:var(--mono);font-size:.7rem;
-  letter-spacing:.06em;color:rgba(236,236,232,.46);line-height:1.7}
+.colophon li{margin-bottom:.4rem}
+.colophon a{color:var(--fg-2);text-decoration:none;font-size:.875rem}
+.colophon a:hover{color:#fff}
+.colophon-note{margin:1rem auto 0;width:min(68rem,100%);padding:0 var(--gutter);
+  font-size:.72rem;color:var(--fg-3);line-height:1.6}
 
-:where(a,button,summary,[tabindex]):focus-visible{outline:2px solid var(--accent);
-  outline-offset:3px}
+:where(a,button,summary,[tabindex]):focus-visible{outline:2px solid rgba(255,255,255,.6);
+  outline-offset:2px}
 
-/* ------------------------------------------------------------------ narrow */
-@media (max-width:600px){
-  /* Every link still ships in the colophon, so the rail keeps only the two a
-     visitor on a phone actually reaches for. */
-  .rail nav a[data-optional]{display:none}
-}
-@media (max-width:960px){
+@media (max-width:860px){
   .deckwrap{grid-template-columns:1fr}
   .held{position:static}
-  .held-stage{aspect-ratio:16/9}
   .viewer-tag{min-height:0}
-  .held-meta{padding-bottom:1rem}
 }
-@media (max-width:720px){
-  body{font-size:1rem}
-  .rail nav{gap:1.1rem}
-  .sect{margin-top:3rem;padding-top:2rem}
-  h2{margin-bottom:1.1rem}
-  /* The plate leaves the overlay and joins the flow, so the chip field has to
-     stop being a fixed box and the canvas has to stop being absolute — an
-     absolute canvas inside a fixed-height parent paints straight over it. */
-  .chipfield{height:auto}
-  .chipfield canvas{position:relative;height:clamp(14rem,42vh,21rem)}
-  .plate{position:static;width:auto;bottom:auto;left:auto;box-shadow:none;
-    border-width:0 0 1px;margin:0;padding:1.5rem var(--gutter) 1.75rem}
-  .sheet{padding-top:2.5rem}
-  .sheet-in{margin-left:var(--gutter);padding-left:1rem;padding-right:var(--gutter)}
-  .sect::before{left:-1rem}
-  .swatch{width:4rem;height:4rem}
-  .fandeck{grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:1.35rem 1rem}
+@media (max-width:640px){
+  .hero{min-height:auto;padding:6rem var(--gutter) 1.5rem}
+  .rail{top:.75rem}
+  .mark{font-size:.85rem;padding:.3rem .55rem}
+  .rail nav a[data-optional]{display:none}
+  .fandeck{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr));gap:.75rem}
+  .swatch{width:3.25rem;height:3.25rem}
 }
 `.trim();
 
@@ -378,21 +356,22 @@ const NAV = [
 
 const CONTRACT = `<!--
 DIRECTION CONTRACT
-THESIS: A gradient is a material with a formula; these pages are its specimen
-  sheets. Refuses the dark-hero-plus-card-grid every gradient tool ships, and the
-  scrimmed wallpaper that dims the product to make room for text.
-OWN-WORLD: A lighting-gel swatch book — black card, chips reading true against
-  it, spec numbers stamped in mono. The gradient supplies all chroma, reproduced
-  at full intensity and never scrimmed; plates are solid objects, never veils.
-  Sofia Sans Extra Condensed display, Sofia Sans text, Spline Sans Mono for hex,
-  formula values and code. Hairline rules, square plates, an accent tabbed from
-  the specimen's own palette.
-STORY: A designer arrives from search, sees the material moving at full size,
-  judges it, reads its formula, and leaves remembering Neat.
-FIRST VIEWPORT: Full-bleed live gradient at 100% intensity under a black binding
-  rail; an opaque card-stock label plate at lower left carries the heading, deck
-  and both actions, overlapping the sheet edge.
-FORM: Specimen sheet / fandeck; candidate 3 of the grounded list; seed f8477209.
+THESIS: These pages are the editor with room to read. Same full-bleed gradient,
+  same floating translucent panels; refuses both the dark-hero-plus-card-grid
+  every gradient tool ships and the scrimmed wallpaper that dims the product to
+  make room for text.
+OWN-WORLD: The editor's own language, taken from its source: a fixed full-bleed
+  WebGL gradient with rounded translucent panels over it (rgba(23,23,23,.82),
+  1px white/10 hairline, 1rem radius, backdrop blur), white rounded-md buttons,
+  a floating pill nav, Sofia Sans throughout, mono only for hex, values and code.
+STORY: A designer arrives from search, sees the gradient running full-bleed,
+  reads what they came for on panels floating over it, and leaves knowing this is
+  the same tool as the editor.
+FIRST VIEWPORT: Full-bleed live gradient at 100% intensity, a floating pill nav
+  centred at the top, and one translucent panel at lower left carrying the
+  heading, deck and both actions.
+FORM: Specimen/fandeck structure rendered in the editor's language; candidate 3
+  of the grounded list; seed f8477209.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;
 
@@ -430,8 +409,10 @@ function shell({ title, description, canonical, bodyHtml, jsonLd, accent, ogImag
 <style>${CSS}</style>
 ${jsonLd.map((b) => `<script type="application/ld+json">\n${JSON.stringify(b, null, 2)}\n</script>`).join("\n")}
 </head>
-<body${accent && accent !== "#ECECE8" ? ` style="--accent:${esc(accent)}"` : ""}>
+<body>
 ${CONTRACT}
+<canvas id="gradient" aria-hidden="true"></canvas>
+<div class="page">
 <header class="rail">
   <a class="mark" href="/">NEAT</a>
   <nav aria-label="Main">
@@ -442,7 +423,7 @@ ${bodyHtml}
 <footer class="colophon">
   <div class="colophon-in">
     <div>
-      <h2>Specimens</h2>
+      <h2>Explore</h2>
       <ul>
         <li><a href="/gradients/">Gradient gallery</a></li>
         <li><a href="/">Open the editor</a></li>
@@ -474,8 +455,9 @@ ${bodyHtml}
       </ul>
     </div>
   </div>
-  <p class="colophon-note">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
 </footer>
+<p class="colophon-note">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
+</div>
 <script src="/neat.umd.js"></script>
 <script>
 ${script}
@@ -499,10 +481,9 @@ const SINGLE_CANVAS_SCRIPT = (cfg) => `(function () {
   } catch (e) { /* leave the CSS gradient fallback in place */ }
 })();`;
 
-function chipField({ crumbs, h1, deck, actions }) {
-    return `<section class="chipfield">
-  <canvas id="gradient" aria-hidden="true"></canvas>
-  <div class="plate">
+function hero({ crumbs, h1, deck, actions }) {
+    return `<section class="hero">
+  <div class="hero-panel">
     <nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>
     <h1>${esc(h1)}</h1>
     <p class="deck">${deck}</p>
@@ -513,12 +494,12 @@ function chipField({ crumbs, h1, deck, actions }) {
 
 function faqSection(faq) {
     if (!faq || !faq.length) return "";
-    return `<section class="sect"><div class="col">
+    return `<section class="panel">
   <h2>Questions</h2>
   <div class="faq">
 ${faq.map((f) => `    <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("\n")}
   </div>
-</div></section>`;
+</section>`;
 }
 
 function onwardSection(slugs, allTitles) {
@@ -528,12 +509,12 @@ function onwardSection(slugs, allTitles) {
         .map((s) => `    <li><a href="/${s}/">${esc(allTitles[s])}</a></li>`)
         .join("\n");
     if (!links) return "";
-    return `<section class="sect"><div class="col">
+    return `<section class="panel">
   <h2>Keep reading</h2>
   <ul class="onward">
 ${links}
   </ul>
-</div></section>`;
+</section>`;
 }
 
 function renderGuide(guide, presets, allTitles) {
@@ -542,27 +523,27 @@ function renderGuide(guide, presets, allTitles) {
 
     const sections = guide.sections
         .map((s) => {
-            let out = `<section class="sect"><div class="col">\n  <h2>${esc(s.h2)}</h2>\n`;
+            let out = `<section class="panel">\n  <h2>${esc(s.h2)}</h2>\n`;
             if (s.body) out += s.body.map((p) => `  <p>${p}</p>`).join("\n") + "\n";
             if (s.list) out += `  <ul>\n${s.list.map((li) => `    <li>${li}</li>`).join("\n")}\n  </ul>\n`;
             if (s.code) out += "  " + codeBlock(s.code) + "\n";
             if (s.after) out += s.after.map((p) => `  <p>${p}</p>`).join("\n") + "\n";
-            return out + `</div></section>`;
+            return out + `</section>`;
         })
         .join("\n");
 
-    const bodyHtml = `${chipField({
+    const bodyHtml = `${hero({
         crumbs: `<a href="/">Neat</a><span>/</span>${esc(guide.h1)}`,
         h1: guide.h1,
         deck: guide.intro,
         actions: `<a class="btn" href="/?preset=${encodeURIComponent(guide.preset)}">Open the editor</a>
-      <a class="btn ghost" href="/gradients/">${Object.keys(presets).length} specimens</a>`,
+      <a class="btn ghost" href="/gradients/">${Object.keys(presets).length} presets</a>`,
     })}
-<main class="sheet"><div class="sheet-in">
+<main class="sheet">
 ${sections}
 ${faqSection(guide.faq)}
 ${onwardSection(guide.related, allTitles)}
-</div></main>`;
+</main>`;
 
     const jsonLd = [
         {
@@ -648,30 +629,29 @@ ${configBody}
         .map((c) => `    <li><span class="swatch" style="background:${esc(c)}"></span><code>${esc(c)}</code></li>`)
         .join("\n");
 
-    const bodyHtml = `${chipField({
+    const bodyHtml = `${hero({
         crumbs: `<a href="/">Neat</a><span>/</span><a href="/gradients/">Gradients</a><span>/</span>${esc(name)}`,
         h1: name,
         deck: `${esc(meta.tagline)}. The gradient behind this page is this exact preset, running live.`,
         actions: `<a class="btn" href="/?preset=${encodeURIComponent(name)}">Open in the editor</a>
-      <a class="btn ghost" href="/gradients/">All specimens</a>`,
+      <a class="btn ghost" href="/gradients/">All presets</a>`,
     })}
-<main class="sheet"><div class="sheet-in">
-  <section class="sect"><div class="col">
+<main class="sheet">
+  <section class="panel">
     <h2>What it is</h2>
     <p>${esc(meta.description)}</p>
-    <h3>Good for</h3>
-    <p>${esc(meta.useCase)}</p>
-  </div></section>
+    <div class="note"><h3>Good for</h3><p>${esc(meta.useCase)}</p></div>
+  </section>
 
-  <section class="sect"><div class="col">
+  <section class="panel">
     <h2>Formula</h2>
     <ul class="chips">
 ${swatches}
     </ul>
     ${specTable(cfg, colors.length)}
-  </div></section>
+  </section>
 
-  <section class="sect"><div class="col">
+  <section class="panel">
     <h2>Use this preset</h2>
     <p>Install the package and pass the config straight to the constructor. No build step and no dependencies:</p>
     <pre><code>npm install @firecms/neat</code></pre>
@@ -679,16 +659,16 @@ ${swatches}
     <p>Prefer a file? Open it <a href="/?preset=${encodeURIComponent(
         name
     )}">in the editor</a> and export a PNG still or an MP4 loop &mdash; see the <a href="/gradient-video-background/">gradient video guide</a>.</p>
-  </div></section>
+  </section>
 
-  <section class="sect">
-    <div class="col"><h2>Adjacent specimens</h2></div>
+  <section class="panel wide">
+    <h2>More presets</h2>
     <ul class="fandeck">
 ${neighbours.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
     </ul>
-    <p style="margin-top:1.75rem"><a href="/gradients/">See all ${Object.keys(presets).length} specimens</a></p>
+    <p style="margin:1.25rem 0 0"><a href="/gradients/">See all ${Object.keys(presets).length} presets</a></p>
   </section>
-</div></main>`;
+</main>`;
 
     const jsonLd = [
         {
@@ -754,33 +734,31 @@ function renderHub(presets, meta) {
         ])
     );
 
-    const bodyHtml = `<main class="sheet sheet--hub"><div class="sheet-in">
-  <section class="sect">
+    const bodyHtml = `<section class="hero">
+  <div class="hero-panel">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Neat</a><span>/</span>Gradients</nav>
     <h1>Gradient gallery</h1>
-    <p class="deck">Every built-in Neat preset, held up at full size and running live. Each one carries its palette, its formula, and the code to use it.</p>
+    <p class="deck">Every built-in Neat preset. Hover one to load it behind the page, then take its palette, its parameters and the code to use it.</p>
     <p class="actions">
       <a class="btn" href="/">Open the editor</a>
       <a class="btn ghost" href="/gradient-generator/">How the generator works</a>
     </p>
-  </section>
-
-  <section class="sect">
+  </div>
+</section>
+<main class="sheet">
+  <section class="panel wide">
     <div class="deckwrap">
       <div class="held">
-        <div class="held-stage">
-          <canvas id="gradient" role="img" aria-label="Live preview of the ${esc(first)} gradient"></canvas>
-        </div>
         <div class="held-meta">
+          <p class="viewer-hint">Hover a preset to load it behind the page</p>
           <h2 id="heldName">${esc(first)}</h2>
           <p class="viewer-tag" id="heldTag">${esc((meta[first] && meta[first].tagline) || "")}</p>
           <table class="spec"><tbody id="heldSpec"></tbody></table>
-          <a class="btn" id="heldOpen" href="/gradients/${slugify(first)}/">Open this specimen</a>
+          <a class="btn" id="heldOpen" href="/gradients/${slugify(first)}/">Open this preset</a>
         </div>
       </div>
 
       <div class="deckcol">
-        <p class="viewer-hint">Hover a specimen to hold it up</p>
         <ul class="fandeck">
 ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
         </ul>
@@ -788,9 +766,9 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
     </div>
   </section>
 
-  <section class="sect"><div class="col">
+  <section class="panel">
     <h2>Picking a starting point</h2>
-    <p>The parameter space is large enough that starting from scratch is rarely productive. Start from whichever specimen is closest to the mood you want, then change colours first and motion second &mdash; motion is what people notice, and it is the easiest thing to overdo.</p>
+    <p>The parameter space is large enough that starting from scratch is rarely productive. Start from whichever preset is closest to the mood you want, then change colours first and motion second &mdash; motion is what people notice, and it is the easiest thing to overdo.</p>
     <ul>
       <li><strong>Behind body text?</strong> Fluid, Pastel, Coral, Oil Slick or Dark Mode. Low speed, low amplitude, nothing that competes.</li>
       <li><strong>Dark theme?</strong> Monterey, Night Dunes, Dark Mode or Cosmic Vortex.</li>
@@ -798,9 +776,9 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
       <li><strong>Loud on purpose?</strong> Flame, Lemon, Virus or Blob.</li>
       <li><strong>Classic SaaS?</strong> Stripe, Bloom or FireCMS.</li>
     </ul>
-  </div></section>
+  </section>
 
-  <section class="sect"><div class="col">
+  <section class="panel">
     <h2>Guides</h2>
     <ul class="onward">
       <li><a href="/gradient-generator/">Gradient generator</a></li>
@@ -810,8 +788,8 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
       <li><a href="/gradient-video-background/">Gradient video</a></li>
       <li><a href="/animated-3d-background-for-websites/">3D backgrounds</a></li>
     </ul>
-  </div></section>
-</div></main>`;
+  </section>
+</main>`;
 
     const jsonLd = [
         {
@@ -843,13 +821,12 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
 
     const script = `(function () {
   var DATA = ${JSON.stringify(data)};
-  var stage = document.querySelector(".held-stage");
   var nameEl = document.getElementById("heldName");
   var tagEl = document.getElementById("heldTag");
   var specEl = document.getElementById("heldSpec");
   var openEl = document.getElementById("heldOpen");
   var canvas = document.getElementById("gradient");
-  if (!stage || !canvas || !window.neat || !window.neat.NeatGradient) return;
+  if (!canvas || !window.neat || !window.neat.NeatGradient) return;
 
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var current = null, gradient = null, timer = null;
@@ -862,7 +839,7 @@ ${entries.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
     nameEl.textContent = name;
     tagEl.textContent = d.tag;
     openEl.setAttribute("href", "/gradients/" + d.slug + "/");
-    canvas.setAttribute("aria-label", "Live preview of the " + name + " gradient");
+    openEl.setAttribute("aria-label", "Open the " + name + " preset");
     specEl.innerHTML = d.spec
       .map(function (r) { return "<tr><th scope=\\"row\\">" + r[0] + "</th><td>" + r[1] + "</td></tr>"; })
       .join("");
