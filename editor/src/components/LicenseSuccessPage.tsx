@@ -7,6 +7,7 @@ import {
     trackCopyCodeSnippet,
     trackLicenseBackToEditor,
 } from "../utils/analytics";
+import { saveLicenseKey } from "../utils/license";
 
 const API_BASE = "https://us-central1-neat-co.cloudfunctions.net";
 
@@ -64,6 +65,8 @@ export function LicenseSuccessPage() {
                 if (cancelled) return;
 
                 if (res.ok && data.licenseKey) {
+                    // Checkout returns to the editor's origin, so the editor opens licensed.
+                    saveLicenseKey(data.licenseKey);
                     setState({ status: "success", licenseKey: data.licenseKey, domain: data.domain });
                     trackLicenseKeyRetrieved(data.domain);
                 } else if (res.status === 402) {
@@ -183,6 +186,9 @@ const gradient = new NeatGradient({
                                 </p>
                                 <p className="text-xs text-white/40">
                                     <span className="text-white/60">✓</span> Removes watermark and console branding
+                                </p>
+                                <p className="text-xs text-white/40">
+                                    <span className="text-white/60">✓</span> PNG and video exports from the editor come out without the watermark
                                 </p>
                             </div>
                         </div>

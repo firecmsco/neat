@@ -49,11 +49,16 @@ function base64urlToBytes(b64url: string): Uint8Array<ArrayBuffer> {
     return bytes;
 }
 
+// The Neat editor, where buyers export their gradients as PNGs and videos.
+const NEAT_EDITOR_HOSTNAME = "neat.firecms.co";
+
 /**
  * Checks whether the current hostname matches the licensed domain.
  * - Exact match: hostname === domain
  * - Subdomain match: hostname ends with .domain
  * - Development hosts are always allowed.
+ * - The Neat editor accepts a key for any domain, so a buyer can export
+ *   without the watermark. No other site can claim that hostname.
  */
 function isDomainMatch(licenseDomain: string): boolean {
     // In non-browser environments (SSR, Node), skip domain check
@@ -72,6 +77,8 @@ function isDomainMatch(licenseDomain: string): boolean {
     ) {
         return true;
     }
+
+    if (hostname === NEAT_EDITOR_HOSTNAME) return true;
 
     // Exact match
     if (hostname === domain) return true;

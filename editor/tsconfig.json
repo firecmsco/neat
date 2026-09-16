@@ -24,6 +24,9 @@
     "paths": {
       "@firecms/neat": [
         "../lib/src/index.ts"
+      ],
+      "@firecms/neat/*": [
+        "../lib/src/*"
       ]
     }
   },

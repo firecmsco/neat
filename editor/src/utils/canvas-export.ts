@@ -22,8 +22,8 @@ export function downloadCanvasAsPNG(canvas: HTMLCanvasElement, filename = "neat.
 
 /**
  * Records the canvas animation and saves it as a high-quality video file
- * (MP4 or WebM depending on browser codec support) with a subtle watermark.
- * Returns a `stop` function to end recording early.
+ * (MP4 or WebM depending on browser codec support), with a subtle watermark
+ * unless `watermark` is false. Returns a `stop` function to end recording early.
  *
  * @param canvas      The source canvas element to record.
  * @param options     Recording configuration.
@@ -37,6 +37,8 @@ export function recordCanvasVideo(
         width?: number;
         height?: number;
         format?: 'mp4' | 'webm';
+        /** Stamp "NEAT" in the corner. Licensed users export without it. */
+        watermark?: boolean;
         onProgress?: (progress: number) => void;
         onComplete?: () => void;
     } = {}
@@ -45,6 +47,7 @@ export function recordCanvasVideo(
         durationMs = 5000,
         filename = "neat.firecms.co",
         format,
+        watermark = true,
         onProgress,
         onComplete,
     } = options;
@@ -121,20 +124,22 @@ export function recordCanvasVideo(
         ctx.drawImage(source, 0, 0, width, height);
 
         // Watermark: "NEAT" in bottom-right corner
-        const fontSize = Math.max(14, Math.round(height * 0.025));
-        ctx.font = `bold ${fontSize}px "Sofia Sans", sans-serif`;
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 4;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        ctx.fillStyle = "rgba(255,255,255,0.7)";
-        ctx.fillText("NEAT", width - fontSize * 0.8, height - fontSize * 0.5);
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
+        if (watermark) {
+            const fontSize = Math.max(14, Math.round(height * 0.025));
+            ctx.font = `bold ${fontSize}px "Sofia Sans", sans-serif`;
+            ctx.textAlign = "right";
+            ctx.textBaseline = "bottom";
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.fillStyle = "rgba(255,255,255,0.7)";
+            ctx.fillText("NEAT", width - fontSize * 0.8, height - fontSize * 0.5);
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+        }
 
         // Signal the stream to capture this frame
         // @ts-ignore – requestFrame exists on CanvasCaptureMediaStreamTrack

@@ -77,3 +77,15 @@ export function trackCopyCodeSnippet() {
 export function trackLicenseBackToEditor() {
     trackEvent("license_back_to_editor");
 }
+
+export function trackLicenseActivated(domain: string) {
+    trackEvent("license_activated", { domain });
+}
+
+export function trackLicenseActivationError(reason: string) {
+    trackEvent("license_activation_error", { reason });
+}
+
+export function trackLicenseRemoved() {
+    trackEvent("license_removed");
+}

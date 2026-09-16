@@ -8,7 +8,7 @@ import { Select, SelectItem } from "./ui/select";
 import { Sheet } from "./ui/sheet";
 import { Slider } from "./ui/slider";
 import { Tooltip } from "./ui/tooltip";
-import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload, Palette, Box, Wind, Sliders, Image, RotateCcw, Camera, Lock, Unlock, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Import, Video, Square, Sparkles, Plus, Trash2, Upload, Palette, Box, Wind, Sliders, Image, RotateCcw, Camera, Lock, Unlock, Minus, Check } from "lucide-react";
 import { ColorSwatch } from "./ColorSwatch";
 import { fontMap, NEAT_PRESET, PRESETS } from "./presets";
 import { getComplementaryColor, isDarkColor, hslToHex, extractColorsFromImage } from "../utils/colors";
@@ -18,9 +18,10 @@ import { Analytics } from "@firebase/analytics";
 import { logEvent as firebaseLogEvent } from "firebase/analytics";
 import { NeatColor, NeatConfig, NeatGradient } from "@firecms/neat"; // Ensure this matches your local link
 import { ImportConfigDialog } from "./ImportConfigDialog";
-import { LicenseDialog } from "./LicenseDialog";
+import { LicenseDialog, LicenseDialogView } from "./LicenseDialog";
 import { downloadCanvasAsPNG, recordCanvasVideo } from "../utils/canvas-export";
-import { trackCheckoutCancelled, trackEvent } from "../utils/analytics";
+import { trackCheckoutCancelled, trackEvent, trackLicenseRemoved } from "../utils/analytics";
+import { forgetLicenseKey, loadLicenseKey, saveLicenseKey, verifyLicenseKey } from "../utils/license";
 import { isShowcaseMode, SHOWCASE_MODES, Showcase, ShowcaseMode } from "./showcase/Showcase";
 import { ContextSwitcher } from "./showcase/ContextSwitcher";
 import { GitHubStars } from "./GitHubStars";
@@ -486,6 +487,45 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
     const [recordFormat, setRecordFormat] = React.useState<'mp4' | 'webm'>('mp4');
     const stopRecordingRef = React.useRef<(() => void) | null>(null);
     const [licenseDialogOpen, setLicenseDialogOpen] = React.useState(false);
+    const [licenseDialogView, setLicenseDialogView] = React.useState<LicenseDialogView>("buy");
+
+    // A key remembered from an earlier visit goes to the gradient straight away:
+    // it verifies the key itself and draws no watermark while it does. The domain
+    // is only known once the key has verified here too, and is what turns off
+    // the watermark on exports.
+    const [licenseKey, setLicenseKey] = React.useState<string | null>(loadLicenseKey);
+    const [licensedDomain, setLicensedDomain] = React.useState<string | null>(null);
+
+    useEffect(() => {
+        if (!licenseKey) {
+            setLicensedDomain(null);
+            return;
+        }
+        let cancelled = false;
+        verifyLicenseKey(licenseKey).then((result) => {
+            if (!cancelled) setLicensedDomain(result.valid && result.payload ? result.payload.domain : null);
+        });
+        return () => { cancelled = true; };
+    }, [licenseKey]);
+
+    const openLicenseDialog = (view: LicenseDialogView) => {
+        setLicenseDialogView(view);
+        setLicenseDialogOpen(true);
+        logEvent(analytics, 'open_license_dialog', { view, licensed: !!licensedDomain });
+    };
+
+    const handleLicenseActivate = (key: string, domain: string) => {
+        saveLicenseKey(key);
+        setLicenseKey(key);
+        setLicensedDomain(domain);
+    };
+
+    const handleLicenseRemove = () => {
+        forgetLicenseKey();
+        setLicenseKey(null);
+        setLicenseDialogOpen(false);
+        trackLicenseRemoved();
+    };
 
     // Custom states for smart randomize and image drop color extractor
     const [randomPresetConfig, setRandomPresetConfig] = React.useState<NeatConfig | null>(null);
@@ -1159,9 +1199,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             cameraRotationY,
             cameraRotationZ,
             cameraZoom,
+
+            licenseKey: licenseKey ?? undefined,
         });
         return gradientRef.current.destroy;
-    }, [antialias]);
+    }, [antialias, licenseKey]);
 
     // Update Gradient properties
     useEffect(() => {
@@ -1434,7 +1476,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
         if (!canvasRef.current || isRecording) return;
         setIsRecording(true);
         setRecordingProgress(0);
-        logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution, format: recordFormat });
+        logEvent(analytics, 'record_video', { duration: recordDuration, resolution: recordResolution, format: recordFormat, licensed: !!licensedDomain });
 
         // Determine target dimensions
         let width: number | undefined;
@@ -1450,6 +1492,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             width,
             height,
             format: recordFormat,
+            watermark: !licensedDomain,
             onProgress: (p) => setRecordingProgress(p),
             onComplete: () => {
                 setIsRecording(false);
@@ -1458,7 +1501,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
             },
         });
         stopRecordingRef.current = stop;
-    }, [analytics, recordDuration, recordResolution, recordFormat, isRecording]);
+    }, [analytics, recordDuration, recordResolution, recordFormat, isRecording, licensedDomain]);
 
     const handleStopRecording = useCallback(() => {
         if (stopRecordingRef.current) {
@@ -2136,12 +2179,10 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                         <Import className="w-5 h-5"/>
                                     </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Remove NEAT watermark — €12">
-                                    <Button variant="text" size="sm" className="px-2 py-1 text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10"
-                                            onClick={() => {
-                                                setLicenseDialogOpen(true);
-                                                logEvent(analytics, 'open_license_dialog');
-                                            }}>
+                                <Tooltip title={licensedDomain ? `Licensed for ${licensedDomain}: no watermark` : "Remove NEAT watermark — €12"}>
+                                    <Button variant="text" size="sm" className="px-2 py-1 gap-1 text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10"
+                                            onClick={() => openLicenseDialog("buy")}>
+                                        {licensedDomain && <Check className="w-3.5 h-3.5" aria-hidden/>}
                                         PRO
                                     </Button>
                                 </Tooltip>
@@ -3504,7 +3545,11 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     onOpenChange={setImportDialogOpen}
                                     onConfigImport={handleConfigImport}/>
                 <LicenseDialog open={licenseDialogOpen}
-                               onOpenChange={setLicenseDialogOpen}/>
+                               onOpenChange={setLicenseDialogOpen}
+                               initialView={licenseDialogView}
+                               licensedDomain={licensedDomain}
+                               onActivate={handleLicenseActivate}
+                               onRemove={handleLicenseRemove}/>
 
                 {/* Record Video Dialog */}
                 <Dialog open={recordDialogOpen} maxWidth="24rem" onOpenChange={(open) => {
@@ -3572,6 +3617,35 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Watermark */}
+                            {!isRecording && (licensedDomain ? (
+                                <p className="flex items-center gap-1.5 text-xs text-emerald-300/80">
+                                    <Check className="w-3.5 h-3.5 shrink-0" aria-hidden/>
+                                    No watermark, licensed for {licensedDomain}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-white/50">
+                                    Videos include a small NEAT watermark.{" "}
+                                    <button type="button"
+                                            className="text-amber-300/80 hover:text-amber-200 underline underline-offset-2"
+                                            onClick={() => {
+                                                setRecordDialogOpen(false);
+                                                openLicenseDialog("activate");
+                                            }}>
+                                        Activate your license
+                                    </button>
+                                    {" "}or{" "}
+                                    <button type="button"
+                                            className="text-amber-300/80 hover:text-amber-200 underline underline-offset-2"
+                                            onClick={() => {
+                                                setRecordDialogOpen(false);
+                                                openLicenseDialog("buy");
+                                            }}>
+                                        remove it for €12
+                                    </button>.
+                                </p>
+                            ))}
 
                             {/* Progress bar (visible during recording) */}
                             {isRecording && (

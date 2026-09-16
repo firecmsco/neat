@@ -548,6 +548,8 @@ const gradient = new NeatGradient({
 
 Each key is locked to the domain you specify at checkout (subdomains included). Development on `localhost` always works without a key.
 
+The same key removes the watermark from PNG and video exports in the [editor](https://neat.firecms.co): click **PRO**, then **Activate your key**, and paste it in.
+
 ---
 
 ## 🙏 Credits
