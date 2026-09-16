@@ -495,13 +495,18 @@ export class NeatGradient implements NeatController {
      * (it is what a 1440px-wide canvas was already getting) and costs a phone about
      * a fifteenth of the vertices. `resolution` still scales it, so the control keeps
      * working in both directions.
+     *
+     * The floor of 24 applies to the canvas-derived count only, so a small canvas
+     * is not coarsened past it. It never raises an explicit low `resolution`: that is
+     * how a deliberately faceted look is asked for (0.05 gives 12 segments), and
+     * flooring it at 24 silently re-drew every such config with twice the facets.
      */
     private _segmentsFor(base: number, width: number, height: number): number {
         const resolution = this._resolution || 1;
         const target = Math.round(base * resolution);
         const longest = Math.max(width, height);
         if (!longest) return target;
-        return Math.max(24, Math.min(target, Math.round((longest / 6) * resolution)));
+        return Math.min(target, Math.max(24, Math.round((longest / 6) * resolution)));
     }
 
     /** Schedule a frame if the loop parked itself. No-op while it is running. */
