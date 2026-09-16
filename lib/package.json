@@ -2,7 +2,7 @@
   "name": "@firecms/neat",
   "description": "Beautiful 3D gradients for your website",
   "access": "public",
-  "version": "1.0.3-canary.20260916094552",
+  "version": "1.0.3-canary.20260916111045",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "dist/index.d.ts",
