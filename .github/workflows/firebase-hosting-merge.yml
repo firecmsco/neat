@@ -16,8 +16,16 @@ jobs:
           node-version: 22
       # The repo declares pnpm via "packageManager"; corepack honours it.
       - run: corepack enable
+      # The editor's `build` ends in `build:seo`, which renders the static pages
+      # with the published bundle, lib/dist/index.umd.js, so lib is installed and
+      # built first. Without it every deploy since 2026-08-26 failed at that step
+      # and published nothing.
+      - run: pnpm install --frozen-lockfile
+        working-directory: lib
+      - run: pnpm build
+        working-directory: lib
       # editor/ is installed on its own: vite aliases @firecms/neat straight to
-      # lib/src, so the library needs no install or build of its own.
+      # lib/src, so the app bundle itself does not read lib/dist.
       - run: pnpm install --frozen-lockfile
         working-directory: editor
       - run: pnpm build
