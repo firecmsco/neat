@@ -177,7 +177,12 @@ async function sendLicenseEmail(email: string, domain: string, licenseKey: strin
         return;
     }
 
+    // The email is dark by design, so it paints its own background: on a light
+    // client's white page the white heading and grey text would not show. A table
+    // with bgcolor, because Outlook's desktop app ignores backgrounds on divs.
     const html = `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0a" style="background: #0a0a0a;">
+<tr><td style="padding: 0 24px;">
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 0;">
     <h2 style="color: #fff; margin: 0 0 8px;">Your NEAT License Key</h2>
     <p style="color: #aaa; font-size: 14px; margin: 0 0 24px;">License for <strong style="color: #fff;">${domain}</strong></p>
@@ -187,7 +192,7 @@ async function sendLicenseEmail(email: string, domain: string, licenseKey: strin
     </div>
 
     <div style="font-size: 13px; color: #888; line-height: 1.7;">
-        <p style="margin: 0 0 12px;"><strong style="color: #ccc;">Usage:</strong></p>
+        <p style="margin: 0 0 12px;"><strong style="color: #ccc;">On your website:</strong></p>
         <pre style="background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 12px; font-size: 12px; color: #ddd; overflow-x: auto;">new NeatGradient({
     ref: canvas,
     licenseKey: "${licenseKey.slice(0, 20)}…",
@@ -195,11 +200,23 @@ async function sendLicenseEmail(email: string, domain: string, licenseKey: strin
 });</pre>
     </div>
 
+    <div style="margin-top: 24px; font-size: 13px; color: #888; line-height: 1.7;">
+        <p style="margin: 0 0 8px;"><strong style="color: #ccc;">Export PNGs and videos without the watermark:</strong></p>
+        <ol style="margin: 0; padding-left: 20px;">
+            <li>Open the editor at <a href="https://neat.firecms.co" style="color: #6ee7b7;">neat.firecms.co</a></li>
+            <li>Click <strong style="color: #ccc;">PRO</strong> in the toolbar, then <strong style="color: #ccc;">Already bought a license? Activate your key</strong></li>
+            <li>Paste the key above and click <strong style="color: #ccc;">Activate</strong></li>
+        </ol>
+        <p style="margin: 8px 0 0;">The editor remembers the key in that browser. On another browser or computer, activate it again.</p>
+    </div>
+
     <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333; font-size: 12px; color: #666;">
         <p style="margin: 0;">✓ Works on ${domain} and all subdomains</p>
         <p style="margin: 4px 0 0;">✓ localhost always works for development</p>
     </div>
 </div>
+</td></tr>
+</table>
 `;
 
     try {
