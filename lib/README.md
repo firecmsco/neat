@@ -556,8 +556,6 @@ The same key removes the watermark from PNG and video exports in the [editor](ht
 
 Created by [FireCMS](https://firecms.co) with ❤️
 
-Built and maintained by [Camberi](https://camberi.com?utm_source=neat&utm_medium=referral&utm_campaign=built-by), a product engineering studio in Madrid and Munich that also builds for clients.
-
 ---
 
 ## 🐛 Issues & Contributing
