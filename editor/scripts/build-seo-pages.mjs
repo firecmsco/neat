@@ -500,6 +500,7 @@ ${bodyHtml}
     </div>
   </div>
   <p class="colophon-note">Neat renders animated 3D gradients in WebGL &mdash; a displaced plane, lit, with up to six colours blended across it. Free to use under MIT + Commons Clause; an unobtrusive watermark is drawn unless a licence key is set.</p>
+  <p class="colophon-note">Built and maintained by <a href="https://camberi.com?utm_source=neat&amp;utm_medium=referral&amp;utm_campaign=built-by" rel="noopener">Camberi</a>, a product engineering studio in Madrid and Munich that also builds for clients.</p>
 </div></footer>
 <script src="/neat.umd.js"></script>
 <script>

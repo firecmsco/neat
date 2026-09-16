@@ -2281,6 +2281,20 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
                             <a
+                                href="https://camberi.com?utm_source=neat&utm_medium=referral&utm_campaign=built-by"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Built and maintained by Camberi, a product engineering studio in Madrid and Munich that also builds for clients."
+                                className="hover:underline"
+                                style={{ color: uiOnDark ? "white" : "black" }}
+                                onClick={() => logEvent(analytics, 'click_camberi_link', { location: 'footer' })}
+                            >
+                                <span className="xl:hidden">Camberi</span>
+                                <span className="hidden xl:inline">Built by Camberi</span>
+                            </a>
+                        </div>
+                        <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
+                            <a
                                 href="mailto:hello@firecms.co"
                                 className="hover:underline"
                                 style={{ color: uiOnDark ? "white" : "black" }}
