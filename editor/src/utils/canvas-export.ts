@@ -121,7 +121,19 @@ export function recordCanvasVideo(
         if (stopped) return;
 
         ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(source, 0, 0, width, height);
+
+        // Cover the frame: scale the source to fill it and centre-crop the
+        // overflow. A fixed export size rarely has the window's aspect ratio,
+        // and stretching would distort the gradient. Measured every frame, as
+        // the window can be resized mid-recording.
+        const scale = Math.max(width / source.width, height / source.height);
+        const cropWidth = width / scale;
+        const cropHeight = height / scale;
+        ctx.drawImage(
+            source,
+            (source.width - cropWidth) / 2, (source.height - cropHeight) / 2, cropWidth, cropHeight,
+            0, 0, width, height
+        );
 
         // Watermark: "NEAT" in bottom-right corner
         if (watermark) {
