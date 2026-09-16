@@ -41,6 +41,22 @@ export interface WebGLState {
     indexType: number;
 }
 
+/** A program whose compile and link have been issued but not read back. See `_startProgram`. */
+interface PendingProgram {
+    program: WebGLProgram;
+    vertex: WebGLShader;
+    fragment: WebGLShader;
+    vertexSource: string;
+    fragmentSource: string;
+}
+
+/**
+ * The gradient's attribute slots, bound before every link. Every shader variant
+ * shares them, so the vertex array built once stays valid across recompiles, and
+ * vertex state can be set up before the first program has finished linking.
+ */
+const GRADIENT_ATTRIBUTES = ["position", "normal", "uv"];
+
 
 import { NeatConfig, NeatColor, NeatController } from "./types";
 
@@ -384,7 +400,15 @@ export class NeatGradient implements NeatController {
     private sizeObserver: ResizeObserver;
     private _currentCursor: string = '';
 
+    /** False until the programs issued in the constructor have linked and been wired up. */
     private _initialized: boolean = false;
+    private _destroyed: boolean = false;
+    /** KHR_parallel_shader_compile, when the context has it. See `_linked`. */
+    private _parallelCompile: KHR_parallel_shader_compile | null = null;
+    /** The gradient program while it links: the first one, and a variant after a feature toggle. */
+    private _pendingGradient: PendingProgram | null = null;
+    /** The bake program while it links. */
+    private _pendingBake: PendingProgram | null = null;
     private _cachedColorRgb: [number, number, number][] = [];
 
     private _yOffset: number = 0;
@@ -501,6 +525,8 @@ export class NeatGradient implements NeatController {
     private _wmLocPos: number = -1;
     private _wmLocTc: number = -1;
     private _wmLocTex: WebGLUniformLocation | null = null;
+    /** Whether the watermark program has linked and its uniform been resolved. */
+    private _wmLinked: boolean = false;
     private _wmPosData: Float32Array = new Float32Array(8);
     private _wmClickHandler: ((e: MouseEvent) => void) | null = null;
     private _wmMoveHandler: ((e: MouseEvent) => void) | null = null;
@@ -749,21 +775,32 @@ export class NeatGradient implements NeatController {
 
         this.glState = this._initScene(resolution, preserveDrawingBuffer);
 
-        this._initWatermark();
+        // A baked texture's program used to be compiled inside the first frame, on
+        // its own. Issued here it links alongside the gradient's, and the first frame
+        // waits for both (see _completeStartup).
+        if (this._enableProceduralTexture && this._resolveTextureMode() === 'baked') {
+            this._startBakeProgram(this.glState.gl as WebGL2RenderingContext);
+        }
 
         injectMetaGenerator();
 
-        // License verification — async, watermark renders until verified
+        // The watermark is only built when it will be shown: straight away without a
+        // license key, and with one only once the key has failed to verify. A valid
+        // key never compiles its program, rasterises its label or listens to the
+        // pointer, and nothing is drawn over the gradient while a key is checked.
         if (licenseKey) {
             verifyLicenseKey(licenseKey).then((result) => {
+                if (this._destroyed) return;
                 this._licensed = result.valid;
-                this._wake();   // the watermark has to come off even if we parked
                 if (!result.valid) {
+                    this._startWatermark();
+                    this._wake();   // the watermark has to go on even if we parked
                     console.warn(`NEAT license key error: ${result.reason}`);
                     _logBranding();
                 }
             });
         } else {
+            this._startWatermark();
             _logBranding();
         }
 
@@ -772,10 +809,40 @@ export class NeatGradient implements NeatController {
 
         const render = () => {
 
+            // The constructor only issues the compiles (see _startProgram). Until they
+            // have linked there is nothing to draw with, and asking would block, so
+            // look again next frame. Cancelling first keeps this to one loop:
+            // setSize calls render() too.
+            if (!this._initialized) {
+                if (!this._completeStartup()) {
+                    cancelAnimationFrame(this.requestRef);
+                    this.requestRef = this._isVisible ? requestAnimationFrame(render) : -1;
+                    return;
+                }
+                lastTime = performance.now();   // the clock starts at the first frame, not while linking
+            }
+
+            // Set by anything this frame could not finish because a program is still
+            // linking. The loop must not park on such a frame.
+            let awaitingLink = false;
+
             // A toggled feature needs a different shader variant. Only worth checking
             // on frames where something actually changed.
-            if (this._initialized && this.__uniformsDirty && this._shaderKey !== this._shaderFeatureKey()) {
+            if (this.__uniformsDirty && this._shaderKey !== this._shaderFeatureKey()) {
                 this._rebuildProgram();
+            }
+            // The variant is swapped in once it has linked; until then the frame draws
+            // with the one it already has, rather than stalling on the compile.
+            if (this._pendingGradient) {
+                const pending = this._pendingGradient;
+                if (this._linked(this.glState.gl, pending.program)) {
+                    const previous = this.glState.program;
+                    this._pendingGradient = null;
+                    this._wireProgram(this.glState.gl, pending);
+                    this.glState.gl.deleteProgram(previous);
+                } else {
+                    awaitingLink = true;
+                }
             }
 
             const { gl, program, locations, indexCount, indexType } = this.glState;
@@ -918,14 +985,19 @@ export class NeatGradient implements NeatController {
                 }
 
                 // Regenerate the procedural texture when needed. Both modes
-                // produce a texture; they differ only in how it is drawn.
+                // produce a texture; they differ only in how it is drawn. A bake
+                // whose program is still linking keeps the current texture.
                 if (this._textureNeedsUpdate && this._enableProceduralTexture) {
-                    if (this._proceduralTexture) {
-                        gl.deleteTexture(this._proceduralTexture);
+                    if (this._bakeProgramLinking(gl)) {
+                        awaitingLink = true;
+                    } else {
+                        if (this._proceduralTexture) {
+                            gl.deleteTexture(this._proceduralTexture);
+                        }
+                        this._proceduralTexture = this._createProceduralTexture(gl);
+                        this._textureNeedsUpdate = false;
+                        this._textureDirty = true;
                     }
-                    this._proceduralTexture = this._createProceduralTexture(gl);
-                    this._textureNeedsUpdate = false;
-                    this._textureDirty = true;
                 }
 
                 // Procedural texture binding — only when texture changes
@@ -978,7 +1050,7 @@ export class NeatGradient implements NeatController {
             }
 
             // Draw watermark overlay inside the canvas (skipped for licensed users)
-            if (!this._licensed) this._renderWatermark(gl);
+            if (!this._licensed && !this._renderWatermark(gl)) awaitingLink = true;
 
             if (!this._isVisible) {
                 this._parked = false;   // the visibility handlers own rescheduling
@@ -990,7 +1062,7 @@ export class NeatGradient implements NeatController {
             // the waves, flow field, grain, iridescence and auto-rotation stands
             // still and the next frame would be pixel-identical. Park instead, and
             // let the dirty-flag setters wake us for the one frame a change needs.
-            if (this._speed === 0 && this._initialized) {
+            if (this._speed === 0 && !awaitingLink) {
                 this._parked = true;
                 this.requestRef = -1;
                 return;
@@ -1069,9 +1141,7 @@ export class NeatGradient implements NeatController {
             updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
             // Recompute projection matrix on resize
-            const projLoc = this.glState.locations.uniforms["projectionMatrix"];
-            gl.useProgram(this.glState.program);
-            if (projLoc) gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
+            this._uploadProjection();
             this._uniformsDirty = true;
 
             // Mesh density follows the canvas, so a big size change rebuilds it
@@ -1113,6 +1183,7 @@ export class NeatGradient implements NeatController {
     }
 
     destroy() {
+        this._destroyed = true;
         cancelAnimationFrame(this.requestRef);
         this.sizeObserver.disconnect();
 
@@ -1145,7 +1216,7 @@ export class NeatGradient implements NeatController {
         // Cleanup WebGL resources
         if (this.glState) {
             const gl = this.glState.gl;
-            gl.deleteProgram(this.glState.program);
+            this._deleteProgram(gl, this.glState.program);
             gl.deleteBuffer(this.glState.buffers.position);
             gl.deleteBuffer(this.glState.buffers.normal);
             gl.deleteBuffer(this.glState.buffers.uv);
@@ -1153,7 +1224,7 @@ export class NeatGradient implements NeatController {
             gl.deleteBuffer(this.glState.buffers.wireframeIndex);
 
             // Cleanup watermark resources
-            if (this._watermarkProgram) gl.deleteProgram(this._watermarkProgram);
+            if (this._watermarkProgram) this._deleteProgram(gl, this._watermarkProgram);
             if (this._watermarkTexture) gl.deleteTexture(this._watermarkTexture);
             if (this._watermarkBuffer) gl.deleteBuffer(this._watermarkBuffer);
             if (this._watermarkTexCoordBuffer) gl.deleteBuffer(this._watermarkTexCoordBuffer);
@@ -1167,6 +1238,16 @@ export class NeatGradient implements NeatController {
         }
         if (this.glState) {
             const g = this.glState.gl;
+            // Programs destroyed while still linking. The first gradient program is
+            // also `glState.program`, deleted above.
+            for (const pending of [this._pendingGradient, this._pendingBake]) {
+                if (!pending) continue;
+                g.deleteShader(pending.vertex);
+                g.deleteShader(pending.fragment);
+                if (pending.program !== this.glState.program) this._deleteProgram(g, pending.program);
+            }
+            this._pendingGradient = null;
+            this._pendingBake = null;
             if (this._bakeProgram) { g.deleteProgram(this._bakeProgram); this._bakeProgram = null; }
             if (this._bakeQuad) { g.deleteBuffer(this._bakeQuad); this._bakeQuad = null; }
             if (this._bakeFbo) { g.deleteFramebuffer(this._bakeFbo); this._bakeFbo = null; }
@@ -1366,11 +1447,22 @@ export class NeatGradient implements NeatController {
         updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
         // Recompute projection matrix
+        this._uploadProjection();
+
+        this._uniformsDirty = true;
+    }
+
+    /**
+     * Uploads the camera's projection to the gradient program. Before the first
+     * program has linked there is nothing to upload to, and touching it would wait
+     * for the link; `_wireProgram` uploads the camera as it stands by then.
+     */
+    _uploadProjection() {
+        if (!this._initialized) return;
+        const gl = this.glState.gl;
         const projLoc = this.glState.locations.uniforms["projectionMatrix"];
         gl.useProgram(this.glState.program);
         if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
-
-        this._uniformsDirty = true;
     }
 
     _hexToRgb(hex: string): [number, number, number] {
@@ -1415,6 +1507,7 @@ export class NeatGradient implements NeatController {
 
         const ext = gl.getExtension("OES_standard_derivatives");
         gl.getExtension("OES_element_index_uint");
+        this._parallelCompile = gl.getExtension("KHR_parallel_shader_compile");
 
         this._derivativesSupported = this._isWebGL2 || !!ext;
 
@@ -1462,18 +1555,27 @@ export class NeatGradient implements NeatController {
         // Rebind the triangle index buffer as default
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-        const program = this._compileProgram(gl);
-
-        gl.useProgram(program);
+        // Issued, not read back: the first frame wires it up once it has linked
+        // (see _startProgram and _completeStartup).
+        this._pendingGradient = this._compileProgram(gl);
+        const program = this._pendingGradient.program;
 
         const camera = new OrthographicCamera(0, 0, 0, 0, 0, 1000);
         camera.position = [0, 0, 5];
         updateCamera(camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
-        // Define attributes
-        const aPosition = gl.getAttribLocation(program, "position");
-        const aNormal = gl.getAttribLocation(program, "normal");
-        const aUv = gl.getAttribLocation(program, "uv");
+        // Define attributes, at the slots _compileProgram binds before linking —
+        // which is what lets this happen before the link has finished.
+        const aPosition = GRADIENT_ATTRIBUTES.indexOf("position");
+        const aNormal = GRADIENT_ATTRIBUTES.indexOf("normal");
+        const aUv = GRADIENT_ATTRIBUTES.indexOf("uv");
+
+        // WebGL2 keeps that state in the gradient's own vertex array, so the bake
+        // and watermark passes switch away and back with one call each.
+        if (gl2) {
+            this._gradientVAO = gl2.createVertexArray();
+            gl2.bindVertexArray(this._gradientVAO);
+        }
 
         gl.enableVertexAttribArray(aPosition);
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -1489,32 +1591,12 @@ export class NeatGradient implements NeatController {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-        // modelViewMatrix is set dynamically in the render loop
-
-        const projLoc = gl.getUniformLocation(program, "projectionMatrix");
-        gl.uniformMatrix4fv(projLoc, false, camera.projectionMatrix.elements);
-
-        const planeWidthLoc = gl.getUniformLocation(program, "u_plane_width");
-        gl.uniform1f(planeWidthLoc, PLANE_WIDTH);
-
-        const planeHeightLoc = gl.getUniformLocation(program, "u_plane_height");
-        gl.uniform1f(planeHeightLoc, PLANE_HEIGHT);
-
-        const colorsCountLoc = gl.getUniformLocation(program, "u_colors_count");
-        gl.uniform1i(colorsCountLoc, COLORS_COUNT);
-
+        // modelViewMatrix is set dynamically in the render loop. The projection,
+        // the other uniforms and their locations wait for the link (_wireProgram).
         const locations: WebGLState["locations"] = {
             attributes: { position: aPosition, normal: aNormal, uv: aUv },
             uniforms: {}
         };
-
-        this._resolveProgramLocations(gl, program, locations);
-
-        this._initialized = true;
-        // New program needs all uniforms re-uploaded on first frame
-        this._uniformsDirty = true;
-        this._colorsChanged = true;
-        this._textureDirty = true;
 
         // Enable alpha blending
         gl.enable(gl.BLEND);
@@ -1639,13 +1721,150 @@ export class NeatGradient implements NeatController {
     }
 
     /**
-     * Swaps in a program built for the current feature set. Attribute locations are
-     * pinned in _compileProgram, so the vertex buffers and the VAO stay valid.
+     * Starts building a program for the current feature set. The render loop swaps
+     * it in once it has linked and draws with the current one until then, so a
+     * toggle does not stall the page while the driver compiles. Attribute
+     * locations are pinned (GRADIENT_ATTRIBUTES), so the vertex buffers and the VAO
+     * stay valid across the swap.
      */
     _rebuildProgram() {
         const gl = this.glState.gl;
-        const previous = this.glState.program;
-        const program = this._compileProgram(gl);
+        // A variant still linking from an earlier toggle is already out of date.
+        const stale = this._pendingGradient;
+        if (stale) {
+            gl.deleteShader(stale.vertex);
+            gl.deleteShader(stale.fragment);
+            this._deleteProgram(gl, stale.program);
+        }
+        this._pendingGradient = this._compileProgram(gl);
+    }
+
+    /** Issues the gradient program for the current feature set. See _startProgram. */
+    _compileProgram(gl: WebGLRenderingContext | WebGL2RenderingContext): PendingProgram {
+        const defines = this._buildShaderDefines();
+        this._shaderKey = this._shaderFeatureKey();
+        const vertShaderSourceCombined = defines + buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
+        const fragShaderSourceCombined = defines + buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
+        return this._startProgram(gl, vertShaderSourceCombined, fragShaderSourceCombined, GRADIENT_ATTRIBUTES);
+    }
+
+    /**
+     * Issues a program's compile and link without reading anything back.
+     *
+     * `compileShader` and `linkProgram` only queue work for the driver. The first
+     * read after them — a compile or link status, a uniform or attribute location —
+     * is what makes the main thread wait for the driver to finish, and on a cold
+     * shader cache that was one uninterrupted task: ~300ms for the gradient and bake
+     * programs on an M2 Pro, and several times that on a phone. So nothing is read
+     * here. Attribute slots are bound before the link instead of looked up after it.
+     * `_linked` asks whether the program is done without waiting for it.
+     */
+    _startProgram(
+        gl: WebGLRenderingContext | WebGL2RenderingContext,
+        vertexSource: string,
+        fragmentSource: string,
+        attributes: string[]
+    ): PendingProgram {
+        const vertex = gl.createShader(gl.VERTEX_SHADER)!;
+        gl.shaderSource(vertex, vertexSource);
+        gl.compileShader(vertex);
+
+        const fragment = gl.createShader(gl.FRAGMENT_SHADER)!;
+        gl.shaderSource(fragment, fragmentSource);
+        gl.compileShader(fragment);
+
+        const program = gl.createProgram()!;
+        gl.attachShader(program, vertex);
+        gl.attachShader(program, fragment);
+        attributes.forEach((name, slot) => gl.bindAttribLocation(program, slot, name));
+        gl.linkProgram(program);
+
+        return { program, vertex, fragment, vertexSource, fragmentSource };
+    }
+
+    /**
+     * Whether a program has finished compiling and linking, asked without waiting.
+     *
+     * With KHR_parallel_shader_compile the driver does that work off the main thread
+     * and this polls it. Without the extension it always answers yes, and the first
+     * read afterwards waits for the driver exactly as it always did.
+     */
+    _linked(gl: WebGLRenderingContext | WebGL2RenderingContext, program: WebGLProgram): boolean {
+        const parallel = this._parallelCompile;
+        // A lost context reports completion rather than leaving callers waiting.
+        return !parallel || gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) !== false;
+    }
+
+    /**
+     * Deletes a program, but never while it is still linking.
+     *
+     * Chrome frees a deleted program's name straight away and hands it to the
+     * next `createProgram` on the context while the driver is still finishing the
+     * old link under it; the new program's queries then fail with
+     * GL_INVALID_VALUE "Program object expected". Destroying a gradient mid-link
+     * and building another on the same canvas does exactly that — React
+     * StrictMode's mount, unmount, mount — and so does toggling a feature again
+     * before the previous variant has linked. A program still linking is deleted
+     * from a later task instead, once it has finished. Works after destroy().
+     */
+    _deleteProgram(gl: WebGLRenderingContext | WebGL2RenderingContext, program: WebGLProgram) {
+        if (this._linked(gl, program)) {
+            gl.deleteProgram(program);
+        } else {
+            setTimeout(() => this._deleteProgram(gl, program), 16);
+        }
+    }
+
+    /**
+     * Finishes what the constructor started, once every program it issued has
+     * linked: the gradient's and, for a baked texture, the bake's. False while
+     * either is still linking. The watermark is not waited for: it is only built
+     * when it will be shown, and draws from the first frame its program is ready.
+     */
+    _completeStartup(): boolean {
+        const gl = this.glState.gl;
+        const gradient = this._pendingGradient;
+        if (gradient && !this._linked(gl, gradient.program)) return false;
+        if (this._pendingBake && !this._linked(gl, this._pendingBake.program)) return false;
+        if (gradient) {
+            this._pendingGradient = null;
+            this._wireProgram(gl, gradient);
+        }
+        this._initialized = true;
+        return true;
+    }
+
+    /**
+     * Makes a linked gradient program current: reports what its compile and link
+     * said, uploads the uniforms that never change, and resolves its locations,
+     * which belong to a program and so are needed again after every recompile.
+     */
+    _wireProgram(gl: WebGLRenderingContext | WebGL2RenderingContext, pending: PendingProgram) {
+        const { program, vertex, fragment } = pending;
+        if (!gl.getShaderParameter(vertex, gl.COMPILE_STATUS)) {
+            console.log("VERTEX_SHADER_ERROR_START");
+            console.log("Vertex shader error: ", gl.getShaderInfoLog(vertex));
+            console.log("GL Error Code:", gl.getError());
+            console.log("Vertex Shader Source Dump:");
+            console.log(pending.vertexSource.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
+            console.log("VERTEX_SHADER_ERROR_END");
+        }
+        if (!gl.getShaderParameter(fragment, gl.COMPILE_STATUS)) {
+            console.log("FRAGMENT_SHADER_ERROR_START");
+            console.log("Fragment shader error: ", gl.getShaderInfoLog(fragment));
+            console.log("GL Error Code:", gl.getError());
+            console.log("Fragment Shader Source Dump:");
+            console.log(pending.fragmentSource.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
+            console.log("FRAGMENT_SHADER_ERROR_END");
+        }
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.log("PROGRAM_LINK_ERROR_START");
+            console.log("Program linking error: ", gl.getProgramInfoLog(program));
+            console.log("GL Error Code:", gl.getError());
+            console.log("PROGRAM_LINK_ERROR_END");
+        }
+        gl.deleteShader(vertex);
+        gl.deleteShader(fragment);
 
         this.glState.program = program;
         gl.useProgram(program);
@@ -1662,62 +1881,10 @@ export class NeatGradient implements NeatController {
         this.glState.locations.uniforms = {};
         this._resolveProgramLocations(gl, program, this.glState.locations);
 
-        if (previous) gl.deleteProgram(previous);
-
+        // A new program needs every uniform uploaded on its first frame
         this._uniformsDirty = true;
         this._colorsChanged = true;
         this._textureDirty = true;
-    }
-
-    _compileProgram(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLProgram {
-        const defines = this._buildShaderDefines();
-        this._shaderKey = this._shaderFeatureKey();
-        const vertShaderSourceCombined = defines + buildVertUniforms() + "\n" + buildNoise() + "\n" + buildColorFunctions() + "\n" + vertexShaderSource;
-        const vertShader = gl.createShader(gl.VERTEX_SHADER)!;
-        gl.shaderSource(vertShader, vertShaderSourceCombined);
-        gl.compileShader(vertShader);
-        if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-            console.log("VERTEX_SHADER_ERROR_START");
-            console.log("Vertex shader error: ", gl.getShaderInfoLog(vertShader));
-            console.log("GL Error Code:", gl.getError());
-            console.log("Vertex Shader Source Dump:");
-            console.log(vertShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
-            console.log("VERTEX_SHADER_ERROR_END");
-        }
-
-        const fragShaderSourceCombined = defines + buildFragUniforms() + "\n" + buildColorFunctions() + "\n" + buildNoise() + "\n" + fragmentShaderSource;
-        const fragShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-        gl.shaderSource(fragShader, fragShaderSourceCombined);
-        gl.compileShader(fragShader);
-        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-            console.log("FRAGMENT_SHADER_ERROR_START");
-            console.log("Fragment shader error: ", gl.getShaderInfoLog(fragShader));
-            console.log("GL Error Code:", gl.getError());
-            console.log("Fragment Shader Source Dump:");
-            console.log(fragShaderSourceCombined.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n'));
-            console.log("FRAGMENT_SHADER_ERROR_END");
-        }
-
-        const program = gl.createProgram()!;
-        gl.attachShader(program, vertShader);
-        gl.attachShader(program, fragShader);
-        // Pin the attribute slots so every variant shares them — the VAO built for
-        // the first program stays valid across recompiles.
-        gl.bindAttribLocation(program, 0, "position");
-        gl.bindAttribLocation(program, 1, "normal");
-        gl.bindAttribLocation(program, 2, "uv");
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.log("PROGRAM_LINK_ERROR_START");
-            console.log("Program linking error: ", gl.getProgramInfoLog(program));
-            console.log("GL Error Code:", gl.getError());
-            console.log("PROGRAM_LINK_ERROR_END");
-        }
-
-        gl.deleteShader(vertShader);
-        gl.deleteShader(fragShader);
-
-        return program;
     }
 
     /**
@@ -1768,39 +1935,52 @@ export class NeatGradient implements NeatController {
         return Math.min(2048, Math.max(1024, target));
     }
 
-    /** Compiles the bake program and its quad, once per context. */
-    _ensureBakePipeline(gl: WebGL2RenderingContext): boolean {
-        if (this._bakeProgram) return true;
+    /** Issues the bake program's compile and link, once per context. See _startProgram. */
+    _startBakeProgram(gl: WebGL2RenderingContext) {
+        if (this._bakeProgram || this._pendingBake) return;
+        this._pendingBake = this._startProgram(gl, PATTERN_BAKE_VERT, buildPatternBakeFrag(), ["a_pos"]);
+    }
 
-        const mk = (type: number, src: string) => {
-            const sh = gl.createShader(type)!;
-            gl.shaderSource(sh, src);
-            gl.compileShader(sh);
+    /** Whether the next texture is a bake whose program has not linked yet. */
+    _bakeProgramLinking(gl: WebGLRenderingContext | WebGL2RenderingContext): boolean {
+        return this._resolveTextureMode() === 'baked'
+            && this._ensureBakePipeline(gl as WebGL2RenderingContext) === "linking";
+    }
+
+    /**
+     * Readies the bake program, its quad and its framebuffer, once per context.
+     * "linking" while the program has not linked yet: the caller keeps the texture
+     * it has and asks again on the next frame.
+     */
+    _ensureBakePipeline(gl: WebGL2RenderingContext): "ready" | "linking" | "failed" {
+        if (this._bakeProgram) return "ready";
+
+        this._startBakeProgram(gl);
+        const pending = this._pendingBake!;
+        if (!this._linked(gl, pending.program)) return "linking";
+        this._pendingBake = null;
+
+        const { program, vertex, fragment } = pending;
+        let compiled = true;
+        for (const [sh, src] of [[vertex, pending.vertexSource], [fragment, pending.fragmentSource]] as const) {
             if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
                 console.log("NEAT_BAKE_SHADER_ERROR_START");
                 console.log(gl.getShaderInfoLog(sh));
                 console.log(src.split("\n").map((l, i) => `${i + 1}: ${l}`).join("\n"));
                 console.log("NEAT_BAKE_SHADER_ERROR_END");
-                return null;
+                compiled = false;
             }
-            return sh;
-        };
-
-        const vs = mk(gl.VERTEX_SHADER, PATTERN_BAKE_VERT);
-        const fs = mk(gl.FRAGMENT_SHADER, buildPatternBakeFrag());
-        if (!vs || !fs) return false;
-
-        const program = gl.createProgram()!;
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-        gl.bindAttribLocation(program, 0, "a_pos");
-        gl.linkProgram(program);
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
+        }
+        gl.deleteShader(vertex);
+        gl.deleteShader(fragment);
+        if (!compiled) {
+            gl.deleteProgram(program);
+            return "failed";
+        }
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             console.log("NEAT_BAKE_LINK_ERROR:", gl.getProgramInfoLog(program));
             gl.deleteProgram(program);
-            return false;
+            return "failed";
         }
 
         this._bakeProgram = program;
@@ -1832,7 +2012,7 @@ export class NeatGradient implements NeatController {
         gl.bindVertexArray(prevVao);
 
         this._bakeFbo = gl.createFramebuffer();
-        return true;
+        return "ready";
     }
 
     /** Uploads the packed pattern into the two data textures the bake reads. */
@@ -1883,7 +2063,9 @@ export class NeatGradient implements NeatController {
     _bakePatternTexture(gl: WebGL2RenderingContext): WebGLTexture | null {
         const pattern = this._buildPattern(1024);
         if (!pattern) return null;
-        if (!this._ensureBakePipeline(gl)) return null;
+        // The render loop only gets here once the program has linked (see
+        // _bakeProgramLinking), so anything but "ready" is a failure.
+        if (this._ensureBakePipeline(gl) !== "ready") return null;
 
         const data = buildPatternData(pattern);
 
@@ -2073,44 +2255,36 @@ export class NeatGradient implements NeatController {
 
     _updateCameraFrustum() {
         if (!this.glState) return;
-        const gl = this.glState.gl;
         const width = this._ref.width;
         const height = this._ref.height;
         updateCamera(this.glState.camera, width, height, PLANE_WIDTH, PLANE_HEIGHT, this._shapeType, this._cameraZoom);
 
-        const projLoc = this.glState.locations.uniforms["projectionMatrix"];
-        gl.useProgram(this.glState.program);
-        if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.glState.camera.projectionMatrix.elements);
+        this._uploadProjection();
         this._uniformsDirty = true;
     }
 
     /**
-     * Compiles the watermark shader, creates the text texture, and sets up
-     * the screen-space quad buffers. Uses VAOs on WebGL2 to minimise
-     * per-frame state switching (~2 calls instead of ~20).
+     * Issues the watermark shader, creates the text texture, and sets up the
+     * screen-space quad buffers. Uses VAOs on WebGL2 to minimise per-frame state
+     * switching (~2 calls instead of ~20).
+     *
+     * Only called once the watermark will be shown: at construction without a
+     * license key, or when a key fails to verify. Once per instance.
      */
-    private _initWatermark(): void {
+    private _startWatermark(): void {
+        if (this._destroyed || this._watermarkProgram) return;
         const gl = this.glState.gl;
         const gl2 = gl as WebGL2RenderingContext;
         const hasVAO = typeof gl2.createVertexArray === 'function';
 
-        // ── 1. Compile watermark shader program ──
-        const vs = gl.createShader(gl.VERTEX_SHADER)!;
-        gl.shaderSource(vs, WATERMARK_VS);
-        gl.compileShader(vs);
-
-        const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-        gl.shaderSource(fs, WATERMARK_FS);
-        gl.compileShader(fs);
-
-        const prog = gl.createProgram()!;
-        gl.attachShader(prog, vs);
-        gl.attachShader(prog, fs);
-        gl.linkProgram(prog);
+        // ── 1. Issue the watermark program; it links in the background (see _startProgram) ──
+        const pending = this._startProgram(gl, WATERMARK_VS, WATERMARK_FS, ["a_wm_position", "a_wm_texcoord"]);
+        const prog = pending.program;
         this._watermarkProgram = prog;
 
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
+        // Nothing reads its compile log, so its shaders can go now.
+        gl.deleteShader(pending.vertex);
+        gl.deleteShader(pending.fragment);
 
         // ── 2. Rasterise "NEAT" text into an offscreen canvas ──
         const fontSize = 13;
@@ -2169,14 +2343,13 @@ export class NeatGradient implements NeatController {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(8), gl.DYNAMIC_DRAW);
         this._watermarkBuffer = posBuf;
 
-        // Cache attribute/uniform locations
-        this._wmLocPos = gl.getAttribLocation(prog, 'a_wm_position');
-        this._wmLocTc = gl.getAttribLocation(prog, 'a_wm_texcoord');
-        this._wmLocTex = gl.getUniformLocation(prog, 'u_wm_texture');
+        // Cache attribute locations: the slots bound before the link. The texture
+        // uniform needs the link, so the first draw resolves it (_renderWatermark).
+        this._wmLocPos = 0;
+        this._wmLocTc = 1;
 
-        // ── 5. Set up VAOs (WebGL2 only) for fast state switching ──
+        // ── 5. Set up the watermark VAO (WebGL2 only) for fast state switching ──
         if (hasVAO) {
-            // Watermark VAO
             this._watermarkVAO = gl2.createVertexArray();
             gl2.bindVertexArray(this._watermarkVAO);
             gl.enableVertexAttribArray(this._wmLocPos);
@@ -2186,22 +2359,7 @@ export class NeatGradient implements NeatController {
             gl.bindBuffer(gl.ARRAY_BUFFER, tcBuf);
             gl.vertexAttribPointer(this._wmLocTc, 2, gl.FLOAT, false, 0, 0);
 
-            // Gradient VAO — capture current gradient attribute state
-            this._gradientVAO = gl2.createVertexArray();
-            gl2.bindVertexArray(this._gradientVAO);
-            const locs = this.glState.locations.attributes;
-            gl.enableVertexAttribArray(locs.position);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.position);
-            gl.vertexAttribPointer(locs.position, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(locs.normal);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.normal);
-            gl.vertexAttribPointer(locs.normal, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(locs.uv);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glState.buffers.uv);
-            gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
-
-            // Leave gradient VAO bound as default
+            // Leave the gradient VAO (built in _initScene) bound as default
             gl2.bindVertexArray(this._gradientVAO);
         } else {
             // WebGL1: re-bind gradient buffers (already done in _initScene)
@@ -2298,16 +2456,25 @@ export class NeatGradient implements NeatController {
     /**
      * Draws the watermark quad as a second pass after the main gradient.
      * Uses VAO switching on WebGL2 (~2 GL calls) or manual restore on WebGL1.
+     *
+     * Returns false only while the watermark program is still linking, so the
+     * loop keeps running until it can draw.
      */
-    private _renderWatermark(gl: WebGLRenderingContext | WebGL2RenderingContext): void {
+    private _renderWatermark(gl: WebGLRenderingContext | WebGL2RenderingContext): boolean {
         const prog = this._watermarkProgram;
         const tex = this._watermarkTexture;
         const posBuf = this._watermarkBuffer;
-        if (!prog || !tex || !posBuf) return;
+        if (!prog || !tex || !posBuf) return true;
+
+        if (!this._wmLinked) {
+            if (!this._linked(gl, prog)) return false;
+            this._wmLocTex = gl.getUniformLocation(prog, 'u_wm_texture');
+            this._wmLinked = true;
+        }
 
         const canvasW = this._ref.width;
         const canvasH = this._ref.height;
-        if (canvasW === 0 || canvasH === 0) return;
+        if (canvasW === 0 || canvasH === 0) return true;
 
         const margin = 4;
         const qw = this._watermarkWidth;
@@ -2378,6 +2545,7 @@ export class NeatGradient implements NeatController {
             gl.vertexAttribPointer(locs.uv, 2, gl.FLOAT, false, 0, 0);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glState.buffers.index);
         }
+        return true;
     }
 }
 
