@@ -123,7 +123,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
         // Use the client's origin so redirects work on localhost too
         const baseUrl = (origin && typeof origin === "string" && (origin.startsWith("http://localhost") || origin.startsWith("https://")))
             ? origin.replace(/\/+$/, "")
-            : "https://neat.firecms.co";
+            : "https://neat.rebase.pro";
 
         const sessionParams: Stripe.Checkout.SessionCreateParams = {
             mode: "payment",
@@ -203,7 +203,7 @@ async function sendLicenseEmail(email: string, domain: string, licenseKey: strin
     <div style="margin-top: 24px; font-size: 13px; color: #888; line-height: 1.7;">
         <p style="margin: 0 0 8px;"><strong style="color: #ccc;">Export PNGs and videos without the watermark:</strong></p>
         <ol style="margin: 0; padding-left: 20px;">
-            <li>Open the editor at <a href="https://neat.firecms.co" style="color: #6ee7b7;">neat.firecms.co</a></li>
+            <li>Open the editor at <a href="https://neat.rebase.pro" style="color: #6ee7b7;">neat.rebase.pro</a></li>
             <li>Click <strong style="color: #ccc;">PRO</strong> in the toolbar, then <strong style="color: #ccc;">Already bought a license? Activate your key</strong></li>
             <li>Paste the key above and click <strong style="color: #ccc;">Activate</strong></li>
         </ol>

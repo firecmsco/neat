@@ -1488,7 +1488,7 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
 
         const stop = recordCanvasVideo(canvasRef.current, {
             durationMs: recordDuration * 1000,
-            filename: 'neat.firecms.co',
+            filename: 'neat.rebase.pro',
             width,
             height,
             format: recordFormat,
@@ -2268,15 +2268,15 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
                             <a
-                                href="https://firecms.co"
+                                href="https://rebase.pro"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline"
                                 style={{ color: uiOnDark ? "white" : "black" }}
-                                onClick={() => logEvent(analytics, 'click_firecms_link', { location: 'footer' })}
+                                onClick={() => logEvent(analytics, 'click_rebase_link', { location: 'footer' })}
                             >
-                                <span className="xl:hidden">FireCMS</span>
-                                <span className="hidden xl:inline">Made by FireCMS</span>
+                                <span className="xl:hidden">Rebase</span>
+                                <span className="hidden xl:inline">Made by Rebase</span>
                             </a>
                         </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">

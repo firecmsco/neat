@@ -18,7 +18,9 @@ import { createRequire } from "node:module";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
-const ORIGIN = "https://neat.firecms.co";
+const ORIGIN = "https://neat.rebase.pro";
+// The organisation that makes Neat, as rebase.pro declares it.
+const MAKER = { "@type": "Organization", "@id": "https://rebase.pro/#organization", name: "Rebase", url: "https://rebase.pro" };
 
 const require = createRequire(import.meta.url);
 
@@ -494,7 +496,7 @@ ${bodyHtml}
       <ul>
         <li><a href="https://github.com/FireCMSco/neat" rel="noopener">GitHub</a></li>
         <li><a href="https://www.npmjs.com/package/@firecms/neat" rel="noopener">npm</a></li>
-        <li><a href="https://firecms.co" rel="noopener">FireCMS</a></li>
+        <li><a href="https://rebase.pro" rel="noopener">Rebase</a></li>
         <li><a href="mailto:hello@firecms.co">hello@firecms.co</a></li>
       </ul>
     </div>
@@ -605,8 +607,8 @@ ${onwardSection(guide.related, allTitles)}
             description: guide.metaDescription,
             url: canonical,
             mainEntityOfPage: canonical,
-            author: { "@type": "Organization", name: "FireCMS", url: "https://firecms.co" },
-            publisher: { "@type": "Organization", name: "FireCMS", url: "https://firecms.co" },
+            author: MAKER,
+            publisher: MAKER,
         },
     ];
     if (guide.faq && guide.faq.length) {
@@ -734,7 +736,7 @@ ${neighbours.map(([n, c], i) => presetChip(n, c, i)).join("\n")}
             name: `${name} gradient preset`,
             description: meta.description,
             url: canonical,
-            creator: { "@type": "Organization", name: "FireCMS", url: "https://firecms.co" },
+            creator: MAKER,
             license: "https://github.com/FireCMSco/neat/blob/main/LICENSE",
         },
     ];

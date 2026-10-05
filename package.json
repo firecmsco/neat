@@ -3,7 +3,7 @@
     "private": true,
     "description": "Best animated background gradients for your website",
     "author": "FireCMS",
-    "homepage": "https://neat.firecms.co",
+    "homepage": "https://neat.rebase.pro",
     "workspaces": [
         "lib",
         "editor"

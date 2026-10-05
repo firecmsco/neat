@@ -1,7 +1,7 @@
 export type NeatConfig = {
     /**
      * License key to remove the NEAT watermark.
-     * Purchase at https://neat.firecms.co
+     * Purchase at https://neat.rebase.pro
      * Format: "NEAT-<payload>.<signature>"
      */
     licenseKey?: string;

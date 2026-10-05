@@ -40,7 +40,7 @@ strings are answering a different question.
 
 ## Operating Context
 
-- The editor at neat.firecms.co is a single client-rendered URL: a full-viewport
+- The editor at neat.rebase.pro is a single client-rendered URL: a full-viewport
   WebGL canvas with floating chrome, a preset switcher, and a controls panel.
 - Static content pages (guides, a gallery, one page per preset) are generated at
   build time by `editor/scripts/build-seo-pages.mjs` and served by Firebase
@@ -63,7 +63,8 @@ strings are answering a different question.
 
 ## Brand Commitments
 
-- Name: NEAT. Made by FireCMS (firecms.co). Source at github.com/FireCMSco/neat.
+- Name: NEAT. Made by Rebase (rebase.pro). Source at github.com/FireCMSco/neat;
+  the npm package keeps its name, `@firecms/neat`.
 - Licence: MIT + Commons Clause. Free to use; an unobtrusive NEAT watermark is
   drawn on the canvas unless a licence key is set, which is a one-off €12.
 - The editor's own visual language — near-black chrome, Sofia Sans, full-bleed

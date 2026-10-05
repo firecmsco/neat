@@ -45,7 +45,7 @@ export function recordCanvasVideo(
 ): () => void {
     const {
         durationMs = 5000,
-        filename = "neat.firecms.co",
+        filename = "neat.rebase.pro",
         format,
         watermark = true,
         onProgress,

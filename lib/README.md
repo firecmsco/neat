@@ -5,11 +5,11 @@ Create stunning, animated 3D gradients with hardware-accelerated WebGL performan
 [![npm version](https://badge.fury.io/js/@firecms%2Fneat.svg)](https://www.npmjs.com/package/@firecms/neat)
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-lightgrey.svg)](https://github.com/FireCMSco/neat/blob/main/LICENSE)
 
-**✨ [Try the Interactive Editor](https://neat.firecms.co/) ✨**
+**✨ [Try the Interactive Editor](https://neat.rebase.pro/) ✨**
 
 Design your perfect gradient with our visual editor, featuring 20+ presets and real-time preview. Export the config and use it in your project instantly.
 
-![Neat Gradient Examples](https://neat.firecms.co/og_image_v3.png)
+![Neat Gradient Examples](https://neat.rebase.pro/og_image_v3.png)
 
 ---
 
@@ -400,7 +400,7 @@ it into as many plain 2D canvases as you like. Each mirror can show a different 
 they all stay perfectly in sync, and the cost per mirror is a GPU copy instead of a
 second render.
 
-This is exactly how the [editor](https://neat.firecms.co) previews a gradient as a
+This is exactly how the [editor](https://neat.rebase.pro) previews a gradient as a
 website hero, a phone screen and a row of avatars at the same time.
 
 The source gradient needs `preserveDrawingBuffer: true` — without it the drawing buffer
@@ -534,7 +534,7 @@ Neat is released under the **MIT License + The Commons Clause**.
 
 Purchase a license key for **€12 one-time** (per domain) to remove the NEAT watermark and console branding.
 
-**[Buy a license →](https://neat.firecms.co)**
+**[Buy a license →](https://neat.rebase.pro)**
 
 Then pass the key in your config:
 
@@ -548,13 +548,13 @@ const gradient = new NeatGradient({
 
 Each key is locked to the domain you specify at checkout (subdomains included). Development on `localhost` always works without a key.
 
-The same key removes the watermark from PNG and video exports in the [editor](https://neat.firecms.co): click **PRO**, then **Activate your key**, and paste it in.
+The same key removes the watermark from PNG and video exports in the [editor](https://neat.rebase.pro): click **PRO**, then **Activate your key**, and paste it in.
 
 ---
 
 ## 🙏 Credits
 
-Created by [FireCMS](https://firecms.co) with ❤️
+Created by [Rebase](https://rebase.pro) with ❤️
 
 ---
 
@@ -569,11 +569,11 @@ Found a bug or have a feature request?
 
 ## 🔗 Links
 
-- 🌐 [Website & Editor](https://neat.firecms.co)
+- 🌐 [Website & Editor](https://neat.rebase.pro)
 - 📦 [npm Package](https://www.npmjs.com/package/@firecms/neat)
 - 💻 [GitHub Repository](https://github.com/FireCMSco/neat)
 - 💬 [Discord Community](https://discord.gg/fxy7xsQm3m)
 
 ---
 
-**Made with ✨ by the FireCMS team**
+**Made with ✨ by the Rebase team**

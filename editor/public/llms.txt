@@ -6,11 +6,11 @@
 > gradient without visiting the editor.
 
 - Package: `@firecms/neat` (npm)
-- Editor / preset browser: https://neat.firecms.co
+- Editor / preset browser: https://neat.rebase.pro
 - Source: https://github.com/FireCMSco/neat
 - Full docs: https://github.com/FireCMSco/neat#readme
 - License: MIT + Commons Clause. Free to use; an unobtrusive "NEAT" watermark is
-  drawn unless a `licenseKey` is set (one-off €12 at https://neat.firecms.co).
+  drawn unless a `licenseKey` is set (one-off €12 at https://neat.rebase.pro).
 
 ## Install
 
@@ -237,7 +237,7 @@ WebGL2 and does not support squiggles. `"bitmap"` works everywhere.
 The editor ships 25 named presets — Neat, Time, Fluid, Flame, Funky, Alejandra,
 Monterey, Virus, Blob, Sands, Nighttime, Prussian, Clouds, Lemon, Dark Mode, FireCMS,
 Stripe, Pastel, Cosmic Vortex, Bloom, Night Dunes, Forest, Bubble Gum, Oceans Eleven,
-Coral. Open https://neat.firecms.co, pick one, hit **Code** and you get the exact
+Coral. Open https://neat.rebase.pro, pick one, hit **Code** and you get the exact
 config object. The editor also previews any config as a website hero, mobile app,
 product UI or poster cards, which is the fastest way to check a palette in context.
 

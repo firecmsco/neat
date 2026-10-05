@@ -7,7 +7,7 @@ import { buildPatternData, buildPatternBakeFrag, PATTERN_BAKE_VERT, AUX_WIDTH, S
 
 function _logBranding() {
     console.info(
-        `%c🌈 Neat Gradients v${NEAT_VERSION}%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nGet a license key to remove the watermark and this message: https://neat.firecms.co`,
+        `%c🌈 Neat Gradients v${NEAT_VERSION}%c\n\nLicensed under MIT + The Commons Clause.\nFree for personal and commercial use.\nSelling this software or its derivatives is strictly prohibited.\nGet a license key to remove the watermark and this message: https://neat.rebase.pro`,
         "font-weight: bold; font-size: 14px; color: #FF5772;", "color: inherit;"
     );
 }
@@ -2376,7 +2376,7 @@ export class NeatGradient implements NeatController {
             if (this._isOverWatermark(e)) {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open('https://neat.firecms.co', '_blank', 'noopener');
+                window.open('https://neat.rebase.pro', '_blank', 'noopener');
             }
         };
         this._wmMoveHandler = (e: MouseEvent) => {
@@ -2596,7 +2596,7 @@ function injectMetaGenerator() {
     if (document.querySelector('meta[name="generator"][content*="NEAT"]')) return;
     const meta = document.createElement('meta');
     meta.name = 'generator';
-    meta.content = 'NEAT by FireCMS — https://neat.firecms.co';
+    meta.content = 'NEAT by Rebase — https://neat.rebase.pro';
     document.head.appendChild(meta);
 }
 

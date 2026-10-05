@@ -44,7 +44,7 @@ export function describeLicenseError(reason: string | undefined): string {
         return "Your browser can't check license keys on this page. Try another browser.";
     }
     if (reason?.startsWith("Domain mismatch")) {
-        return `License keys can't be activated on ${window.location.hostname}. Open the editor at neat.firecms.co.`;
+        return `License keys can't be activated on ${window.location.hostname}. Open the editor at neat.rebase.pro.`;
     }
     return "That isn't a valid NEAT license key. Copy the whole key from your purchase email and try again.";
 }
