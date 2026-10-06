@@ -497,7 +497,7 @@ ${bodyHtml}
         <li><a href="https://github.com/FireCMSco/neat" rel="noopener">GitHub</a></li>
         <li><a href="https://www.npmjs.com/package/@firecms/neat" rel="noopener">npm</a></li>
         <li><a href="https://rebase.pro" rel="noopener">Rebase</a></li>
-        <li><a href="mailto:hello@firecms.co">hello@firecms.co</a></li>
+        <li><a href="mailto:hello@rebase.pro">hello@rebase.pro</a></li>
       </ul>
     </div>
   </div>

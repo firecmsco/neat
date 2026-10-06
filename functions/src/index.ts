@@ -227,7 +227,7 @@ async function sendLicenseEmail(email: string, domain: string, licenseKey: strin
                 "Authorization": `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                from: { email: "hello@firecms.co", name: "NEAT by FireCMS" },
+                from: { email: "hello@rebase.pro", name: "NEAT by Rebase" },
                 to: [{ email }],
                 subject: `Your NEAT license key for ${domain}`,
                 html,

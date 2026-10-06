@@ -119,7 +119,7 @@ export function LicenseSuccessPage() {
                         </div>
                         <h1 className="text-xl font-bold text-white mb-2">Something went wrong</h1>
                         <p className="text-white/60 text-sm mb-6">{state.message}</p>
-                        <a href="mailto:hello@firecms.co"
+                        <a href="mailto:hello@rebase.pro"
                            className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                             Contact support →
                         </a>
@@ -198,9 +198,9 @@ const gradient = new NeatGradient({
                             <p className="text-xs text-amber-200/70">
                                 <span className="font-bold text-amber-200/90">Save this key!</span>{" "}
                                 Bookmark this page or copy the key now. If you lose it, contact{" "}
-                                <a href="mailto:hello@firecms.co"
+                                <a href="mailto:hello@rebase.pro"
                                    className="text-amber-200/90 underline underline-offset-2 hover:text-amber-100 transition-colors font-normal">
-                                    hello@firecms.co
+                                    hello@rebase.pro
                                 </a>{" "}
                                 with your purchase email.
                             </p>

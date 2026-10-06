@@ -2281,12 +2281,12 @@ export default function NeatEditor({ analytics }: NeatEditorProps) {
                         </div>
                         <div className="text-[11px] sm:text-xs opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap">
                             <a
-                                href="mailto:hello@firecms.co"
+                                href="mailto:hello@rebase.pro"
                                 className="hover:underline"
                                 style={{ color: uiOnDark ? "white" : "black" }}
                                 onClick={() => logEvent(analytics, 'click_email', { location: 'footer' })}
                             >
-                                hello@firecms.co
+                                hello@rebase.pro
                             </a>
                         </div>
                     </div>
